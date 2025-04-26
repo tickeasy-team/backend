@@ -1,0 +1,18 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # 將本地的 3000 端口映射到容器的 3000 端口
+    env_file:
+      - .env        # 從 .env 檔案加載環境變數 (包含 Supabase 連接字串和 Google OAuth keys)
+    volumes:
+      # 將本地源代碼掛載到容器中，實現開發時的熱重載
+      # 注意：node_modules 不掛載，以使用容器內安裝的版本
+      - .:/app 
+      - /app/node_modules 
+    # 使用 nodemon 進行開發，如果 Dockerfile 的 CMD 是 node dist/server.js，則覆蓋它
+    # 確保 package.json 中的 dev script 使用 nodemon 監控 TypeScript 文件
+    command: npm run dev 
+    restart: unless-stopped 
