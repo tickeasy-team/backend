@@ -139,7 +139,7 @@
 
 ### 基礎 URL
 
-`https://tickeasy-backend.onrender.com` 或本地 `http://localhost:3000`
+`https://tickeasy-team-backend.onrender.com` 或本地 `http://localhost:3000`
 
 ### 認證相關 API (前綴路徑：/api/v1/auth)
 
