@@ -13,29 +13,33 @@ import { Order } from './order';
 import { TicketType } from './ticket-type';
 import { User } from './user';
 
+// --- 新增 TicketStatus ---
+export type TicketStatus = 'purchased' | 'refunded' | 'used';
+// ------------------------
+
 @Entity('ticket')
 export class Ticket {
   @PrimaryGeneratedColumn('uuid', { name: 'ticketId' })
   ticketId: string;
 
-  @Column({ name: 'orderId' })
+  @Column({ name: 'orderId', nullable: false })
   orderId: string;
 
-  @ManyToOne(() => Order, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Order, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
-  @Column({ name: 'ticketTypeId' })
+  @Column({ name: 'ticketTypeId', nullable: false })
   ticketTypeId: string;
 
-  @ManyToOne(() => TicketType, { onDelete: 'CASCADE' })
+  @ManyToOne(() => TicketType, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'ticketTypeId' })
   ticketType: TicketType;
 
-  @Column({ name: 'userId', nullable: true })
+  @Column({ name: 'userId', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -45,18 +49,22 @@ export class Ticket {
   @Column({ length: 100, nullable: true })
   purchaserEmail: string;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamp', nullable: false })
   concertStartTime: Date;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ nullable: true })
   seatNumber: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255, unique: true, nullable: true })
   qrCode: string;
 
-  @Column({ length: 20 })
-  status: string;
+  @Column({
+    type: 'enum',
+    enum: ['purchased', 'refunded', 'used'] as TicketStatus[],
+    nullable: false
+  })
+  status: TicketStatus;
 
-  @CreateDateColumn({ name: 'purchaseTime' })
+  @Column({ type: 'timestamp', name: 'purchaseTime', nullable: false })
   purchaseTime: Date;
 } 

@@ -16,13 +16,13 @@ export class Venue {
   @PrimaryGeneratedColumn('uuid', { name: 'venueId' })
   venueId: string;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, nullable: false })
   venueName: string;
 
   @Column({ type: 'text', nullable: true })
   venueDescription: string;
 
-  @Column({ length: 200 })
+  @Column({ length: 200, nullable: false })
   venueAddress: string;
 
   @Column({ nullable: true })
