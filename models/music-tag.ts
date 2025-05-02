@@ -14,7 +14,7 @@ export class MusicTag {
   @PrimaryGeneratedColumn('uuid', { name: 'musicTagId' })
   musicTagId: string;
 
-  @Column({ length: 50 })
+  @Column({ length: 50, nullable: false })
   musicTagName: string;
   
   @OneToMany(() => Concert, concert => concert.musicTag)
