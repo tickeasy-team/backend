@@ -16,17 +16,17 @@ export class Organization {
   @PrimaryGeneratedColumn('uuid', { name: 'organizationId' })
   organizationId: string;
 
-  @Column({ name: 'userId' })
+  @Column({ name: 'userId', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, nullable: false })
   orgName: string;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, nullable: false })
   orgAddress: string;
 
   @Column({ length: 100, nullable: true })

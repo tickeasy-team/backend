@@ -16,10 +16,10 @@ export class ConcertSession {
   @PrimaryGeneratedColumn('uuid', { name: 'sessionId' })
   sessionId: string;
 
-  @Column({ name: 'concertId' })
+  @Column({ name: 'concertId', nullable: false })
   concertId: string;
 
-  @ManyToOne(() => Concert, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Concert, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'concertId' })
   concert: Concert;
 
