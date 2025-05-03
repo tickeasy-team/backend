@@ -157,7 +157,10 @@ export class User {
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
-    if (this.password) {
+    // Check if password exists and if it's likely *not* already hashed
+    // Common bcrypt hash prefixes: $2a$, $2b$, $2y$
+    // If it doesn't look like a hash, hash it.
+    if (this.password && !/^\$2[aby]\$/.test(this.password)) {
       this.password = await bcrypt.hash(this.password, 12);
     }
   }
@@ -168,6 +171,10 @@ export class User {
    * @returns 密碼是否匹配
    */
   async comparePassword(candidatePassword: string): Promise<boolean> {
+    // Ensure this.password is not null or undefined before comparing
+    if (!this.password) {
+      return false;
+    }
     return bcrypt.compare(candidatePassword, this.password);
   }
   

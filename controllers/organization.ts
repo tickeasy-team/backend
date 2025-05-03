@@ -66,6 +66,7 @@ export const getOrganizationById = handleErrorAsync(async (req: Request, res: Re
 
 // 創建組織
 export const createOrganization = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>, next: NextFunction) => {
+  // 獲取當前用戶的 userId
   const authenticatedUser = req.user as { userId: string; }; // 來自 isAuthenticated
   if (!authenticatedUser || !authenticatedUser.userId) {
     // 理論上 isAuthenticated 會處理，但以防萬一
