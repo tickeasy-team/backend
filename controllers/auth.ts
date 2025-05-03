@@ -101,13 +101,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     newUser.role = UserRole.USER;
     newUser.isEmailVerified = false;
     newUser.oauthProviders = [];
-    
-    await userRepository.save(newUser);
 
-    // 生成驗證碼
-    const { token, code } = await newUser.createVerificationToken();
-    
-    // 再次保存以更新驗證碼相關字段
+    // 在第一次保存前生成驗證碼並設置相關字段
+    const { code } = await newUser.createVerificationToken();
+
+    // 只保存一次，觸發 @BeforeInsert -> hashPassword
     await userRepository.save(newUser);
 
     // 發送驗證郵件
