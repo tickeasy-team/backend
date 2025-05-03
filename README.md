@@ -162,11 +162,20 @@
 | GET  | /profile | 獲取用戶個人資料 | 是       |
 | PUT  | /profile | 更新用戶個人資料 | 是       |
 
+### 組織相關 API (前綴路徑：/api/v1/organizations)
+
+| 方法   | 路徑             | 功能                     | 需要認證 |
+| ------ | ---------------- | ------------------------ | -------- |
+| GET    | /                | 獲取用戶擁有的所有組織 | 是       |
+| GET    | /:organizationId | 獲取單個組織             | 是       |
+| POST   | /                | 創建組織                 | 是       |
+| PUT    | /:organizationId | 更新組織                 | 是       |
+| DELETE | /:organizationId | 刪除組織                 | 是       |
 
 ## 專案結構
 
 ```
-tickeasy-backend/
+tickeasy-team-backend/
 ├── bin/                  # 應用程式入口點
 ├── config/               # 設定檔案
 ├── controllers/          # 業務邏輯控制器
@@ -181,3 +190,4 @@ tickeasy-backend/
 ├── package.json          # 相依性管理
 └── tsconfig.json         # TypeScript 設定
 ```
+
