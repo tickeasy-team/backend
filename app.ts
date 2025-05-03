@@ -17,6 +17,7 @@ import './models';
 // 引入路由
 import authRouter from './routes/auth';
 import userRouter from './routes/user';
+import organizationRouter from './routes/organization';
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use(cookieParser());
 // 路由設置
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/organizations', organizationRouter);
 
 
 // 註冊錯誤處理中間件
