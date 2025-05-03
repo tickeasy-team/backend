@@ -23,7 +23,7 @@ export class Organization {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ length: 100, nullable: false })
+  @Column({ length: 100, nullable: false, unique: true })
   orgName: string;
 
   @Column({ length: 100, nullable: false })

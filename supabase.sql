@@ -47,7 +47,7 @@ CREATE TABLE "users" (
 CREATE TABLE "organization" (
     "organizationId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     "userId" uuid NOT NULL,
-    "orgName" character varying(100) NOT NULL,
+    "orgName" character varying(100) UNIQUE NOT NULL,
     "orgAddress" character varying(100) NOT NULL,
     "orgMail" character varying(100),
     "orgContact" character varying(1000),

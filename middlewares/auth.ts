@@ -128,28 +128,6 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
- * 驗證組織管理者權限的中間件
- */
-export const isOrganizer = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      throw ApiError.unauthorized();
-    }
-
-    // 使用簡單字符串比較
-    const user = req.user as any;
-    const userRole = String(user.role).toLowerCase();
-    if (userRole !== 'admin' && userRole !== 'organizer') {
-      throw ApiError.create(403, '需要組織管理員權限', ErrorCode.AUTH_FORBIDDEN);
-    }
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
  * 管理員權限驗證中間件
  */
 export const adminAuth = async (req: Request, res: Response, next: NextFunction) => {
