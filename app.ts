@@ -18,6 +18,7 @@ import './models';
 import authRouter from './routes/auth';
 import userRouter from './routes/user';
 import organizationRouter from './routes/organization';
+import uploadRouter from './routes/upload';
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use(cookieParser());
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/organizations', organizationRouter);
+app.use('/api/v1/upload', uploadRouter);
 
 
 // 註冊錯誤處理中間件
