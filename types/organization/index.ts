@@ -1,5 +1,5 @@
-import { Organization as OrganizationEntity } from '../models';
-import { ApiResponse } from './api';
+import { Organization as OrganizationEntity } from '../../models';
+import { ApiResponse } from '../api';
 
 /**
  * 創建組織請求 Body 類型
