@@ -66,7 +66,7 @@ passport.use(new GoogleStrategy({
           existingProvider.accessToken = accessToken;
           existingProvider.refreshToken = refreshToken;
           existingProvider.tokenExpiresAt = new Date(Date.now() + 3600000);
-          if (avatarUrl && user.avatar !== avatarUrl) { // 更新頭像如果不同
+          if (avatarUrl && !user.avatar) { // 僅在用戶沒有本地頭像時才更新
             user.avatar = avatarUrl;
           }
           await userRepository.save(user);
