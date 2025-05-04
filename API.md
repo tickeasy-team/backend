@@ -1,8 +1,10 @@
-# API
+# API 文檔
 
-## BaseURL = `https://tickeasy-backend.onrender.com`
+## Base URL
 
-## 認證相關 API (前綴路徑：/api/v1/auth)
+`https://tickeasy-team-backend.onrender.com` 或本地 `http://localhost:3000`
+
+### 認證相關 API (前綴路徑：/api/v1/auth)
 
 | 方法 | 路徑                    | 功能                 | 需要認證 |
 | ---- | ----------------------- | -------------------- | -------- |
@@ -16,68 +18,73 @@
 
 - Google 登入前端重定向`https://frontend-fj47.onrender.com/callback`
 
-## 用戶相關 API (前綴路徑：/api/v1/users)
+### 用戶相關 API (前綴路徑：/api/v1/users)
 
 | 方法 | 路徑     | 功能             | 需要認證 |
 | ---- | -------- | ---------------- | -------- |
 | GET  | /profile | 獲取用戶個人資料 | 是       |
 | PUT  | /profile | 更新用戶個人資料 | 是       |
 
-這些 API 已經配備了適當的中間件和錯誤處理，包括認證檢查、參數驗證等。系統使用 JWT 進行身份驗證，並且支持 Google OAuth 第三方登入。
+### 組織相關 API (前綴路徑：/api/v1/organizations)
 
-## API 返回格式
+| 方法   | 路徑             | 功能                   | 需要認證 |
+| ------ | ---------------- | ---------------------- | -------- |
+| GET    | /                | 獲取用戶擁有的所有組織 | 是       |
+| GET    | /:organizationId | 獲取單個組織           | 是       |
+| POST   | /                | 創建組織               | 是       |
+| PUT    | /:organizationId | 更新組織               | 是       |
+| DELETE | /:organizationId | 刪除組織               | 是       |
 
-### 成功響應
+### 圖片上傳 API (前綴路徑：/api/v1/upload)
 
-成功的 API 調用將返回以下格式：
+| 方法 | 路徑   | 功能           | 需要認證 |
+| ---- | ------ | -------------- | -------- |
+| POST | /image | 上傳並處理圖片 | 是       |
 
-```json
-{
-  "status": "success",
-  "message": "操作結果訊息",
-  "data": { ... } // 選擇性的數據內容
-}
-```
+**POST /image 詳細說明:**
 
-### 錯誤響應
+- **功能：** 上傳圖片檔案（用戶頭像、場地照片、音樂會圖片等），進行優化處理後存儲至 Supabase。
+- **請求格式：** `multipart/form-data`
+- **標頭：**
+  - `Authorization: Bearer {token}`
+- **請求內容 (Form Data):**
+  - `file`: (檔案) **必需**。支援 `image/jpeg`, `image/png`, `image/gif`, `image/webp` 格式，最大 5MB。
+  - `uploadContext`: (字串) **必需**。指定圖片用途，必須是以下其中一個值：
+    - `'USER_AVATAR'` (使用者頭像)
+    - `'VENUE_PHOTO'` (場地照片)
+    - `'CONCERT_SEATTABLE'` (音樂會座位表)
+    - `'CONCERT_BANNER'` (音樂會橫幅)
+  - `targetId`: (字串) **條件必需**。關聯目標的 ID (例如場地 ID、音樂會 ID)。
+    - 當 `uploadContext` 為 `'USER_AVATAR'` 時 **不需要** 提供此欄位 (會使用 token 中的用戶 ID)。
+    - 當 `uploadContext` 為其他值時 **必需** 提供此欄位。
+- **成功回應 (Status Code: 200):**
+  ```json
+  {
+    "status": "success",
+    "message": "圖片上傳成功",
+    "data": {
+      "url": "圖片的公開存取 URL",
+    }
+  }
+  ```
+- **主要錯誤回應 (Status Code):**
+  - `400 Bad Request`: 請求參數錯誤（缺少檔案、檔案類型/大小不符、缺少必要欄位、`uploadContext` 或 `targetId` 無效）。
+  - `401 Unauthorized`: 未提供有效 Token 或 Token 過期。
+  - `403 Forbidden`: (保留，未來可能用於更細緻的權限控制)。
+  - `404 Not Found`: 提供的 `targetId` 找不到對應的資源（例如找不到用戶、場地或音樂會）。
+  - `500 Internal Server Error`: 伺服器內部錯誤（圖片處理失敗、儲存失敗、資料庫更新失敗等）。
 
-失敗的 API 調用將返回以下格式：
+### 活動頁面圖片 API (前綴路徑：/api/v1/banners)
 
-```json
-{
-  "status": "failed",
-  "message": "錯誤描述訊息",
-  "code": "錯誤碼",
-  "fieldErrors": { // 選擇性的字段錯誤信息
-    "字段名": {
-      "code": "錯誤碼",
-      "message": "字段錯誤描述"
-    },
-    ...
-  },
-  "details": "..." // 僅在開發環境中提供的詳細錯誤堆棧
-}
-```
+| 方法 | 路徑 | 功能           | 需要認證 |
+| ---- | ---- | -------------- | -------- |
+| GET  | /    | 獲得演唱會圖片 | 否       |
 
-## 錯誤碼說明
+### 演唱會搜尋相關 API (前綴路徑：/api/v1/concerts)
 
-錯誤碼分為以下幾類：
+| 方法 | 路徑         | 功能           | 需要認證 |
+| ---- | ------------ | -------------- | -------- |
+| GET  | /popular     | 獲得熱門演唱會 | 否       |
+| GET  | /venues      | 獲取場館資訊   | 否       |
+| GET  | /{concertId} | 搜尋單一演唱會 | 否       |
 
-- A\*\*: 身份認證與授權相關錯誤
-- V\*\*: 數據驗證錯誤
-- D\*\*: 數據相關錯誤
-- S\*\*: 系統錯誤
-- U\*\*: 未知錯誤
-
-常見錯誤碼：
-| 錯誤碼 | 描述 |
-|--------|------|
-| A01 | Email 為必填欄位 |
-| A02 | 密碼為必填欄位 |
-| A05 | 登入憑證無效 |
-| A06 | 未授權訪問 |
-| V01 | 表單驗證失敗 |
-| V03 | 密碼格式不正確 |
-| D01 | 資源未找到 |
-| S01 | 系統錯誤 |
-| S03 | 請求頻率過高 |

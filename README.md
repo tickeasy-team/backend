@@ -135,43 +135,6 @@
     - `-p 8080:3000`: 將主機的 8080 端口映射到容器的 3000 端口 (可依需求調整主機端口)。
     - `--name tickeasy-app`: 為容器命名。
 
-## API 文檔
-
-### 基礎 URL
-
-`https://tickeasy-team-backend.onrender.com` 或本地 `http://localhost:3000`
-
-### 認證相關 API (前綴路徑：/api/v1/auth)
-
-| 方法 | 路徑                    | 功能                 | 需要認證 |
-| ---- | ----------------------- | -------------------- | -------- |
-| POST | /register               | 用戶註冊             | 否       |
-| POST | /login                  | 用戶登入             | 否       |
-| POST | /verify-email           | 驗證電子郵件         | 否       |
-| POST | /resend-verification    | 重新發送驗證郵件     | 否       |
-| POST | /request-password-reset | 請求重設密碼         | 否       |
-| POST | /reset-password         | 重設密碼             | 否       |
-| GET  | /google                 | Google 登入（OAuth） | 否       |
-
-- Google 登入前端重定向`https://frontend-fj47.onrender.com/callback`
-
-### 用戶相關 API (前綴路徑：/api/v1/users)
-
-| 方法 | 路徑     | 功能             | 需要認證 |
-| ---- | -------- | ---------------- | -------- |
-| GET  | /profile | 獲取用戶個人資料 | 是       |
-| PUT  | /profile | 更新用戶個人資料 | 是       |
-
-### 組織相關 API (前綴路徑：/api/v1/organizations)
-
-| 方法   | 路徑             | 功能                     | 需要認證 |
-| ------ | ---------------- | ------------------------ | -------- |
-| GET    | /                | 獲取用戶擁有的所有組織 | 是       |
-| GET    | /:organizationId | 獲取單個組織             | 是       |
-| POST   | /                | 創建組織                 | 是       |
-| PUT    | /:organizationId | 更新組織                 | 是       |
-| DELETE | /:organizationId | 刪除組織                 | 是       |
-
 ## 專案結構
 
 ```
@@ -190,4 +153,3 @@ tickeasy-team-backend/
 ├── package.json          # 相依性管理
 └── tsconfig.json         # TypeScript 設定
 ```
-
