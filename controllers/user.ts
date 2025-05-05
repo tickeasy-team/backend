@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/database';
-import { User as UserEntity } from '../models/user';
+import { User as UserEntity, RegionOptions, EventTypeOptions, Region, EventType } from '../models/user';
 import { ApiResponse, UpdateProfileRequest, UserProfileResponse, UserProfileData, ErrorCode } from '../types';
 import { handleErrorAsync, ApiError } from '../utils';
 
@@ -56,6 +56,16 @@ export const getUserProfile = handleErrorAsync(async (req: Request, res: Respons
   });
 });
 
+// 輔助函數：檢查是否為有效的 Region 值
+function isValidRegion(value: string): value is Region {
+  return Object.values(Region).includes(value as Region);
+}
+
+// 輔助函數：檢查是否為有效的 EventType 值
+function isValidEventType(value: string): value is EventType {
+  return Object.values(EventType).includes(value as EventType);
+}
+
 /**
  * 更新用戶個人資料
  */
@@ -99,9 +109,22 @@ export const updateUserProfile = handleErrorAsync(async (req: Request, res: Resp
   if (gender !== undefined) user.gender = gender;
   if (address !== undefined) user.address = address;
   if (country !== undefined) user.country = country;
-  // 添加對 preferredRegions 和 preferredEventTypes 的更新
-  if (preferredRegions !== undefined) user.preferredRegions = preferredRegions;
-  if (preferredEventTypes !== undefined) user.preferredEventTypes = preferredEventTypes;
+
+  // 驗證和更新 preferredRegions
+  if (preferredRegions !== undefined) {
+    if (!Array.isArray(preferredRegions) || !preferredRegions.every(isValidRegion)) {
+      throw ApiError.create(400, 'preferredRegions 包含無效的值', ErrorCode.DATA_INVALID);
+    }
+    user.preferredRegions = preferredRegions as Region[]; 
+  }
+
+  // 驗證和更新 preferredEventTypes
+  if (preferredEventTypes !== undefined) {
+    if (!Array.isArray(preferredEventTypes) || !preferredEventTypes.every(isValidEventType)) {
+      throw ApiError.create(400, 'preferredEventTypes 包含無效的值', ErrorCode.DATA_INVALID);
+    }
+    user.preferredEventTypes = preferredEventTypes as EventType[]; 
+  }
   
   // 保存更新
   await userRepository.save(user);
@@ -127,5 +150,62 @@ export const updateUserProfile = handleErrorAsync(async (req: Request, res: Resp
     data: {
       user: updatedSelectedUser as unknown as UserProfileData
     }
+  });
+});
+
+// 英文地區鍵名到英文子標籤的映射
+const regionSubLabelMap: Record<string, string> = {
+  NORTH: 'North',
+  SOUTH: 'South',
+  EAST: 'East',
+  CENTRAL: 'Central',
+  ISLANDS: 'Outlying Islands',
+  OVERSEAS: 'Overseas'
+};
+
+/**
+ * 獲取地區選項 (新格式)
+ */
+export const getRegionOptions = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>, next: NextFunction) => {
+  // 將 RegionOptions 轉換為前端期望的格式
+  const formattedOptions = RegionOptions.map(option => ({
+    label: option.value, // 中文標籤
+    value: option.value, // 值 (與中文標籤相同)
+    subLabel: regionSubLabelMap[option.key] || option.key // 英文子標籤 (從映射獲取，如果沒有則備用 key)
+  }));
+  
+  return res.status(200).json({
+    status: 'success',
+    message: '獲取地區選項成功',
+    data: formattedOptions // 返回轉換後的格式
+  });
+});
+
+// 英文鍵名到英文子標籤的映射
+const eventTypeSubLabelMap: Record<string, string> = {
+  POP: 'Pop',
+  ROCK: 'Rock',
+  ELECTRONIC: 'Electronic',
+  HIP_HOP: 'Hip-Hop/Rap', // 根據前端需求調整
+  JAZZ_BLUES: 'Jazz/Blues', // 根據前端需求調整
+  CLASSICAL: 'Classical/Symphony', // 根據前端需求調整
+  OTHER: 'Other'
+};
+
+/**
+ * 獲取活動類型選項 (新格式)
+ */
+export const getEventTypeOptions = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>, next: NextFunction) => {
+  // 將 EventTypeOptions 轉換為前端期望的格式
+  const formattedOptions = EventTypeOptions.map(option => ({
+    label: option.value, // 中文標籤
+    value: option.value, // 值 (與中文標籤相同)
+    subLabel: eventTypeSubLabelMap[option.key] || option.key // 英文子標籤 (從映射獲取，如果沒有則備用 key)
+  }));
+  
+  return res.status(200).json({
+    status: 'success',
+    message: '獲取活動類型選項成功',
+    data: formattedOptions // 返回轉換後的格式
   });
 }); 

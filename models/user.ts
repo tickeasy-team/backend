@@ -34,6 +34,47 @@ export enum Gender {
   OTHER = 'other'
 }
 
+/**
+ * 用戶偏好地區枚舉
+ */
+export enum Region {
+  NORTH = '北部',
+  SOUTH = '南部',
+  EAST = '東部',
+  CENTRAL = '中部',
+  ISLANDS = '離島',
+  OVERSEAS = '海外'
+}
+
+/**
+ * 提供 Region 枚舉的選項列表 (供前端使用)
+ */
+export const RegionOptions = Object.entries(Region).map(([key, value]) => ({
+  key: key,
+  value: value
+}));
+
+/**
+ * 用戶偏好活動類型枚舉
+ */
+export enum EventType {
+  POP = '流行音樂',
+  ROCK = '搖滾',
+  ELECTRONIC = '電子音樂',
+  HIP_HOP = '嘻哈',
+  JAZZ_BLUES = '爵士藍調',
+  CLASSICAL = '古典音樂',
+  OTHER = '其他'
+}
+
+/**
+ * 提供 EventType 枚舉的選項列表 (供前端使用)
+ */
+export const EventTypeOptions = Object.entries(EventType).map(([key, value]) => ({
+  key: key,
+  value: value
+}));
+
 // OAuth Provider 介面定義
 export interface OAuthProvider {
   provider: string;
@@ -94,11 +135,23 @@ export class User {
   })
   gender: Gender;
 
-  @Column('varchar', { array: true, nullable: true, default: '{}' })
-  preferredRegions: string[];
+  @Column({
+    type: 'enum',
+    enum: Region,
+    array: true, 
+    nullable: true, 
+    default: '{}' 
+  })
+  preferredRegions: Region[];
 
-  @Column('varchar', { array: true, nullable: true, default: '{}' })
-  preferredEventTypes: string[];
+  @Column({
+    type: 'enum',
+    enum: EventType,
+    array: true, 
+    nullable: true, 
+    default: '{}' 
+  })
+  preferredEventTypes: EventType[];
 
   @Column({ length: 20, nullable: true })
   country: string;
