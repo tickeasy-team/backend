@@ -9,6 +9,8 @@ CREATE TYPE "OrderStatus" AS ENUM ('held', 'expired', 'paid', 'cancelled', 'refu
 CREATE TYPE "TicketStatus" AS ENUM ('purchased', 'refunded', 'used');
 CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'completed', 'failed', 'refunded');
 CREATE TYPE "ConInfoStatus" AS ENUM ('draft', 'published', 'finished');
+CREATE TYPE "Region" AS ENUM ('北部', '南部', '東部', '中部', '離島', '海外');
+CREATE TYPE "EventType" AS ENUM ('流行音樂', '搖滾', '電子音樂', '嘻哈', '爵士藍調', '古典音樂', '其他');
 
 
 -- 創建 表格
@@ -24,8 +26,8 @@ CREATE TABLE "users" (
     "phone" character varying(20),
     "birthday" date,
     "gender" "Gender",
-    "preferredRegions" character varying[] DEFAULT '{}',
-    "preferredEventTypes" character varying[] DEFAULT '{}',
+    "preferredRegions" "Region"[] DEFAULT '{}',
+    "preferredEventTypes" "EventType"[] DEFAULT '{}',
     "country" character varying(20),
     "address" character varying(100),
     "avatar" character varying(255),
