@@ -268,7 +268,7 @@ export const googleLogin = handleErrorAsync(async (req: Request, res: Response, 
   }
 
   // 如果是 GET 請求 (來自 Google 重定向)
-  const redirectUrl = googleReq.query.state || 'http://localhost:3000/callback';
+  const redirectUrl = googleReq.query.state || process.env.FRONTEND_URL || 'http://localhost:3000/callback';
   res.redirect(`${redirectUrl}?token=${token}`);
 });
 
