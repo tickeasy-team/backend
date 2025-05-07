@@ -268,8 +268,39 @@ export const googleLogin = handleErrorAsync(async (req: Request, res: Response, 
   }
 
   // 如果是 GET 請求 (來自 Google 重定向)
-  const redirectUrl = googleReq.query.state || process.env.FRONTEND_URL || 'http://localhost:3000/callback';
-  res.redirect(`${redirectUrl}?token=${token}`);
+  let finalRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:3000/login/success'; // 預設前端登入成功頁面
+  const stateFromQuery = googleReq.query.state as string;
+
+  if (stateFromQuery) {
+    try {
+      const decodedJsonString = Buffer.from(stateFromQuery, 'base64').toString('utf-8');
+      const originalQueryParams = JSON.parse(decodedJsonString);
+      
+      // 前端是透過 ?state=URL 傳遞重定向目標，因此解碼後的物件中，目標URL會儲存在 state 屬性中
+      if (originalQueryParams && typeof originalQueryParams.state === 'string' && originalQueryParams.state) {
+        finalRedirectUrl = originalQueryParams.state;
+        // 可選：驗證 originalQueryParams.state 是否為有效的 URL
+        try {
+          new URL(finalRedirectUrl); // 如果 URL 無效，會拋出錯誤
+        } catch (urlError) {
+          // console.warn(`從 state 參數中解析出的重導向 URL '${finalRedirectUrl}' 格式無效，將使用預設 URL。錯誤:`, urlError);
+          finalRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:3000/login/success'; // 無效則退回預設值
+        }
+      } else {
+        // 如果解碼後的 state 物件中沒有 state 屬性，或其值不是有效的字串
+        // console.warn('State 參數已解碼，但未找到有效的 state 屬性作為重導向 URL，將使用預設重導向 URL。原始 state 內容:', originalQueryParams);
+        // 如果沒有有效的 state.state，則使用預設的 finalRedirectUrl
+      }
+    } catch (error) {
+      // console.error('無法解析從 Google callback 傳回的 state，將使用預設重導向 URL:', error);
+      // 如果解碼失敗，仍然重導向到預設的前端頁面，finalRedirectUrl 已被初始化為預設值
+    }
+  } else {
+    // console.warn('Google callback 未收到 state 參數，將使用預設重導向 URL。');
+    // 如果沒有 stateFromQuery，使用預設的 finalRedirectUrl
+  }
+  
+  res.redirect(`${finalRedirectUrl}?token=${token}`);
 });
 
 // 驗證電子郵件
