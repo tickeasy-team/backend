@@ -23,22 +23,22 @@ export const getUserProfile = handleErrorAsync(async (req: Request, res: Respons
   const selectedUser = await userRepository.findOne({
     where: { userId: userId },
     select: [
-      "userId",
-      "email",
-      "name",
-      "nickname",
-      "role",
-      "phone",
-      "birthday",
-      "gender",
-      "preferredRegions",
-      "preferredEventTypes",
-      "country",
-      "address",
-      "avatar",
-      "isEmailVerified",
-      "oauthProviders",
-      "searchHistory"
+      'userId',
+      'email',
+      'name',
+      'nickname',
+      'role',
+      'phone',
+      'birthday',
+      'gender',
+      'preferredRegions',
+      'preferredEventTypes',
+      'country',
+      'address',
+      'avatar',
+      'isEmailVerified',
+      'oauthProviders',
+      'searchHistory'
     ]
   });
 
@@ -134,9 +134,9 @@ export const updateUserProfile = handleErrorAsync(async (req: Request, res: Resp
   const updatedSelectedUser = await userRepository.findOne({
     where: { userId: userId },
     select: [
-      "userId", "email", "name", "nickname", "role", "phone", "birthday",
-      "gender", "preferredRegions", "preferredEventTypes", "country", 
-      "address", "avatar", "isEmailVerified", "oauthProviders", "searchHistory"
+      'userId', 'email', 'name', 'nickname', 'role', 'phone', 'birthday',
+      'gender', 'preferredRegions', 'preferredEventTypes', 'country', 
+      'address', 'avatar', 'isEmailVerified', 'oauthProviders', 'searchHistory'
     ]
   });
 

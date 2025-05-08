@@ -33,7 +33,7 @@ export const generateToken = (
   options: SignOptions = { expiresIn: '7d' }
 ): string => {
   if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET environment variable is not set.");
+    throw new Error('JWT_SECRET environment variable is not set.');
   }
   return jsonWebToken.sign(payload, process.env.JWT_SECRET, options);
 };
@@ -45,7 +45,7 @@ export const generateToken = (
  */
 export const verifyToken = (token: string): EmailTokenPayload | AuthTokenPayload => {
   if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET environment variable is not set.");
+    throw new Error('JWT_SECRET environment variable is not set.');
   }
   try {
     const decoded = jsonWebToken.verify(token, process.env.JWT_SECRET) as EmailTokenPayload | AuthTokenPayload;
@@ -91,7 +91,7 @@ export const verifyToken = (token: string): EmailTokenPayload | AuthTokenPayload
 export const generateEmailToken = (): { code: string; token: string } => {
   const code = generateRandomCode();
   if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET environment variable is not set.");
+    throw new Error('JWT_SECRET environment variable is not set.');
   }
   const token = jsonWebToken.sign({ code }, process.env.JWT_SECRET, {
     expiresIn: 600 // 10 minutes

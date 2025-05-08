@@ -34,10 +34,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 connectToDatabase()
-  .then(() => console.log("資料庫連接成功"))
+  .then(() => console.log('資料庫連接成功'))
   .catch(err => {
-    console.error("資料庫連接失敗:", err);
-    console.error("錯誤詳情:", {
+    console.error('資料庫連接失敗:', err);
+    console.error('錯誤詳情:', {
       message: err.message,
       code: err.code,
       syscall: err.syscall,

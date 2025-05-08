@@ -26,7 +26,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'postgres',
   synchronize: false,
-  logging: process.env.NODE_ENV === 'development' ? ["error"] : false,
+  logging: process.env.NODE_ENV === 'development' ? ['error'] : false,
   entities: [path.join(__dirname, '..', 'models', '*.{ts,js}')],
   migrations: [path.join(__dirname, '..', 'migrations', '*.{ts,js}')],
   subscribers: [],
