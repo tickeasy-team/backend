@@ -1,13 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database';
 import { User as UserEntity, RegionOptions, EventTypeOptions, Region, EventType } from '../models/user';
-import { ApiResponse, UpdateProfileRequest, UserProfileResponse, UserProfileData, ErrorCode } from '../types';
-import { handleErrorAsync, ApiError } from '../utils';
+import { ApiResponse, UpdateProfileRequest, UserProfileResponse, UserProfileData } from '../types';
+import { handleErrorAsync, ApiError, ErrorCode } from '../utils';
 
 /**
  * 獲取用戶個人資料
  */
-export const getUserProfile = handleErrorAsync(async (req: Request, res: Response<ApiResponse<UserProfileResponse>>, next: NextFunction) => {
+export const getUserProfile = handleErrorAsync(async (req: Request, res: Response<ApiResponse<UserProfileResponse>>) => {
   // req.user 由 isAuth 中間件設置，包含 userId, email, role
   // const authenticatedUser = req.user as Express.User;
   const authenticatedUser = req.user as { userId: string; role: string; email: string; };
@@ -69,7 +69,7 @@ function isValidEventType(value: string): value is EventType {
 /**
  * 更新用戶個人資料
  */
-export const updateUserProfile = handleErrorAsync(async (req: Request, res: Response<ApiResponse<UserProfileResponse>>, next: NextFunction) => {
+export const updateUserProfile = handleErrorAsync(async (req: Request, res: Response<ApiResponse<UserProfileResponse>>) => {
   // const userId = (req.user as Express.User)?.userId;
   const authenticatedUser = req.user as { userId: string; role: string; email: string; };
 
@@ -166,7 +166,7 @@ const regionSubLabelMap: Record<string, string> = {
 /**
  * 獲取地區選項 (新格式)
  */
-export const getRegionOptions = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>, next: NextFunction) => {
+export const getRegionOptions = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>) => {
   // 將 RegionOptions 轉換為前端期望的格式
   const formattedOptions = RegionOptions.map(option => ({
     label: option.value, // 中文標籤
@@ -195,7 +195,7 @@ const eventTypeSubLabelMap: Record<string, string> = {
 /**
  * 獲取活動類型選項 (新格式)
  */
-export const getEventTypeOptions = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>, next: NextFunction) => {
+export const getEventTypeOptions = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>) => {
   // 將 EventTypeOptions 轉換為前端期望的格式
   const formattedOptions = EventTypeOptions.map(option => ({
     label: option.value, // 中文標籤

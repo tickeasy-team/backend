@@ -7,7 +7,7 @@ import {
   Column, 
   ManyToOne,
   JoinColumn,
-  CreateDateColumn
+  // CreateDateColumn
 } from 'typeorm';
 import { Order } from './order';
 import { TicketType } from './ticket-type';

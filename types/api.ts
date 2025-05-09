@@ -2,7 +2,7 @@
  * API 相關型別定義
  */
 
-import { HttpError } from 'http-errors';
+// import { HttpError } from 'http-errors';
 
 /**
  * API 標準響應結構
@@ -37,6 +37,7 @@ export interface ErrorResponse {
 /**
  * 常用 HTTP 狀態碼
  */
+/** 
 export enum HttpStatus {
   OK = 200,
   CREATED = 201,
@@ -48,6 +49,7 @@ export enum HttpStatus {
   CONFLICT = 409,
   INTERNAL_SERVER_ERROR = 500
 }
+*/
 
 /**
  * 錯誤碼定義
@@ -55,6 +57,8 @@ export enum HttpStatus {
  * X: 錯誤類型（A=身份認證, V=數據驗證, D=資料, S=系統）
  * YZ: 序號
  */
+
+/* eslint-disable no-unused-vars */
 export enum ErrorCode {
   // 身份認證與授權相關錯誤 (A)
   AUTH_EMAIL_REQUIRED = 'A01',

@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 
@@ -62,7 +62,7 @@ app.use('/api/v1/upload', uploadRouter);
 
 
 // 註冊錯誤處理中間件
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response) => {
   console.error('錯誤詳情:', err);
   
   // 開發環境顯示詳細錯誤信息，生產環境顯示友好錯誤信息

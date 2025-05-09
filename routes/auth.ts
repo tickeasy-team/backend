@@ -1,4 +1,5 @@
 import express, { Router } from 'express';
+import { Buffer } from 'buffer';
 import {
   register,
   login,

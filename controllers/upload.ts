@@ -22,7 +22,7 @@ function getStoragePathFromUrl(url: string): string | null {
     if (urlParts.length === 2) {
       return urlParts[1];
     }
-  } catch (e) { /* 忽略解析錯誤 */ }
+  } catch (e) { console.log(e); /* 忽略解析錯誤 */ }
   return null;
 }
 

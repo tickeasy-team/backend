@@ -5,11 +5,6 @@ import { handleErrorAsync } from './handleErrorAsync';
 import { ApiError } from './apiError';
 import { TokenPayload, ErrorCode } from '../types';
 
-// 更精確的使用者介面定義
-interface User {
-  userId: string;
-  role: string;
-}
 
 // 擴展的令牌載荷，包含電子郵件
 interface EmailTokenPayload extends TokenPayload {
