@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database';
 import { Organization } from '../models';
-import { User as UserEntity } from '../models/user'; // 確保引入 UserEntity 以便關聯
+// import { User as UserEntity } from '../models/user'; // 確保引入 UserEntity 以便關聯
 import { handleErrorAsync, ApiError } from '../utils';
 import {
   ApiResponse,
@@ -14,7 +14,7 @@ import {
 import { Not } from 'typeorm';
 
 // 獲取當前用戶擁有的所有組織
-export const getAllOrganizations = handleErrorAsync(async (req: Request, res: Response<OrganizationsResponse>, next: NextFunction) => {
+export const getAllOrganizations = handleErrorAsync(async (req: Request, res: Response<OrganizationsResponse>) => {
   const authenticatedUser = req.user as { userId: string; };
   if (!authenticatedUser || !authenticatedUser.userId) {
     throw ApiError.unauthorized();
@@ -37,7 +37,7 @@ export const getAllOrganizations = handleErrorAsync(async (req: Request, res: Re
 });
 
 // 獲取單個組織 (需要是擁有者)
-export const getOrganizationById = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>, next: NextFunction) => {
+export const getOrganizationById = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>) => {
   const authenticatedUser = req.user as { userId: string; };
   if (!authenticatedUser || !authenticatedUser.userId) {
     throw ApiError.unauthorized();
@@ -65,7 +65,7 @@ export const getOrganizationById = handleErrorAsync(async (req: Request, res: Re
 });
 
 // 創建組織
-export const createOrganization = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>, next: NextFunction) => {
+export const createOrganization = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>) => {
   // 獲取當前用戶的 userId
   const authenticatedUser = req.user as { userId: string; }; // 來自 isAuthenticated
   if (!authenticatedUser || !authenticatedUser.userId) {
@@ -146,7 +146,7 @@ export const createOrganization = handleErrorAsync(async (req: Request, res: Res
 });
 
 // 更新組織 (需要是擁有者)
-export const updateOrganization = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>, next: NextFunction) => {
+export const updateOrganization = handleErrorAsync(async (req: Request, res: Response<OrganizationResponse>) => {
   const authenticatedUser = req.user as { userId: string; };
   if (!authenticatedUser || !authenticatedUser.userId) {
     throw ApiError.unauthorized();
@@ -231,7 +231,7 @@ export const updateOrganization = handleErrorAsync(async (req: Request, res: Res
 });
 
 // 刪除組織 (需要是擁有者)
-export const deleteOrganization = handleErrorAsync(async (req: Request, res: Response<ApiResponse<null>>, next: NextFunction) => {
+export const deleteOrganization = handleErrorAsync(async (req: Request, res: Response<ApiResponse<null>>) => {
   const authenticatedUser = req.user as { userId: string; };
   if (!authenticatedUser || !authenticatedUser.userId) {
     throw ApiError.unauthorized();

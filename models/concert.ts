@@ -20,6 +20,7 @@ import { TicketType } from './ticket-type';
 
 export type ConInfoStatus = 'draft' | 'published' | 'finished';
 
+/* eslint-disable no-unused-vars */
 export enum ReviewStatus {
   PENDING = 'pending',
   APPROVED = 'approved',

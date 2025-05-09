@@ -125,7 +125,7 @@ passport.use(new GoogleStrategy({
 
       return done(null, userData as any); // 使用類型斷言來解決類型不匹配問題
     } catch (err) {
-      console.error("Error in Google Strategy verify callback:", err); // 添加日誌記錄
+      console.error('Error in Google Strategy verify callback:', err); // 添加日誌記錄
       return done(err);
     }
   })

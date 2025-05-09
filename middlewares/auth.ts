@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { User as UserEntity, UserRole } from '../models/user';
+import { User as UserEntity } from '../models/user';
 import { Request, Response, NextFunction } from 'express';
 import { TokenPayload } from '../types/auth/jwt';
 import { AppDataSource } from '../config/database';
 import { ApiError } from '../utils';
-import { ErrorCode } from '../types';
+// import { ErrorCode } from '../types'; // Removed as ErrorCode is not exported
 
 /**
  * 驗證用戶是否已登入的中間件
@@ -26,7 +26,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     // 驗證令牌
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret') as TokenPayload;
     if (!decoded.userId) {
-      throw ApiError.create(401, '無效的認證令牌', ErrorCode.AUTH_TOKEN_INVALID);
+      throw ApiError.create(401, '無效的認證令牌', 'AUTH_TOKEN_INVALID'); // Replaced with a string literal
     }
 
     // 查找用戶
@@ -48,7 +48,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      return next(ApiError.create(401, '無效的認證令牌', ErrorCode.AUTH_TOKEN_INVALID));
+      return next(ApiError.create(401, '無效的認證令牌', 'AUTH_TOKEN_INVALID'));
     }
     next(error);
   }
@@ -96,12 +96,14 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       };
     } catch (error) {
       // 對於可選驗證，忽略令牌錯誤
+      console.log(error);
     }
 
     next();
   } catch (error) {
     // 對於可選驗證，忽略令牌錯誤
     next();
+    console.log(error);
   }
 };
 
@@ -148,5 +150,6 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
     });
   } catch (error) {
     next(ApiError.unauthorized());
+    console.log(error);
   }
 };
