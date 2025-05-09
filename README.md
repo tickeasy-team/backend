@@ -153,3 +153,17 @@ tickeasy-team-backend/
 ├── package.json          # 相依性管理
 └── tsconfig.json         # TypeScript 設定
 ```
+
+### 執行程式碼檢查
+
+使用以下指令檢查所有 `.ts` 檔案：
+
+```bash
+npm run lint
+```
+
+執行下列指令，自動修正可修正的問題：
+
+```bash
+npm run lint:fix
+```
