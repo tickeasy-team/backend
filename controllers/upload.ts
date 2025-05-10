@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import createHttpError from 'http-errors';
-import storageService from '../services/storage';
-import { UploadContext } from '../types/upload';
-import { AppDataSource } from '../config/database';
-import { User } from '../models/user';
-import { Venue } from '../models/venue';
-import { Concert } from '../models/concert';
+import storageService from '../services/storage.js';
+import { UploadContext } from '../types/upload/index.js';
+import { AppDataSource } from '../config/database.js';
+import { User } from '../models/user.js';
+import { Venue } from '../models/venue.js';
+import { Concert } from '../models/concert.js';
 
 // 合法的上傳上下文值
 const ALLOWED_UPLOAD_CONTEXTS: UploadContext[] = [
@@ -22,7 +22,7 @@ function getStoragePathFromUrl(url: string): string | null {
     if (urlParts.length === 2) {
       return urlParts[1];
     }
-  } catch (e) { /* 忽略解析錯誤 */ }
+  } catch (e) { console.log(e); /* 忽略解析錯誤 */ }
   return null;
 }
 
@@ -69,7 +69,7 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     
     // 2.3 驗證是否有 uploadContext
     if (!uploadContext) {
-      return next(createHttpError(400, "缺少必要的 'uploadContext' 欄位"));
+      return next(createHttpError(400, '缺少必要的 \'uploadContext\' 欄位'));
     }
     
     // 2.4 驗證 uploadContext 是否為允許的值
@@ -184,10 +184,10 @@ async function deleteImage(req: Request, res: Response, next: NextFunction) {
     
     // 驗證
     if (!path) {
-      return next(createHttpError(400, "缺少必要的 'path' 欄位"));
+      return next(createHttpError(400, '缺少必要的 \'path\' 欄位'));
     }
     if (!uploadContext) {
-      return next(createHttpError(400, "缺少必要的 'uploadContext' 欄位"));
+      return next(createHttpError(400, '缺少必要的 \'uploadContext\' 欄位'));
     }
     
     // 確定目標 ID 和權限檢查

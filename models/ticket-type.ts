@@ -10,9 +10,9 @@ import {
   JoinColumn,
   OneToMany
 } from 'typeorm';
-import { Concert } from './concert';
-import { Order } from './order';
-import { Ticket } from './ticket';
+import { Concert } from './concert.js';
+import { Order } from './order.js';
+import { Ticket } from './ticket.js';
 
 @Entity('ticketType')
 export class TicketType {

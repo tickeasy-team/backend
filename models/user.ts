@@ -17,17 +17,17 @@ import {
   BeforeUpdate
 } from 'typeorm';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
-import { Ticket } from './ticket';
-import { Order } from './order';
-import { Organization } from './organization';
+// import crypto from 'crypto';
+import { Ticket } from './ticket.js';
+import { Order } from './order.js';
+import { Organization } from './organization.js';
 
+/* eslint-disable no-unused-vars */
 export enum UserRole {
   USER = 'user',
   ADMIN = 'admin',
   SUPERUSER = 'superuser'
 }
-
 export enum Gender {
   MALE = 'male',
   FEMALE = 'female',
@@ -37,6 +37,8 @@ export enum Gender {
 /**
  * 用戶偏好地區枚舉
  */
+
+/* eslint-disable no-unused-vars */
 export enum Region {
   NORTH = '北部',
   SOUTH = '南部',
@@ -45,10 +47,11 @@ export enum Region {
   ISLANDS = '離島',
   OVERSEAS = '海外'
 }
-
 /**
  * 提供 Region 枚舉的選項列表 (供前端使用)
  */
+
+
 export const RegionOptions = Object.entries(Region).map(([key, value]) => ({
   key: key,
   value: value
@@ -57,6 +60,7 @@ export const RegionOptions = Object.entries(Region).map(([key, value]) => ({
 /**
  * 用戶偏好活動類型枚舉
  */
+
 export enum EventType {
   POP = '流行音樂',
   ROCK = '搖滾',
@@ -204,7 +208,7 @@ export class User {
   @OneToMany(() => Order, order => order.user)
   orders: Order[];
 
-  @OneToMany(() => Organization, organization => organization.user)
+  @OneToMany('Organization', 'user')
   organizations: Organization[];
 
   @BeforeInsert()

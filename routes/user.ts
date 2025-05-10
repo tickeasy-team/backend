@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
-import { isAuthenticated } from '../middlewares/auth';
-import { getUserProfile, updateUserProfile, getRegionOptions, getEventTypeOptions } from '../controllers/user';
+import { isAuthenticated } from '../middlewares/auth.js';
+import { getUserProfile, updateUserProfile, getRegionOptions, getEventTypeOptions } from '../controllers/user.js';
 
 const router: Router = express.Router();
 

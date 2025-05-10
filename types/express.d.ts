@@ -1,4 +1,4 @@
-import { UserRole } from '../models/user';
+import { UserRole } from '../models/user.js';
 
 // 移除 declare global，直接定義在命名空間中並匯出
 declare namespace Express {

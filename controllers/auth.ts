@@ -1,16 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import createHttpError from 'http-errors';
-import bcrypt from 'bcrypt';
-import jwt, { SignOptions } from 'jsonwebtoken';
-import { User, UserRole } from '../models/user';
-import { verifyToken, generateToken, handleErrorAsync, ApiError } from '../utils';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
+import { User, UserRole } from '../models/user.js';
+import { generateToken, handleErrorAsync, ApiError } from '../utils/index.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
 import { IsNull, Not, MoreThan } from 'typeorm';
-import { AppDataSource } from '../config/database';
+import { AppDataSource } from '../config/database.js';
 import { 
-  ApiResponse, 
-  TokenPayload,
-  ErrorResponse,
   RegisterRequest,
   LoginRequest,
   VerifyEmailRequest,
@@ -18,13 +12,18 @@ import {
   RequestPasswordResetRequest,
   ResetPasswordRequest,
   GoogleRequestUser,
-  AuthResponseData,
+} from '../types/auth/requests.js';
+
+import {
   VerificationResponseData,
   UserData,
-  GoogleUserResponseData,
+} from '../types/auth/responses.js';
+
+import {
   ErrorCode,
-  DetailedErrorResponse
-} from '../types';
+} from '../types/api.js';
+import { Buffer } from 'buffer';
+import { URL } from 'url';
 
 // Google 登入相關介面 - 保留原有介面以維持相容性
 interface GoogleRequest extends Omit<Request, 'user'> {
@@ -215,7 +214,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 // Google 登入
-export const googleLogin = handleErrorAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const googleLogin = handleErrorAsync(async (req: Request, res: Response, ) => {
+  
   const googleReq = req as GoogleRequest;
 
   // 檢查必要的用戶數據
@@ -282,8 +282,7 @@ export const googleLogin = handleErrorAsync(async (req: Request, res: Response, 
         // 可選：驗證 originalQueryParams.state 是否為有效的 URL
         try {
           new URL(finalRedirectUrl); // 如果 URL 無效，會拋出錯誤
-        } catch (urlError) {
-          // console.warn(`從 state 參數中解析出的重導向 URL '${finalRedirectUrl}' 格式無效，將使用預設 URL。錯誤:`, urlError);
+        } catch {
           finalRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:3000/login/success'; // 無效則退回預設值
         }
       } else {
@@ -291,7 +290,7 @@ export const googleLogin = handleErrorAsync(async (req: Request, res: Response, 
         // console.warn('State 參數已解碼，但未找到有效的 state 屬性作為重導向 URL，將使用預設重導向 URL。原始 state 內容:', originalQueryParams);
         // 如果沒有有效的 state.state，則使用預設的 finalRedirectUrl
       }
-    } catch (error) {
+    } catch {
       // console.error('無法解析從 Google callback 傳回的 state，將使用預設重導向 URL:', error);
       // 如果解碼失敗，仍然重導向到預設的前端頁面，finalRedirectUrl 已被初始化為預設值
     }
@@ -446,7 +445,8 @@ export const requestPasswordReset = async (req: Request, res: Response, next: Ne
     }
 
     // 生成密碼重置碼
-    const { token, code } = await user.createPasswordResetToken();
+    const { code } = await user.createPasswordResetToken();
+    // const { token } = await user.createPasswordResetToken();
     
     // 保存更新後的用戶數據
     await userRepository.save(user);
