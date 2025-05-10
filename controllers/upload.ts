@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import createHttpError from 'http-errors';
-import storageService from '../services/storage';
-import { UploadContext } from '../types/upload';
-import { AppDataSource } from '../config/database';
-import { User } from '../models/user';
-import { Venue } from '../models/venue';
-import { Concert } from '../models/concert';
+import storageService from '../services/storage.js';
+import { UploadContext } from '../types/upload/index.js';
+import { AppDataSource } from '../config/database.js';
+import { User } from '../models/user.js';
+import { Venue } from '../models/venue.js';
+import { Concert } from '../models/concert.js';
 
 // 合法的上傳上下文值
 const ALLOWED_UPLOAD_CONTEXTS: UploadContext[] = [

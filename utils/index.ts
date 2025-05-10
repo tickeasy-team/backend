@@ -1,9 +1,10 @@
 import createHttpError from 'http-errors';
 import jsonWebToken from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
-import { handleErrorAsync } from './handleErrorAsync';
-import { ApiError } from './apiError';
-import { TokenPayload, ErrorCode } from '../types';
+import { handleErrorAsync } from './handleErrorAsync.js';
+import { ApiError } from './apiError.js';
+import { ErrorCode } from '../types/api.js';
+import { TokenPayload } from '../types/auth/jwt.js';
 
 
 // 擴展的令牌載荷，包含電子郵件

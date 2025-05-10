@@ -18,9 +18,9 @@ import {
 } from 'typeorm';
 import bcrypt from 'bcrypt';
 // import crypto from 'crypto';
-import { Ticket } from './ticket';
-import { Order } from './order';
-import { Organization } from './organization';
+import { Ticket } from './ticket.js';
+import { Order } from './order.js';
+import { Organization } from './organization.js';
 
 /* eslint-disable no-unused-vars */
 export enum UserRole {

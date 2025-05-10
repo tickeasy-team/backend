@@ -9,9 +9,9 @@ import {
   JoinColumn,
   // CreateDateColumn
 } from 'typeorm';
-import { Order } from './order';
-import { TicketType } from './ticket-type';
-import { User } from './user';
+import { Order } from './order.js';
+import { TicketType } from './ticket-type.js';
+import { User } from './user.js';
 
 // --- 新增 TicketStatus ---
 export type TicketStatus = 'purchased' | 'refunded' | 'used';

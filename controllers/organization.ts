@@ -1,16 +1,19 @@
 import { Request, Response } from 'express';
-import { AppDataSource } from '../config/database';
-import { Organization } from '../models';
+import { AppDataSource } from '../config/database.js';
+import { Organization } from '../models/organization.js';
 // import { User as UserEntity } from '../models/user'; // 確保引入 UserEntity 以便關聯
-import { handleErrorAsync, ApiError } from '../utils';
+import { handleErrorAsync, ApiError } from '../utils/index.js';
 import {
-  ApiResponse,
   CreateOrganizationRequest,
   OrganizationResponse,
   OrganizationData,
   OrganizationsResponse, // 雖然創建時不用，但先引入
-  ErrorCode
-} from '../types';
+} from '../types/organization/index.js';
+import {
+  ErrorCode,
+  ApiResponse
+} from '../types/api.js';
+
 import { Not } from 'typeorm';
 
 // 獲取當前用戶擁有的所有組織

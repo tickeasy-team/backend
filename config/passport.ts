@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile, VerifyCallback } from 'passport-google-oauth20';
-import { AppDataSource } from './database';
-import { User, UserRole, OAuthProvider, Gender } from '../models/user';
+import { AppDataSource } from './database.js';
+import { User, UserRole, OAuthProvider, Gender } from '../models/user.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 // import path from 'path';
 import createHttpError from 'http-errors';
-import { UploadContext, UploadImageParams, UploadImageResult } from '../types/upload';
+import { UploadContext, UploadImageParams, UploadImageResult } from '../types/upload/index.js';
 
 // 從環境變數讀取 Supabase URL 和 Service Key
 const supabaseUrl = process.env.DB_URL;

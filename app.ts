@@ -9,16 +9,16 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 // 資料庫連接
-import { connectToDatabase } from './config/database';
+import { connectToDatabase } from './config/database.js';
 
 // 確保模型初始化
 import './models';
 
 // 引入路由
-import authRouter from './routes/auth';
-import userRouter from './routes/user';
-import organizationRouter from './routes/organization';
-import uploadRouter from './routes/upload';
+import authRouter from './routes/auth.js';
+import userRouter from './routes/user.js';
+import organizationRouter from './routes/organization.js';
+import uploadRouter from './routes/upload.js';
 
 const app = express();
 

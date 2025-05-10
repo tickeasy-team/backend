@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
   OneToMany
 } from 'typeorm';
-import { Concert } from './concert';
+import { Concert } from './concert.js';
 
 @Entity('venues')
 export class Venue {

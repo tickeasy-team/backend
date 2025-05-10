@@ -2,7 +2,7 @@
  * 用戶相關請求類型定義
  */
 
-import { Gender } from '../../models/user';
+import { Gender } from '../../models/user.js';
 
 /**
  * 更新用戶資料請求

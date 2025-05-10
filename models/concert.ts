@@ -11,12 +11,12 @@ import {
   JoinColumn,
   OneToMany
 } from 'typeorm';
-import { Organization } from './organization';
-import { Venue } from './venue';
-import { LocationTag } from './location-tag';
-import { MusicTag } from './music-tag';
-import { ConcertSession } from './concert-session';
-import { TicketType } from './ticket-type';
+import { Organization } from './organization.js';
+import { Venue } from './venue.js';
+import { LocationTag } from './location-tag.js';
+import { MusicTag } from './music-tag.js';
+import { ConcertSession } from './concert-session.js';
+import { TicketType } from './ticket-type.js';
 
 export type ConInfoStatus = 'draft' | 'published' | 'finished';
 

@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { User as UserEntity } from '../models/user';
+import { User as UserEntity } from '../models/user.js';
 import { Request, Response, NextFunction } from 'express';
-import { TokenPayload } from '../types/auth/jwt';
-import { AppDataSource } from '../config/database';
-import { ApiError } from '../utils';
-import { ErrorCode } from '../types'; // Removed as ErrorCode is not exported
+import { TokenPayload } from '../types/auth/jwt.js';
+import { AppDataSource } from '../config/database.js';
+import { ApiError } from '../utils/index.js';
+import { ErrorCode } from '../types/api.js';
 
 /**
  * 驗證用戶是否已登入的中間件

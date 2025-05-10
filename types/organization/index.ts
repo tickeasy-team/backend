@@ -1,8 +1,8 @@
-import { Organization as OrganizationEntity } from '../../models';
-import { ApiResponse } from '../api';
+import { Organization as OrganizationEntity } from '../../models/organization.js';
+import { ApiResponse } from '../api.js';
 
 /**
- * 創建組織請求 Body 類型
+ * 創建組織請求 Body 類型   
  */
 export interface CreateOrganizationRequest {
   orgName: string;

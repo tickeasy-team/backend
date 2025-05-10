@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import { AppDataSource } from '../config/database';
-import { User as UserEntity, RegionOptions, EventTypeOptions, Region, EventType } from '../models/user';
-import { ApiResponse, UpdateProfileRequest, UserProfileResponse, UserProfileData } from '../types';
-import { handleErrorAsync, ApiError } from '../utils';
-import { ErrorCode } from '../types';
+import { AppDataSource } from '../config/database.js';
+import { User as UserEntity, RegionOptions, EventTypeOptions, Region, EventType } from '../models/user.js';
+import { UpdateProfileRequest } from '../types/user/requests.js';
+import { UserProfileResponse, UserProfileData } from '../types/user/responses.js';
+import { handleErrorAsync, ApiError } from '../utils/index.js';
+import { ErrorCode, ApiResponse } from '../types/api.js';
 
 /**
  * 獲取用戶個人資料

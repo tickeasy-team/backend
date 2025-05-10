@@ -1,17 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-// import createHttpError from 'http-errors';
-// import bcrypt from 'bcrypt';
-// import jwt, { SignOptions } from 'jsonwebtoken';
-import { User, UserRole } from '../models/user';
-// import { verifyToken } from '../utils';
-import { generateToken, handleErrorAsync, ApiError } from '../utils';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
+import { User, UserRole } from '../models/user.js';
+import { generateToken, handleErrorAsync, ApiError } from '../utils/index.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
 import { IsNull, Not, MoreThan } from 'typeorm';
-import { AppDataSource } from '../config/database';
+import { AppDataSource } from '../config/database.js';
 import { 
-  // ApiResponse,  
-  // TokenPayload,
-  // ErrorResponse,
   RegisterRequest,
   LoginRequest,
   VerifyEmailRequest,
@@ -19,13 +12,16 @@ import {
   RequestPasswordResetRequest,
   ResetPasswordRequest,
   GoogleRequestUser,
-  // AuthResponseData,
+} from '../types/auth/requests.js';
+
+import {
   VerificationResponseData,
   UserData,
-  // GoogleUserResponseData,
+} from '../types/auth/responses.js';
+
+import {
   ErrorCode,
-  // DetailedErrorResponse
-} from '../types';
+} from '../types/api.js';
 import { Buffer } from 'buffer';
 import { URL } from 'url';
 

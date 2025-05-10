@@ -1,19 +1,47 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "es2020",
-    "moduleResolution": "node",
-    "lib": ["ES2020"],
-    "outDir": "./dist",
-    "rootDir": ".",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "strictPropertyInitialization": false,
+    // 建議更新到較新的穩定版本，與你的 Node.js 版本兼容
+    // Node.js 18 完整支援 ES2022 特性
+    "target": "es2022",
+
+    // *** 解決 Node.js ESM 找不到 .js 副檔名問題的關鍵修改 ***
+    // 設定模組輸出格式為 Node.js 的 ESM (ES Module)
+    // 使用 "node16" 或 "nodenext" 這裡能確保編譯器知道目標是 Node.js ESM 環境
+    "module": "node16", // 或者 "nodenext" (更前沿，可能支援未來特性)
+
+    // *** 解決 Node.js ESM 找不到 .js 副檔名問題的關鍵修改 ***
+    // 設定模組解析策略為 Node.js 的 ESM 解析規則
+    // 這會告訴 tsc 編譯器：當匯入本地模組時，請在編譯後的 JS 檔案中添加 .js 副檔名
+    "moduleResolution": "node16", // 必須與上面的 "module" 設定相匹配
+
+    // 根據 target 更新 lib，包含新的標準庫特性
+    "lib": ["es2022"], // 例如，如果 target 是 es2022，lib 也應包含 es2022
+
+    "outDir": "./dist", // 編譯輸出目錄
+    "rootDir": ".", // 原始碼根目錄 (如果原始碼都在這裡)
+    "strict": true, // 啟用所有嚴格的類型檢查選項，推薦保持開啟以提高代碼品質
+    "esModuleInterop": true, // 允許使用 ES Module 的語法匯入 CommonJS 模組，通常建議開啟
+
+    "skipLibCheck": true, // 保留原樣，跳過聲明文件 (*.d.ts) 的類型檢查，加快編譯速度 (但可能略過庫的類型問題)
+    "forceConsistentCasingInFileNames": true, // 強制匯入時檔案路徑的大小寫一致，避免在大小寫不敏感的文件系統上開發時引起問題
+
+    // 關於 Decorators 的設定，這些是 TypeORM 等框架需要的，保留原樣
+    "emitDecoratorMetadata": true, // 發出設計類型元數據的裝飾器
+    "experimentalDecorators": true, // 啟用實驗性的裝飾器語法
+    "strictPropertyInitialization": false, // 保留原樣，因為 TypeORM 等框架會在實例化後初始化屬性
+
+    // 如果你的專案使用 alias 路徑 (paths)，可能還需要 baseUrl 和 paths
+    // "baseUrl": "./",
+    // "paths": { ... }
   },
-  "include": ["**/*.ts", "eslint.config.js"],
-  "exclude": ["node_modules", "**/*.test.ts"]
-} 
+  "include": [
+    // *** 關鍵修改 ***
+    "**/*.ts" // 包含根目錄及其所有子目錄下的所有 .ts 檔案
+    // 移除 "eslint.config.js"，tsc 只應該編譯 .ts, .js(如果設置 allowJs) 等程式碼檔案，不應該編譯 ESLint 的配置文件
+  ],
+  "exclude": [
+    "node_modules", // 排除 node_modules 目錄
+    "**/*.test.ts", // 排除測試檔案
+    "./dist" // 建議明確排除編譯輸出目錄本身，避免編譯器重複處理或引起問題
+  ]
+}

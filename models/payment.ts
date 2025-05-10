@@ -10,7 +10,7 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { Order } from './order';
+import { Order } from './order.js';
 
 // --- 新增 PaymentStatus ---
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';

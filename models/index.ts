@@ -6,16 +6,16 @@ import 'reflect-metadata';
  */
 
 // 導入所有模型
-export * from './user';
-export * from './organization';
-export * from './location-tag';
-export * from './music-tag';
-export * from './venue';
-export * from './concert';
-export * from './concert-session';
-export * from './ticket-type';
-export * from './order';
-export * from './ticket';
-export * from './payment';
+export * from './user.js';
+export * from './organization.js';
+export * from './location-tag.js';
+export * from './music-tag.js';
+export * from './venue.js';
+export * from './concert.js';
+export * from './concert-session.js';
+export * from './ticket-type.js';
+export * from './order.js';
+export * from './ticket.js';
+export * from './payment.js';
 
 console.log('模型已初始化'); 

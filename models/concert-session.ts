@@ -9,7 +9,7 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { Concert } from './concert';
+import { Concert } from './concert.js';
 
 @Entity('concertSession')
 export class ConcertSession {

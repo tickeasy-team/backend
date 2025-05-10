@@ -1,6 +1,6 @@
 import express from 'express';
-import * as organizationController from '../controllers/organization';
-import { isAuthenticated } from '../middlewares/auth';
+import * as organizationController from '../controllers/organization.js';
+import { isAuthenticated } from '../middlewares/auth.js';
 // import { authenticateToken } from '../middleware/auth'; // 之後會用到
 
 const router = express.Router();

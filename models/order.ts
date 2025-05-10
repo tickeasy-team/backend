@@ -11,10 +11,10 @@ import {
   JoinColumn,
   OneToMany
 } from 'typeorm';
-import { User } from './user';
-import { TicketType } from './ticket-type';
-import { Ticket } from './ticket';
-import { Payment } from './payment';
+import { User } from './user.js';
+import { TicketType } from './ticket-type.js';
+import { Ticket } from './ticket.js';
+import { Payment } from './payment.js';
 
 // --- 新增 OrderStatus ---
 export type OrderStatus = 'held' | 'expired' | 'paid' | 'cancelled' | 'refunded';

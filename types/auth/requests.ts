@@ -2,7 +2,7 @@
  * 認證相關請求類型定義
  */
 
-import { UserRole, Gender } from '../../models/user';
+import { UserRole, Gender } from '../../models/user.js';
 
 // 用戶註冊請求
 export interface RegisterRequest {
