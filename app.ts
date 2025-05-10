@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 
@@ -63,7 +63,7 @@ app.use('/api/v1/upload', uploadRouter);
 
 
 // 註冊錯誤處理中間件
-app.use((err: any, req: Request, res: Response) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('錯誤詳情:', err);
   
   // 開發環境顯示詳細錯誤信息，生產環境顯示友好錯誤信息
@@ -116,11 +116,16 @@ app.use((err: any, req: Request, res: Response) => {
     errorResponse.details = err.stack;
   }
   
+  // 如果 headers 已經發送，則將錯誤交給 Express 的預設錯誤處理器
+  if (res.headersSent) {
+    return next(err);
+  }
+  
   res.status(statusCode).json(errorResponse);
 });
 
 // 註冊 404 處理中間件
-app.use((req: Request, res: Response) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(404).json({
     status: 'failed',
     message: '找不到該資源',
