@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import express, { Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -12,7 +13,7 @@ import cors from 'cors';
 import { connectToDatabase } from './config/database.js';
 
 // 確保模型初始化
-import './models';
+import './models/index.js';
 
 // 引入路由
 import authRouter from './routes/auth.js';
