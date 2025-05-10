@@ -7,7 +7,7 @@ import {
   Column, 
   OneToMany
 } from 'typeorm';
-import { Concert } from './concert';
+import { Concert } from './concert.js';
 
 @Entity('musicTag')
 export class MusicTag {

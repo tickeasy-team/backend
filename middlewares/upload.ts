@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { Request, Response } from 'express';
+import { Request, Response, Express } from 'express';
 import createHttpError from 'http-errors';
 
 // 配置內存儲存

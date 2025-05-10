@@ -7,11 +7,12 @@ import {
   Column, 
   ManyToOne,
   JoinColumn,
-  CreateDateColumn
+  // CreateDateColumn
 } from 'typeorm';
-import { Order } from './order';
-import { TicketType } from './ticket-type';
-import { User } from './user';
+import { Order } from './order.js';
+import { TicketType } from './ticket-type.js';
+// 移除直接引入 User
+// import { User } from './user.js';
 
 // --- 新增 TicketStatus ---
 export type TicketStatus = 'purchased' | 'refunded' | 'used';
@@ -39,9 +40,10 @@ export class Ticket {
   @Column({ name: 'userId', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'RESTRICT' })
+  // 使用字串表示類型而非直接引用，解決循環依賴
+  @ManyToOne('User', { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user: any; // 或者可以使用 Record<string, any> 類型
 
   @Column({ length: 100, nullable: true })
   purchaserName: string;

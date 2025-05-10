@@ -1,5 +1,5 @@
 import createHttpError from 'http-errors';
-import { ErrorCode } from '../types';
+import { ErrorCode } from '../types/api.js';
 
 /**
  * 字段錯誤接口

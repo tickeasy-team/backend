@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import { Buffer } from 'buffer';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
+// import path from 'path';
 import createHttpError from 'http-errors';
-import { UploadContext, UploadImageParams, UploadImageResult } from '../types/upload';
+import { UploadContext, UploadImageParams, UploadImageResult } from '../types/upload/index.js';
 
 // 從環境變數讀取 Supabase URL 和 Service Key
 const supabaseUrl = process.env.DB_URL;
@@ -118,7 +119,7 @@ async function processImage(
  * 上傳圖片到 Supabase Storage
  */
 async function uploadImage(params: UploadImageParams): Promise<UploadImageResult> {
-  const { fileBuffer, originalName, mimetype, uploadContext, targetId } = params;
+  const { fileBuffer, mimetype, uploadContext, targetId } = params;
   
   if (!supabaseUrl || !supabaseServiceKey) {
     throw createHttpError(500, 'Supabase 環境變數未設定 (DB_URL 或 DB_SERVICE_KEY)');
@@ -137,7 +138,7 @@ async function uploadImage(params: UploadImageParams): Promise<UploadImageResult
     const storagePath = getStoragePath(uploadContext, targetId, fileExtension);
 
     // 4. 上傳到 Supabase Storage
-    const { data, error } = await supabase.storage
+    const {  error } = await supabase.storage
       .from(bucketName)
       .upload(storagePath, buffer, {
         contentType,

@@ -9,7 +9,11 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { User } from './user';
+
+// 避免直接導入 User 類型，使用接口代替
+interface UserRef {
+  userId: string;
+}
 
 @Entity('organization')
 export class Organization {
@@ -19,9 +23,9 @@ export class Organization {
   @Column({ name: 'userId', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne('User', 'organizations', { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user: UserRef;
 
   @Column({ length: 100, nullable: false, unique: true })
   orgName: string;

@@ -1,4 +1,5 @@
 import express, { Router } from 'express';
+import { Buffer } from 'buffer';
 import {
   register,
   login,
@@ -7,8 +8,8 @@ import {
   requestPasswordReset,
   resetPassword,
   googleLogin
-} from '../controllers/auth';
-import passport from '../config/passport';
+} from '../controllers/auth.js';
+import passport from '../config/passport.js';
 
 const router: Router = express.Router();
 

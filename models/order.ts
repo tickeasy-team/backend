@@ -11,10 +11,14 @@ import {
   JoinColumn,
   OneToMany
 } from 'typeorm';
-import { User } from './user';
-import { TicketType } from './ticket-type';
-import { Ticket } from './ticket';
-import { Payment } from './payment';
+import { TicketType } from './ticket-type.js';
+import { Ticket } from './ticket.js';
+import { Payment } from './payment.js';
+
+// 避免直接導入 User 類型，使用接口代替
+interface UserRef {
+  userId: string;
+}
 
 // --- 新增 OrderStatus ---
 export type OrderStatus = 'held' | 'expired' | 'paid' | 'cancelled' | 'refunded';
@@ -35,9 +39,9 @@ export class Order {
   @Column({ name: 'userId', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne('User', 'orders', { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user: UserRef;
 
   @Column({
     type: 'enum',
@@ -91,6 +95,6 @@ export class Order {
   @OneToMany(() => Ticket, ticket => ticket.order)
   tickets: Ticket[];
   
-  @OneToMany(() => Payment, payment => payment.order)
+  @OneToMany('Payment', 'order')
   payments: Payment[];
 } 

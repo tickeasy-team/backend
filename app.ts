@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import express, { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -9,16 +10,16 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 // 資料庫連接
-import { connectToDatabase } from './config/database';
+import { connectToDatabase } from './config/database.js';
 
 // 確保模型初始化
-import './models';
+import './models/index.js';
 
 // 引入路由
-import authRouter from './routes/auth';
-import userRouter from './routes/user';
-import organizationRouter from './routes/organization';
-import uploadRouter from './routes/upload';
+import authRouter from './routes/auth.js';
+import userRouter from './routes/user.js';
+import organizationRouter from './routes/organization.js';
+import uploadRouter from './routes/upload.js';
 
 const app = express();
 
@@ -34,10 +35,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 connectToDatabase()
-  .then(() => console.log("資料庫連接成功"))
+  .then(() => console.log('資料庫連接成功'))
   .catch(err => {
-    console.error("資料庫連接失敗:", err);
-    console.error("錯誤詳情:", {
+    console.error('資料庫連接失敗:', err);
+    console.error('錯誤詳情:', {
       message: err.message,
       code: err.code,
       syscall: err.syscall,
@@ -115,11 +116,16 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     errorResponse.details = err.stack;
   }
   
+  // 如果 headers 已經發送，則將錯誤交給 Express 的預設錯誤處理器
+  if (res.headersSent) {
+    return next(err);
+  }
+  
   res.status(statusCode).json(errorResponse);
 });
 
 // 註冊 404 處理中間件
-app.use((req: Request, res: Response) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(404).json({
     status: 'failed',
     message: '找不到該資源',

@@ -2,7 +2,7 @@
  * 用戶相關響應類型定義
  */
 
-import { Gender, UserRole } from '../../models/user';
+import { Gender, UserRole } from '../../models/user.js';
 
 /**
  * OAuth提供者資訊

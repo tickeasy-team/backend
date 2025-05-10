@@ -10,7 +10,11 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { Order } from './order';
+
+// 避免直接導入 Order 類型，使用接口代替
+interface OrderRef {
+  orderId: string;
+}
 
 // --- 新增 PaymentStatus ---
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
@@ -24,9 +28,9 @@ export class Payment {
   @Column({ name: 'orderId', nullable: false })
   orderId: string;
 
-  @ManyToOne(() => Order, { onDelete: 'RESTRICT' })
+  @ManyToOne('Order', 'payments', { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'orderId' })
-  order: Order;
+  order: OrderRef;
 
   @Column({ length: 50, nullable: false })
   method: string;

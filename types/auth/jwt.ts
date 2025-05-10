@@ -2,7 +2,7 @@
  * JWT 相關型別定義
  */
 
-import { UserRole } from '../../models/user';
+import { UserRole } from '../../models/user.js';
 
 /**
  * JWT 令牌載荷
