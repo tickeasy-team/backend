@@ -130,7 +130,7 @@ export class User {
   phone: string;
 
   @Column({ type: 'date', nullable: true })
-  birthday: Date;
+  birthday: Date | null;
 
   @Column({
     type: 'enum',
