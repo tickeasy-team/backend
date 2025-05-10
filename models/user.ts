@@ -208,7 +208,7 @@ export class User {
   @OneToMany(() => Order, order => order.user)
   orders: Order[];
 
-  @OneToMany(() => Organization, organization => organization.user)
+  @OneToMany('Organization', 'user')
   organizations: Organization[];
 
   @BeforeInsert()

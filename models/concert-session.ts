@@ -9,7 +9,11 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { Concert } from './concert.js';
+
+// 避免直接導入 Concert 類型，使用接口代替
+interface ConcertRef {
+  concertId: string;
+}
 
 @Entity('concertSession')
 export class ConcertSession {
@@ -19,9 +23,9 @@ export class ConcertSession {
   @Column({ name: 'concertId', nullable: false })
   concertId: string;
 
-  @ManyToOne(() => Concert, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne('Concert', 'sessions', { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'concertId' })
-  concert: Concert;
+  concert: ConcertRef;
 
   @Column({ type: 'date' })
   sessionDate: Date;

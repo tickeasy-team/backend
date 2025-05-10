@@ -123,7 +123,7 @@ export class Concert {
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToMany(() => ConcertSession, session => session.concert)
+  @OneToMany('ConcertSession', 'concert')
   sessions: ConcertSession[];
 
   @OneToMany(() => TicketType, ticketType => ticketType.concert)
