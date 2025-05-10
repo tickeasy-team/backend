@@ -2,13 +2,13 @@
  * 通用類型定義
  */
 
-import { UserRole } from '../models/user';
-import { TokenPayload as AuthTokenPayload } from './auth/jwt';
+import { UserRole } from '../models/user.js';
+import { TokenPayload as AuthTokenPayload } from './auth/jwt.js';
 import { 
   ApiResponse as ApiResponseType, 
   PaginatedResponse as PaginatedResponseType,
   ErrorResponse as ErrorResponseType 
-} from './api';
+} from './api.js';
 
 // 為了向後兼容性重新導出
 export { AuthTokenPayload as TokenPayload };
