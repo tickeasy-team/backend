@@ -6,7 +6,7 @@
   "main": "dist/bin/server.js",
   "scripts": {
     "start": "node dist/bin/server.js",
-    "dev": "tsx --no-warnings bin/server.ts",
+    "dev": "nodemon --exec ts-node bin/server.ts",
     "build": "tsc",
     "typeorm": "typeorm-ts-node-commonjs",
     "migrate": "npm run typeorm migration:run -- -d config/database.ts",
