@@ -11,8 +11,8 @@ export interface UpdateProfileRequest {
   name?: string;
   nickname?: string;
   phone?: string;
-  birthday?: Date | string;
-  gender?: Gender;
+  birthday?: Date | string | null;
+  gender?: string | null;
   address?: string;
   country?: string;
   preferredRegions?: string[];
