@@ -12,7 +12,7 @@ export interface UserData {
   name: string;
   nickname?: string;
   phone?: string;
-  birthday?: Date | string;
+  birthday?: Date | string | null;
   gender?: Gender;
   avatar?: string;
   isEmailVerified: boolean;

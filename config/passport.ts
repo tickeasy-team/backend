@@ -17,7 +17,7 @@ interface GoogleUser {
     oauthProviders: OAuthProvider[];
     phone?: string;
     address?: string;
-    birthday?: Date;
+    birthday?: Date | null;
     gender?: Gender;
     isEmailVerified: boolean;
     [key: string]: any;
@@ -25,12 +25,12 @@ interface GoogleUser {
 }
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL!,
-    passReqToCallback: true,
-    scope: ['profile', 'email']
-  },
+  clientID: process.env.GOOGLE_CLIENT_ID!,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+  passReqToCallback: true,
+  scope: ['profile', 'email']
+},
   async function (req: any, accessToken: string, refreshToken: string | undefined, profile: Profile, done: VerifyCallback) {
     try {
       const userRepository = AppDataSource.getRepository(User);
@@ -40,7 +40,7 @@ passport.use(new GoogleStrategy({
         return done(new Error('Google profile ID not found'));
       }
       if (!profile.emails || !profile.emails[0]?.value) {
-          return done(new Error('Google profile email not found'));
+        return done(new Error('Google profile email not found'));
       }
       const email = profile.emails[0].value;
       const googleId = profile.id;

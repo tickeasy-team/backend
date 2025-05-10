@@ -107,7 +107,22 @@ export const updateUserProfile = handleErrorAsync(async (req: Request, res: Resp
   if (name !== undefined) user.name = name;
   if (nickname !== undefined) user.nickname = nickname;
   if (phone !== undefined) user.phone = phone;
-  if (birthday !== undefined) user.birthday = birthday instanceof Date ? birthday : new Date(birthday);
+  if (birthday !== undefined) {
+    if (birthday === null) {
+      user.birthday = null;
+    } else if (typeof birthday === 'string' && birthday.trim() === '') {
+      // 如果前端傳送空字串，視為無效輸入，要求明確傳 null 或有效日期
+      console.log('birthday', birthday);
+      throw ApiError.create(400, '生日欄位格式錯誤：如需清空生日，請傳遞 null；否則請提供有效的日期字串。', ErrorCode.DATA_INVALID);
+    } else {
+      const dateObj = birthday instanceof Date ? birthday : new Date(birthday);
+      // 檢查轉換後的日期是否有效
+      if (isNaN(dateObj.getTime())) {
+        throw ApiError.create(400, '生日欄位格式錯誤：請提供有效的日期字串 (例如 "YYYY-MM-DD")。', ErrorCode.DATA_INVALID);
+      }
+      user.birthday = dateObj;
+    }
+  }
   if (gender !== undefined) user.gender = gender;
   if (address !== undefined) user.address = address;
   if (country !== undefined) user.country = country;
