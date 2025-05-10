@@ -137,7 +137,7 @@ export class User {
     enum: Gender,
     nullable: true
   })
-  gender: Gender;
+  gender: Gender | null;
 
   @Column({
     type: 'enum',

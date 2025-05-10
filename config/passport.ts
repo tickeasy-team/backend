@@ -18,7 +18,7 @@ interface GoogleUser {
     phone?: string;
     address?: string;
     birthday?: Date | null;
-    gender?: Gender;
+    gender?: Gender | null;
     isEmailVerified: boolean;
     [key: string]: any;
   }

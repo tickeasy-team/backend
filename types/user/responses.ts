@@ -35,7 +35,7 @@ export interface UserProfileData {
   role: UserRole;
   phone?: string;
   birthday?: Date | string | null;
-  gender?: Gender;
+  gender?: string | null;
   preferredRegions?: string[];
   preferredEventTypes?: string[];
   country?: string;
