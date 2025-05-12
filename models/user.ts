@@ -105,17 +105,17 @@ export class User {
     return this.userId;
   }
 
-  @Column({ length: 100, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 100, unique: true, nullable: false })
   @Index()
   email: string;
 
-  @Column({ length: 60, nullable: true, select: false })
+  @Column({ type: 'varchar', length: 60, nullable: true, select: false })
   password: string;
 
-  @Column({ length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   name: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   nickname: string;
 
   @Column({
@@ -126,7 +126,7 @@ export class User {
   @Index()
   role: UserRole;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string;
 
   @Column({ type: 'date', nullable: true })
@@ -157,34 +157,34 @@ export class User {
   })
   preferredEventTypes: EventType[];
 
-  @Column({ length: 20, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   country: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   address: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   avatar: string;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   verificationToken: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   verificationTokenExpires: Date;
 
-  @Column({ default: false, nullable: false })
+  @Column({ type: 'boolean', default: false, nullable: false })
   isEmailVerified: boolean;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   passwordResetToken: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   passwordResetExpires: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   lastVerificationAttempt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   lastPasswordResetAttempt: Date;
 
   @Column('jsonb', { default: '[]', nullable: false })

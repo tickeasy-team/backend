@@ -125,7 +125,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 // 註冊 404 處理中間件
+
 app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(next);
   res.status(404).json({
     status: 'failed',
     message: '找不到該資源',

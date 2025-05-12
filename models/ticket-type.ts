@@ -19,17 +19,17 @@ export class TicketType {
   @PrimaryGeneratedColumn('uuid', { name: 'ticketTypeId' })
   ticketTypeId: string;
 
-  @Column({ name: 'concertId', nullable: false })
+  @Column({ name: 'concertId', type: 'uuid', nullable: false })
   concertId: string;
 
   @ManyToOne(() => Concert, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'concertId' })
   concert: Concert;
 
-  @Column({ length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   ticketTypeName: string;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   entranceType: string;
 
   @Column({ type: 'text', nullable: true })
@@ -41,10 +41,10 @@ export class TicketType {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
   ticketTypePrice: number;
 
-  @Column({ nullable: false })
+  @Column({ type: 'int', nullable: false })
   totalQuantity: number;
 
-  @Column({ nullable: false })
+  @Column({ type: 'int', nullable: false })
   remainingQuantity: number;
 
   @Column({ type: 'timestamp', nullable: true })

@@ -6,13 +6,13 @@
   "main": "dist/bin/server.js",
   "scripts": {
     "start": "node dist/bin/server.js",
-    "dev": "nodemon --exec ts-node bin/server.ts",
+    "dev": "tsx watch bin/server.ts",
     "build": "tsc",
     "typeorm": "typeorm-ts-node-commonjs",
     "migrate": "npm run typeorm migration:run -- -d config/database.ts",
     "test": "jest",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix"
   },
   "keywords": [
     "ticketing",
