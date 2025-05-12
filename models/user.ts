@@ -169,16 +169,16 @@ export class User {
   @Column({ type: 'varchar', length: 50, nullable: true })
   verificationToken: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   verificationTokenExpires: Date;
 
-  @Column({ default: false, nullable: false })
+  @Column({ type: 'boolean', default: false, nullable: false })
   isEmailVerified: boolean;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   passwordResetToken: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   passwordResetExpires: Date;
 
   @Column({ type: 'timestamp', nullable: true })
