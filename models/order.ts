@@ -29,14 +29,14 @@ export class Order {
   @PrimaryGeneratedColumn('uuid', { name: 'orderId' })
   orderId: string;
 
-  @Column({ name: 'ticketTypeId', nullable: false })
+  @Column({ name: 'ticketTypeId', type: 'uuid', nullable: false })
   ticketTypeId: string;
 
   @ManyToOne(() => TicketType, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'ticketTypeId' })
   ticketType: TicketType;
 
-  @Column({ name: 'userId', nullable: false })
+  @Column({ name: 'userId', type: 'uuid', nullable: false })
   userId: string;
 
   @ManyToOne('User', 'orders', { nullable: false, onDelete: 'RESTRICT' })
@@ -50,40 +50,40 @@ export class Order {
   })
   orderStatus: OrderStatus;
 
-  @Column({ default: true, nullable: false })
+  @Column({ type: 'boolean', default: true, nullable: false })
   isLocked: boolean;
 
-  @Column({ length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 100, nullable: false })
   lockToken: string;
 
-  @Column({ nullable: false })
+  @Column({ type: 'timestamp', nullable: false })
   lockExpireTime: Date;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   purchaserName: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   purchaserEmail: string;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   purchaserPhone: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   invoicePlatform: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   invoiceType: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   invoiceCarrier: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   invoiceStatus: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   invoiceNumber: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   invoiceUrl: string;
 
   @CreateDateColumn()

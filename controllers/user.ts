@@ -157,7 +157,7 @@ export const updateUserProfile = handleErrorAsync(async (req: Request, res: Resp
     if (rawGender === null) {
       user.gender = null;
     } else if (typeof rawGender === 'string' && rawGender.trim() === '') {
-      throw ApiError.create(400, `性別欄位不能為空字串。如需清除，請傳遞 null。有效值為 "男", "女", "其他"。`, ErrorCode.DATA_INVALID);
+      throw ApiError.create(400, '性別欄位不能為空字串。如需清除，請傳遞 null。有效值為 "男", "女", "其他"。', ErrorCode.DATA_INVALID);
     } else if (typeof rawGender === 'string') {
       const englishGender = toEnglishGender(rawGender);
       if (englishGender === undefined) { 
@@ -165,7 +165,7 @@ export const updateUserProfile = handleErrorAsync(async (req: Request, res: Resp
       }
       user.gender = englishGender; 
     } else {
-      throw ApiError.create(400, `性別欄位格式不正確。`, ErrorCode.DATA_INVALID);
+      throw ApiError.create(400, '性別欄位格式不正確。', ErrorCode.DATA_INVALID);
     }
   }
 

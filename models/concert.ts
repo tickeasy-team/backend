@@ -33,44 +33,44 @@ export class Concert {
   @PrimaryGeneratedColumn('uuid', { name: 'concertId' })
   concertId: string;
 
-  @Column({ name: 'organizationId', nullable: false })
+  @Column({ name: 'organizationId', type: 'uuid', nullable: false })
   organizationId: string;
 
   @ManyToOne(() => Organization, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'organizationId' })
   organization: Organization;
 
-  @Column({ name: 'venueId', nullable: false })
+  @Column({ name: 'venueId', type: 'uuid', nullable: false })
   venueId: string;
 
   @ManyToOne(() => Venue, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'venueId' })
   venue: Venue;
 
-  @Column({ name: 'locationTagId', nullable: false })
+  @Column({ name: 'locationTagId', type: 'uuid', nullable: false })
   locationTagId: string;
 
   @ManyToOne(() => LocationTag, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'locationTagId' })
   locationTag: LocationTag;
 
-  @Column({ name: 'musicTagId', nullable: false })
+  @Column({ name: 'musicTagId', type: 'uuid', nullable: false })
   musicTagId: string;
 
   @ManyToOne(() => MusicTag, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'musicTagId' })
   musicTag: MusicTag;
 
-  @Column({ length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   conTitle: string;
 
-  @Column({ length: 3000, nullable: true })
+  @Column({ type: 'varchar', length: 3000, nullable: true })
   conIntroduction: string;
 
-  @Column({ length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   conLocation: string;
 
-  @Column({ length: 200, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   conAddress: string;
 
   @Column({ type: 'date', nullable: true })
@@ -79,19 +79,19 @@ export class Concert {
   @Column({ type: 'date', nullable: true })
   eventEndDate: Date;
 
-  @Column({ length: 255, nullable: false })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   imgBanner: string;
 
-  @Column({ length: 255, nullable: false })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   imgSeattable: string;
 
-  @Column({ length: 1000, nullable: false })
+  @Column({ type: 'varchar', length: 1000, nullable: false })
   ticketPurchaseMethod: string;
 
-  @Column({ length: 2000, nullable: false })
+  @Column({ type: 'varchar', length: 2000, nullable: false })
   precautions: string;
 
-  @Column({ length: 1000, nullable: false })
+  @Column({ type: 'varchar', length: 1000, nullable: false })
   refundPolicy: string;
 
   @Column({
@@ -108,13 +108,13 @@ export class Concert {
   })
   reviewStatus: ReviewStatus;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   visitCount: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   promotion: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   cancelledAt: Date;
 
   @UpdateDateColumn()

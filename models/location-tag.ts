@@ -14,7 +14,7 @@ export class LocationTag {
   @PrimaryGeneratedColumn('uuid', { name: 'locationTagId' })
   locationTagId: string;
 
-  @Column({ length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   locationTagName: string;
   
   @OneToMany(() => Concert, concert => concert.locationTag)

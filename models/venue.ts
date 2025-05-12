@@ -16,31 +16,31 @@ export class Venue {
   @PrimaryGeneratedColumn('uuid', { name: 'venueId' })
   venueId: string;
 
-  @Column({ length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 100, nullable: false })
   venueName: string;
 
   @Column({ type: 'text', nullable: true })
   venueDescription: string;
 
-  @Column({ length: 200, nullable: false })
+  @Column({ type: 'varchar', length: 200, nullable: false })
   venueAddress: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   venueCapacity: number;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   venueImageUrl: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   googleMapUrl: string;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isAccessible: boolean;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   hasParking: boolean;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   hasTransit: boolean;
 
   @CreateDateColumn()
