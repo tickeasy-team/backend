@@ -154,6 +154,10 @@ tickeasy-team-backend/
 └── tsconfig.json         # TypeScript 設定
 ```
 
+## 程式碼檢查（Lint）
+
+本專案使用 [ESLint](https://eslint.org/) 搭配 TypeScript 檢查程式碼風格與潛在錯誤。
+
 ### 執行程式碼檢查
 
 使用以下指令檢查所有 `.ts` 檔案：
@@ -167,3 +171,5 @@ npm run lint
 ```bash
 npm run lint:fix
 ```
+
+

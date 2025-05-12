@@ -22,40 +22,40 @@ export class Ticket {
   @PrimaryGeneratedColumn('uuid', { name: 'ticketId' })
   ticketId: string;
 
-  @Column({ name: 'orderId', nullable: false })
+  @Column({ name: 'orderId', type: 'uuid', nullable: false })
   orderId: string;
 
   @ManyToOne(() => Order, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
-  @Column({ name: 'ticketTypeId', nullable: false })
+  @Column({ name: 'ticketTypeId', type: 'uuid', nullable: false })
   ticketTypeId: string;
 
   @ManyToOne(() => TicketType, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'ticketTypeId' })
   ticketType: TicketType;
 
-  @Column({ name: 'userId', nullable: false })
+  @Column({ name: 'userId', type: 'uuid', nullable: false })
   userId: string;
 
   @ManyToOne(() => User, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   purchaserName: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   purchaserEmail: string;
 
   @Column({ type: 'timestamp', nullable: false })
   concertStartTime: Date;
 
-  @Column({ nullable: true })
+  @Column({type: 'varchar', nullable: true })
   seatNumber: string;
 
-  @Column({ length: 255, unique: true, nullable: true })
+  @Column({type: 'varchar', length: 255, unique: true, nullable: true })
   qrCode: string;
 
   @Column({

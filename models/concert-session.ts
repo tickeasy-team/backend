@@ -16,7 +16,7 @@ export class ConcertSession {
   @PrimaryGeneratedColumn('uuid', { name: 'sessionId' })
   sessionId: string;
 
-  @Column({ name: 'concertId', nullable: false })
+  @Column({ name: 'concertId', type: 'uuid', nullable: false }) // ✅ 加上 type
   concertId: string;
 
   @ManyToOne(() => Concert, { nullable: false, onDelete: 'CASCADE' })
@@ -32,9 +32,9 @@ export class ConcertSession {
   @Column({ type: 'time', nullable: true })
   sessionEnd: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true }) // ✅ 加上 type
   sessionTitle: string;
-
+  
   @CreateDateColumn()
   createdAt: Date;
 } 

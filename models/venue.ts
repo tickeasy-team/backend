@@ -16,31 +16,31 @@ export class Venue {
   @PrimaryGeneratedColumn('uuid', { name: 'venueId' })
   venueId: string;
 
-  @Column({ length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 100, nullable: false }) // ✅ 指定 type
   venueName: string;
 
   @Column({ type: 'text', nullable: true })
   venueDescription: string;
 
-  @Column({ length: 200, nullable: false })
+  @Column({ type: 'varchar', length: 200, nullable: false }) // ✅ 指定 type
   venueAddress: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true }) // ✅ 指定 type
   venueCapacity: number;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true }) // ✅ 指定 type
   venueImageUrl: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true }) // ✅ 指定 type
   googleMapUrl: string;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false }) // ✅ 指定 type
   isAccessible: boolean;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false }) // ✅ 指定 type
   hasParking: boolean;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false }) // ✅ 指定 type
   hasTransit: boolean;
 
   @CreateDateColumn()
@@ -51,4 +51,4 @@ export class Venue {
   
   @OneToMany(() => Concert, concert => concert.venue)
   concerts: Concert[];
-} 
+}
