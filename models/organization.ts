@@ -20,32 +20,32 @@ export class Organization {
   @PrimaryGeneratedColumn('uuid', { name: 'organizationId' })
   organizationId: string;
 
-  @Column({ name: 'userId', nullable: false })
+  @Column({ name: 'userId', type: 'uuid', nullable: false })
   userId: string;
 
   @ManyToOne('User', 'organizations', { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'userId' })
   user: UserRef;
 
-  @Column({ length: 100, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 100, nullable: false, unique: true })
   orgName: string;
 
-  @Column({ length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 100, nullable: false })
   orgAddress: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   orgMail: string;
 
-  @Column({ length: 1000, nullable: true })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   orgContact: string;
 
-  @Column({ length: 200, nullable: true })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   orgMobile: string;
 
-  @Column({ length: 200, nullable: true })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   orgPhone: string;
 
-  @Column({ length: 200, nullable: true })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   orgWebsite: string;
 
   @CreateDateColumn()

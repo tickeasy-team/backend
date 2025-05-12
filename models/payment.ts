@@ -25,17 +25,17 @@ export class Payment {
   @PrimaryGeneratedColumn('uuid', { name: 'paymentId' })
   paymentId: string;
 
-  @Column({ name: 'orderId', nullable: false })
+  @Column({ name: 'orderId', type: 'uuid', nullable: false })
   orderId: string;
 
   @ManyToOne('Order', 'payments', { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'orderId' })
   order: OrderRef;
 
-  @Column({ length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   method: string;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   provider: string;
 
   @Column({
@@ -48,13 +48,13 @@ export class Payment {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
   amount: number;
 
-  @Column({ length: 10, default: 'TWD' })
+  @Column({ type: 'varchar', length: 10, default: 'TWD' })
   currency: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   paidAt: Date;
 
-  @Column({ length: 100, unique: true, nullable: true })
+  @Column({ type: 'uuid', unique: true, nullable: true })
   transactionId: string;
 
   @Column({ type: 'jsonb', nullable: true })
