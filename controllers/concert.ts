@@ -1,9 +1,9 @@
 // import { createConcert } from './concert';
 import { Request, Response } from 'express';
-import { AppDataSource } from '../config/database';
-import { Concert } from '../models/concert';
-import { TicketType } from '../models/ticket-type';
-import { handleErrorAsync  } from '../utils/handleErrorAsync';
+import { AppDataSource } from '../config/database.js';
+import { Concert } from '../models/concert.js';
+import { TicketType } from '../models/ticket-type.js';
+import { handleErrorAsync  } from '../utils/handleErrorAsync.js';
 import{ApiError}from '../utils/index.js';
 import { CreateConcertRequest, ConcertResponse, ConcertData } from './../types/concert/index.js';
 // import{ConcertsResponse}from './../types/concert/index.js';
