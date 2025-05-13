@@ -49,12 +49,15 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
     } = req.body as CreateConcertRequest;
 
 
-    // const imgBanner = req.files?.imgBanner?.[0];
-    // const imgSeattable = req.files?.imgSeattable?.[0];
+    let imgBanner, imgSeattable;
+    if (req.files && !Array.isArray(req.files)) {
+        imgBanner = req.files.imgBanner?.[0];
+        imgSeattable = req.files.imgSeattable?.[0];
+    }
 
-    // if (!imgBanner || !imgSeattable) {
-    //     throw ApiError.fieldRequired('主視覺與座位圖');
-    // }
+    if (!imgBanner || !imgSeattable) {
+        throw ApiError.fieldRequired('主視覺與座位圖');
+    }
 
     // --- 基本驗證 --- 
     if (
@@ -131,8 +134,8 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
         conAddress: address,
         eventStartDate: new Date(eventStartDate),
         eventEndDate: new Date(eventEndDate),
-        // imgBanner: imgBanner.path,
-        // imgSeattable: imgSeattable.path,
+        imgBanner: imgBanner.path,
+        imgSeattable: imgSeattable.path,
         ticketPurchaseMethod,
         precautions,
         refundPolicy,
