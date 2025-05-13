@@ -20,7 +20,7 @@ import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
 import organizationRouter from './routes/organization.js';
 import uploadRouter from './routes/upload.js';
-import concertRoute from './routes/concert';
+import concertRoute from './routes/concert.js';
 
 const app = express();
 
