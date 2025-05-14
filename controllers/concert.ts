@@ -5,16 +5,15 @@ import { Concert } from '../models/concert.js';
 import { TicketType } from '../models/ticket-type.js';
 import { handleErrorAsync  } from '../utils/handleErrorAsync.js';
 import{ApiError}from '../utils/index.js';
-import { CreateConcertRequest, ConcertResponse, ConcertData } from './../types/concert/index.js';
+import { CreateConcertRequest, ConcertResponse  } from './../types/concert/index.js';
 // import{ConcertsResponse}from './../types/concert/index.js';
-import {
-    ErrorCode,
-} from '../types/api.js';
-// ApiResponse 刪除會需要？
+// import{ConcertData}from './../types/concert/index.js';
+import {ErrorCode,} from '../types/api.js';
+// import {ApiResponse} from '../types/api.js';
 
 
 
-// 
+// 建立活動
 export const createConcert = handleErrorAsync(async (req: Request, res: Response<ConcertResponse>) => {
     // 驗證
     const authenticatedUser = req.user as { userId: string; }; // 來自 isAuthenticated
@@ -45,19 +44,13 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
         ticketTypePrice,
         totalQuantity,
         sellBeginDate,
-        sellEndDate
+        sellEndDate,
+        imgBanner,
+        imgSeattable
     } = req.body as CreateConcertRequest;
 
 
-    let imgBanner, imgSeattable;
-    if (req.files && !Array.isArray(req.files)) {
-        imgBanner = req.files.imgBanner?.[0];
-        imgSeattable = req.files.imgSeattable?.[0];
-    }
 
-    if (!imgBanner || !imgSeattable) {
-        throw ApiError.fieldRequired('主視覺與座位圖');
-    }
 
     // --- 基本驗證 --- 
     if (
@@ -85,6 +78,10 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
         !sellEndDate
     ) {
         throw ApiError.fieldRequired('所有欄位');
+    }
+
+    if (!imgBanner || !imgSeattable) {
+        throw ApiError.fieldRequired('主視覺與座位圖');
     }
 
     if (typeof ticketTypePrice !== 'number' || ticketTypePrice < 0) {
@@ -123,7 +120,7 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
     }
 
     // 創建演唱會
-    const newConcert = concertRepository.create({
+    const newConcert = concertRepository.create(Object.assign({}, {
         organizationId,
         venueId,
         locationTagId,
@@ -134,13 +131,14 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
         conAddress: address,
         eventStartDate: new Date(eventStartDate),
         eventEndDate: new Date(eventEndDate),
-        imgBanner: imgBanner.path,
-        imgSeattable: imgSeattable.path,
+        imgBanner: imgBanner,
+        imgSeattable: imgSeattable,
         ticketPurchaseMethod,
         precautions,
         refundPolicy,
         conInfoStatus
-    });
+      }));
+      
 
     const savedConcert = await concertRepository.save(newConcert);
 
@@ -164,7 +162,7 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
     res.status(201).json({
         status: 'success',
         message: '演唱會活動建立成功！',
-        data: { concert: savedConcert as ConcertData }
+        data: { concert: savedConcert }
     });
 
 });
