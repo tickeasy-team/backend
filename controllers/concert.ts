@@ -72,8 +72,8 @@ export const createConcert = handleErrorAsync(async (req: Request, res: Response
         !entranceType ||
         !ticketBenefits ||
         !ticketRefundPolicy ||
-        ticketTypePrice === undefined ||
-        totalQuantity === undefined ||
+        !ticketTypePrice  ||
+        !totalQuantity  ||
         !sellBeginDate ||
         !sellEndDate
     ) {
