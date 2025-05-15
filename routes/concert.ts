@@ -11,6 +11,11 @@ router.post(
     concertController.createConcert
 );
 
-// 
+// 修改活動（僅限草稿）
+router.put(
+    '/:concertId',
+    isAuthenticated,
+    concertController.updateConcert
+);
 
 export default router;
