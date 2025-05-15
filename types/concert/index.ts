@@ -27,8 +27,8 @@ export interface CreateConcertRequest {
   totalQuantity: number;
   sellBeginDate: string; // yyyy/MM/dd HH:mm
   sellEndDate: string; // yyyy/MM/dd HH:mm
-  imgBanner: File;
-  imgSeattable: File;
+  imgBanner: string;
+  imgSeattable: string;
 }
 
 /**
