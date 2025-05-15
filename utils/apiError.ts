@@ -109,4 +109,22 @@ export class ApiError {
       : '請求頻率過高，請稍後再試';
     return this.create(429, message, ErrorCode.RATE_LIMIT_EXCEEDED);
   }
+
+  // 必填錯誤
+  static fieldRequired(fieldName: string) {
+    return this.create(400, `${fieldName} 為必填欄位`, ErrorCode.DATA_INVALID);
+  }
+
+  // 格式錯誤
+  static invalidFormat(fieldName: string) {
+    return this.create(400, `${fieldName} 格式不正確`, ErrorCode.DATA_INVALID);
+  }
+
+  // 僅能編輯草稿
+  static badRequest(fieldName: string) {
+    return this.create(400, `${fieldName} 僅能編輯草稿中的演唱會`, ErrorCode.DATA_INVALID);
+  }
+
+
+
 } 

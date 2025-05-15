@@ -20,6 +20,7 @@ import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
 import organizationRouter from './routes/organization.js';
 import uploadRouter from './routes/upload.js';
+import concertRoute from './routes/concert.js';
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/organizations', organizationRouter);
 app.use('/api/v1/upload', uploadRouter);
+app.use('/api/v1/concert', concertRoute);
 
 
 // 註冊錯誤處理中間件
