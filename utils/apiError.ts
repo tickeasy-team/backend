@@ -119,4 +119,12 @@ export class ApiError {
   static invalidFormat(fieldName: string) {
     return this.create(400, `${fieldName} 格式不正確`, ErrorCode.DATA_INVALID);
   }
+
+  // 僅能編輯草稿
+  static badRequest(fieldName: string) {
+    return this.create(400, `${fieldName} 僅能編輯草稿中的演唱會`, ErrorCode.DATA_INVALID);
+  }
+
+
+
 } 
