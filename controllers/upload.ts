@@ -54,6 +54,7 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     const { uploadContext } = req.body;
     let targetIdFromBody = req.body.targetId;
     const userIdFromToken = (req.user as any)?.userId;
+    const userRoleFromToken = (req.user as any)?.role; // 取得 user role
     
     // 2. 驗證請求參數
     // 2.1 驗證是否有檔案
@@ -78,7 +79,7 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     }
     
     // 2.5 根據 uploadContext 確定並驗證 targetId，並獲取相關實體
-    let effectiveTargetId: string | number;
+    let effectiveTargetId: string | number | undefined;
     let userToUpdate: User | null = null;
     let venueToUpdate: Venue | null = null;
     let concertToUpdate: Concert | null = null;
@@ -91,44 +92,45 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
       userToUpdate = await userRepository.findOne({ where: { userId: String(effectiveTargetId) } });
       if (!userToUpdate) return next(createHttpError(404, '找不到用戶'));
       oldImageUrl = userToUpdate.avatar;
+    } else if (uploadContext === 'VENUE_PHOTO') {
+      // 只允許 admin 上傳，且不需要 targetId
+      if (userRoleFromToken !== 'admin') {
+        return next(createHttpError(403, '僅限管理員上傳場館圖片'));
+      }
+      effectiveTargetId = undefined; // 不需要 targetId
+      // 不需查詢 venue 也不需 oldImageUrl
     } else {
       if (!targetIdFromBody) return next(createHttpError(400, `缺少必要的 'targetId' 欄位 (針對 ${uploadContext})`));
       effectiveTargetId = targetIdFromBody;
-      
-      if (uploadContext === 'VENUE_PHOTO') {
-        const venueRepository = AppDataSource.getRepository(Venue);
-        venueToUpdate = await venueRepository.findOne({ where: { venueId: effectiveTargetId as string } });
-        if (!venueToUpdate) return next(createHttpError(404, '找不到場地'));
-        oldImageUrl = venueToUpdate.venueImageUrl;
-      } else if (uploadContext === 'CONCERT_SEATTABLE' || uploadContext === 'CONCERT_BANNER') {
+      if (uploadContext === 'CONCERT_SEATTABLE' || uploadContext === 'CONCERT_BANNER') {
         const concertRepository = AppDataSource.getRepository(Concert);
         concertToUpdate = await concertRepository.findOne({ where: { concertId: effectiveTargetId as string } });
         if (!concertToUpdate) return next(createHttpError(404, '找不到音樂會'));
         oldImageUrl = (uploadContext === 'CONCERT_SEATTABLE') ? concertToUpdate.imgSeattable : concertToUpdate.imgBanner;
       }
-      // 在這裡可以添加針對其他 context 的權限檢查
+      // 這裡可以添加針對其他 context 的權限檢查
       // if (!hasPermissionForTarget(userIdFromToken, uploadContext, effectiveTargetId)) {
       //   return next(createHttpError(403, '權限不足'));
       // }
     }
     
     // 3. 呼叫服務上傳圖片
-    const result = await storageService.uploadImage({
+    const uploadImagePayload: any = {
       fileBuffer: file.buffer,
       originalName: file.originalname,
       mimetype: file.mimetype,
       uploadContext: uploadContext as UploadContext,
-      targetId: effectiveTargetId,
-    });
+    };
+    if (effectiveTargetId !== undefined) {
+      uploadImagePayload.targetId = effectiveTargetId;
+    }
+    const result = await storageService.uploadImage(uploadImagePayload);
     
     // 4. 更新資料庫欄位
     try {
       if (userToUpdate) {
         userToUpdate.avatar = result.url;
         await AppDataSource.getRepository(User).save(userToUpdate);
-      } else if (venueToUpdate) {
-        venueToUpdate.venueImageUrl = result.url;
-        await AppDataSource.getRepository(Venue).save(venueToUpdate);
       } else if (concertToUpdate) {
         if (uploadContext === 'CONCERT_SEATTABLE') {
           concertToUpdate.imgSeattable = result.url;
@@ -137,6 +139,7 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
         }
         await AppDataSource.getRepository(Concert).save(concertToUpdate);
       }
+      // VENUE_PHOTO 不需更新資料庫
     } catch (dbError) {
       // 如果資料庫更新失敗，最好也嘗試刪除剛剛上傳的圖片以保持一致性
       console.error('資料庫更新失敗，嘗試刪除已上傳圖片:', dbError);
