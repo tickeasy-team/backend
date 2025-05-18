@@ -109,10 +109,10 @@ export class Concert {
   reviewStatus: ReviewStatus;
 
   @Column({ type: 'int', default: 0 })
-  visitCount: number;
+  visitCount: number; // 參觀人數
 
   @Column({ type: 'int', nullable: true })
-  promotion: number;
+  promotion: number; // 權重數字？
 
   @Column({ type: 'timestamp', nullable: true })
   cancelledAt: Date;

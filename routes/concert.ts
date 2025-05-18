@@ -18,4 +18,25 @@ router.put(
     concertController.updateConcert
 );
 
+// 增加visitCount
+router.patch('/:concertId/visit', concertController.incrementVisitCount);
+
+// 設定promotion權重
+//(暫時沒有做驗證)
+router.patch('/:concertId/promotion', concertController.updatePromotion);
+
+// 獲得熱門演唱會
+router.get('/popular', concertController.getPopularConcerts);
+
+// 獲得場地
+router.get('/venues',concertController.getAllVenues);
+
+// 搜尋
+router.get('/search', concertController.searchConcerts);
+
+// 獲得首頁promo的banner
+router.get('/banners', concertController.getBannerConcerts);
+
+
+
 export default router;
