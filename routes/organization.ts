@@ -11,6 +11,9 @@ router.get('/', isAuthenticated, organizationController.getAllOrganizations);
 // 獲取單個組織 (需要登入和權限)
 router.get('/:organizationId', isAuthenticated, organizationController.getOrganizationById);
 
+// 取得特定組織的音樂會列表（含分頁、篩選、排序）
+router.get('/:organizationId/concerts', isAuthenticated, organizationController.getConcertsByOrganization);
+
 // 創建組織 (需要登入)
 router.post('/', isAuthenticated, /* authenticateToken?, */ organizationController.createOrganization);
 
