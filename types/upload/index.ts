@@ -17,7 +17,7 @@ export interface UploadImageParams {
   originalName: string;     // 原始檔案名稱
   mimetype: string;         // 檔案MIME類型
   uploadContext: UploadContext; // 上傳上下文
-  targetId: string | number;    // 目標ID (使用者ID, 音樂會ID等)
+  targetId?: string | number;    // 目標ID (使用者ID, 音樂會ID等)，暫存模式下可為空
   userId?: string | number;     // 上傳者ID (可選，用於權限驗證)
   options?: {
     maxWidth?: number;      // 最大寬度 (像素)

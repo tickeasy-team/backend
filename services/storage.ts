@@ -44,8 +44,13 @@ function getBucketName(uploadContext: UploadContext): string {
 /**
  * 根據上傳上下文和目標 ID 建立儲存路徑
  */
-function getStoragePath(uploadContext: UploadContext, targetId: string | number, fileExtension: string): string {
+function getStoragePath(uploadContext: UploadContext, targetId: string | number | undefined, fileExtension: string): string {
   const fileName = `${uuidv4()}${fileExtension}`;
+  
+  // 如果沒有 targetId，則視為暫存圖片
+  if (targetId === undefined) {
+    return `temp/${uploadContext.toLowerCase()}/${fileName}`;
+  }
   
   switch (uploadContext) {
     case 'USER_AVATAR':
@@ -206,7 +211,81 @@ async function deleteImage(path: string): Promise<boolean> {
   }
 }
 
+/**
+ * 清理暫存圖片
+ * @param hours 清理超過多少小時的暫存圖片
+ */
+async function cleanupTempImages(hours: number = 24): Promise<number> {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw createHttpError(500, 'Supabase 環境變數未設定 (DB_URL 或 DB_SERVICE_KEY)');
+  }
+
+  try {
+    // 獲取所有 bucket
+    const buckets = ['avatar', 'venue', 'concert'];
+    let totalDeleted = 0;
+
+    for (const bucket of buckets) {
+      // 獲取 temp 目錄下所有檔案
+      const { data: files, error: listError } = await supabase.storage
+        .from(bucket)
+        .list('temp', {
+          sortBy: { column: 'created_at', order: 'asc' },
+        });
+
+      if (listError) {
+        console.error(`獲取 ${bucket} bucket 的暫存檔案列表失敗:`, listError);
+        continue;
+      }
+
+      if (!files || files.length === 0) {
+        console.log(`${bucket} bucket 中沒有暫存檔案`);
+        continue;
+      }
+
+      // 計算時間閾值
+      const threshold = new Date();
+      threshold.setHours(threshold.getHours() - hours);
+
+      // 篩選出過期檔案
+      const filesToDelete = files.filter(file => {
+        if (!file.created_at) return false;
+        const createdAt = new Date(file.created_at);
+        return createdAt < threshold;
+      });
+
+      if (filesToDelete.length === 0) {
+        console.log(`${bucket} bucket 中沒有過期的暫存檔案`);
+        continue;
+      }
+
+      // 刪除過期檔案
+      const filePaths = filesToDelete.map(file => `temp/${file.name}`);
+      const { error: deleteError } = await supabase.storage
+        .from(bucket)
+        .remove(filePaths);
+
+      if (deleteError) {
+        console.error(`刪除 ${bucket} bucket 的暫存檔案失敗:`, deleteError);
+        continue;
+      }
+
+      console.log(`已從 ${bucket} bucket 中刪除 ${filePaths.length} 個暫存檔案`);
+      totalDeleted += filePaths.length;
+    }
+
+    return totalDeleted;
+  } catch (err) {
+    console.error('清理暫存圖片時出錯:', err);
+    if (err instanceof Error) {
+      throw createHttpError(500, `清理暫存圖片失敗: ${err.message}`);
+    }
+    throw createHttpError(500, '清理暫存圖片失敗');
+  }
+}
+
 export default {
   uploadImage,
   deleteImage,
+  cleanupTempImages,
 }; 
