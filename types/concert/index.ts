@@ -73,4 +73,10 @@ export interface ConcertResponse extends ApiResponse<{
  */
 export interface ConcertsResponse extends ApiResponse<{
   concerts: ConcertData[];
+  pagination: {
+    totalCount: number;
+    totalPages: number;
+    currentPage: number;
+    limit: number;
+  };
 }> {}

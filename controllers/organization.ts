@@ -15,6 +15,8 @@ import {
 } from '../types/api.js';
 
 import { Not } from 'typeorm';
+import { Concert } from '../models/concert.js';
+import { ConcertsResponse, ConcertData } from '../types/concert/index.js';
 
 // 獲取當前用戶擁有的所有組織
 export const getAllOrganizations = handleErrorAsync(async (req: Request, res: Response<OrganizationsResponse>) => {
@@ -263,4 +265,95 @@ export const deleteOrganization = handleErrorAsync(async (req: Request, res: Res
     data: null // 刪除成功通常不返回 data
   });
   // res.status(501).json({ status:'failed', message: `Not Implemented: ${organizationId}` });
+});
+
+// 取得特定組織的音樂會列表（含分頁、篩選、排序）
+export const getConcertsByOrganization = handleErrorAsync(async (req, res: Response<ConcertsResponse>) => {
+  const authenticatedUser = req.user as { userId: string };
+  if (!authenticatedUser || !authenticatedUser.userId) {
+    throw ApiError.unauthorized();
+  }
+  const userId = authenticatedUser.userId;
+  const { organizationId } = req.params;
+  const { status, limit = 10, page = 1, sort } = req.query;
+
+  // 權限檢查：必須是組織擁有者
+  const organizationRepository = AppDataSource.getRepository(Organization);
+  const organization = await organizationRepository.findOne({ where: { organizationId } });
+  if (!organization) {
+    throw ApiError.notFound('組織');
+  }
+  if (organization.userId !== userId) {
+    throw ApiError.forbidden();
+  }
+
+  // 組合 where 條件
+  const where: any = { organizationId };
+  if (status) where.reviewStatus = status;
+
+  // 組合排序
+  let order: any = {};
+  if (sort) {
+    sort.toString().split(',').forEach((s: string) => {
+      const [field, dir] = s.split(':');
+      if (field) order[field] = dir?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    });
+  } else {
+    order = { eventStartDate: 'DESC' };
+  }
+
+  // 分頁
+  const take = Math.max(1, Number(limit) || 10);
+  const currentPage = Math.max(1, Number(page) || 1);
+  const skip = (currentPage - 1) * take;
+
+  // 查詢
+  const concertRepository = AppDataSource.getRepository(Concert);
+  const [concerts, totalCount] = await concertRepository.findAndCount({
+    where,
+    order,
+    skip,
+    take,
+    select: [
+      'concertId',
+      'organizationId',
+      'venueId',
+      'locationTagId',
+      'musicTagId',
+      'conTitle',
+      'conIntroduction',
+      'conLocation',
+      'conAddress',
+      'eventStartDate',
+      'eventEndDate',
+      'imgBanner',
+      'imgSeattable',
+      'ticketPurchaseMethod',
+      'precautions',
+      'refundPolicy',
+      'conInfoStatus',
+      'reviewStatus',
+      'visitCount',
+      'promotion',
+      'cancelledAt',
+      'createdAt',
+      'updatedAt',
+    ],
+  });
+
+  const totalPages = Math.ceil(totalCount / take);
+
+  res.status(200).json({
+    status: 'success',
+    message: '成功獲取音樂會列表',
+    data: {
+      concerts: concerts as ConcertData[],
+      pagination: {
+        totalCount,
+        totalPages,
+        currentPage,
+        limit: take,
+      },
+    },
+  });
 }); 
