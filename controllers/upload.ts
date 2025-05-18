@@ -46,14 +46,18 @@ async function deleteOldImage(oldUrl: string | null | undefined): Promise<void> 
 /**
  * 上傳圖片
  * 接收並處理通過 multipart/form-data 上傳的圖片檔案
+ * 支援兩種模式：
+ * 1. 臨時上傳模式：不提供 targetId，只上傳圖片並返回 URL
+ * 2. 直接關聯模式：提供 targetId，上傳圖片並與目標實體關聯
  */
 async function uploadImage(req: Request, res: Response, next: NextFunction) {
   try {
     // 1. 從請求中獲取檔案和相關參數
     const file = req.file;
     const { uploadContext } = req.body;
-    let targetIdFromBody = req.body.targetId;
+    let targetIdFromBody = req.body.targetId; // 可能為空，表示臨時上傳模式
     const userIdFromToken = (req.user as any)?.userId;
+    const isTemporaryUpload = !targetIdFromBody && uploadContext !== 'USER_AVATAR';
     
     // 2. 驗證請求參數
     // 2.1 驗證是否有檔案
@@ -78,13 +82,17 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     }
     
     // 2.5 根據 uploadContext 確定並驗證 targetId，並獲取相關實體
-    let effectiveTargetId: string | number;
+    let effectiveTargetId: string | number | undefined;
     let userToUpdate: User | null = null;
     let venueToUpdate: Venue | null = null;
     let concertToUpdate: Concert | null = null;
     let oldImageUrl: string | null | undefined = null; // 用於存儲待刪除的舊圖片 URL
     
-    if (uploadContext === 'USER_AVATAR') {
+    // 臨時上傳模式下，跳過實體關聯驗證
+    if (isTemporaryUpload) {
+      effectiveTargetId = undefined; // 臨時上傳不需要 targetId
+    } else if (uploadContext === 'USER_AVATAR') {
+      // 用戶頭像必須提供用戶 ID (從 token 中獲取)
       if (!userIdFromToken) return next(createHttpError(401, '用戶未經驗證'));
       effectiveTargetId = userIdFromToken;
       const userRepository = AppDataSource.getRepository(User);
@@ -92,6 +100,7 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
       if (!userToUpdate) return next(createHttpError(404, '找不到用戶'));
       oldImageUrl = userToUpdate.avatar;
     } else {
+      // 直接關聯模式，需要驗證 targetId 有效性
       if (!targetIdFromBody) return next(createHttpError(400, `缺少必要的 'targetId' 欄位 (針對 ${uploadContext})`));
       effectiveTargetId = targetIdFromBody;
       
@@ -119,54 +128,56 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
       mimetype: file.mimetype,
       uploadContext: uploadContext as UploadContext,
       targetId: effectiveTargetId,
+      isTemporary: isTemporaryUpload, // 標記為臨時上傳
     });
     
-    // 4. 更新資料庫欄位
-    try {
-      if (userToUpdate) {
-        userToUpdate.avatar = result.url;
-        await AppDataSource.getRepository(User).save(userToUpdate);
-      } else if (venueToUpdate) {
-        venueToUpdate.venueImageUrl = result.url;
-        await AppDataSource.getRepository(Venue).save(venueToUpdate);
-      } else if (concertToUpdate) {
-        if (uploadContext === 'CONCERT_SEATTABLE') {
-          concertToUpdate.imgSeattable = result.url;
-        } else { // CONCERT_BANNER
-          concertToUpdate.imgBanner = result.url;
-        }
-        await AppDataSource.getRepository(Concert).save(concertToUpdate);
-      }
-    } catch (dbError) {
-      // 如果資料庫更新失敗，最好也嘗試刪除剛剛上傳的圖片以保持一致性
-      console.error('資料庫更新失敗，嘗試刪除已上傳圖片:', dbError);
+    // 4. 如果不是臨時上傳模式，則更新資料庫欄位
+    if (!isTemporaryUpload) {
       try {
-        await storageService.deleteImage(result.path);
-        console.log(`因資料庫更新失敗，已刪除圖片: ${result.path}`);
-      } catch (rollbackDeleteError) {
-        console.error(`刪除圖片失敗 (${result.path}):`, rollbackDeleteError);
+        if (userToUpdate) {
+          userToUpdate.avatar = result.url;
+          await AppDataSource.getRepository(User).save(userToUpdate);
+        } else if (venueToUpdate) {
+          venueToUpdate.venueImageUrl = result.url;
+          await AppDataSource.getRepository(Venue).save(venueToUpdate);
+        } else if (concertToUpdate) {
+          if (uploadContext === 'CONCERT_SEATTABLE') {
+            concertToUpdate.imgSeattable = result.url;
+          } else { // CONCERT_BANNER
+            concertToUpdate.imgBanner = result.url;
+          }
+          await AppDataSource.getRepository(Concert).save(concertToUpdate);
+        }
+        
+        // 異步刪除舊圖片 (不阻塞回應)
+        deleteOldImage(oldImageUrl).catch(err => {
+          console.error('異步刪除舊圖片過程中發生未捕獲錯誤:', err);
+        });
+      } catch (dbError) {
+        // 如果資料庫更新失敗，最好也嘗試刪除剛剛上傳的圖片以保持一致性
+        console.error('資料庫更新失敗，嘗試刪除已上傳圖片:', dbError);
+        try {
+          await storageService.deleteImage(result.path);
+          console.log(`因資料庫更新失敗，已刪除圖片: ${result.path}`);
+        } catch (rollbackDeleteError) {
+          console.error(`刪除圖片失敗 (${result.path}):`, rollbackDeleteError);
+        }
+        return next(createHttpError(500, '更新資料庫失敗'));
       }
-      return next(createHttpError(500, '更新資料庫失敗'));
     }
     
-    // 5. 異步刪除舊圖片 (不阻塞回應)
-    deleteOldImage(oldImageUrl).catch(err => {
-      console.error('異步刪除舊圖片過程中發生未捕獲錯誤:', err);
-    }); 
-    
-    // 6. 回傳成功回應
-    const responseData: { url: string; path?: string } = { url: result.url };
-    // 對於非頭像，仍然返回 path，因為 deleteImage API 可能還需要它 (取決於後續是否修改 deleteImage)
-    if (uploadContext !== 'USER_AVATAR') {
-      responseData.path = result.path; 
-    }
+    // 5. 回傳成功回應
+    const responseData: { url: string; path: string; isTemporary: boolean } = { 
+      url: result.url,
+      path: result.path,
+      isTemporary: isTemporaryUpload
+    };
     
     res.status(200).json({
       status: 'success',
-      message: '圖片上傳成功',
+      message: isTemporaryUpload ? '圖片暫存成功' : '圖片上傳成功',
       data: responseData
     });
-
   } catch (err) {
     next(err);
   }
