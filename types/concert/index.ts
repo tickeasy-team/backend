@@ -1,8 +1,22 @@
-import { Concert as ConcertEntity, ConInfoStatus, } from '../../models/concert.js';
+import { Concert as ConcertEntity, ConInfoStatus } from '../../models/concert.js';
 import { ApiResponse } from '../api.js';
 
 /**
- * 創建活動請求 Body 類型   
+ * 建立活動時每一個票種的結構
+ */
+export interface TicketTypeInput {
+  ticketTypeName: string;
+  entranceType: string;
+  ticketBenefits: string;
+  ticketRefundPolicy: string;
+  ticketTypePrice: number;
+  totalQuantity: number;
+  sellBeginDate: string; // yyyy/MM/dd HH:mm
+  sellEndDate: string;   // yyyy/MM/dd HH:mm
+}
+
+/**
+ * 創建活動請求 Body 類型
  */
 export interface CreateConcertRequest {
   organizationId: string;
@@ -14,21 +28,14 @@ export interface CreateConcertRequest {
   location: string;
   address: string;
   eventStartDate?: string; // yyyy/MM/dd
-  eventEndDate?: string; // yyyy/MM/dd
+  eventEndDate?: string;   // yyyy/MM/dd
   ticketPurchaseMethod: string;
   precautions: string;
   refundPolicy: string;
   conInfoStatus: ConInfoStatus;
-  ticketTypeName: string;
-  entranceType: string;
-  ticketBenefits: string;
-  ticketRefundPolicy: string;
-  ticketTypePrice: number;
-  totalQuantity: number;
-  sellBeginDate: string; // yyyy/MM/dd HH:mm
-  sellEndDate: string; // yyyy/MM/dd HH:mm
   imgBanner: string;
   imgSeattable: string;
+  ticketTypes: TicketTypeInput[]; // 多張票種
 }
 
 /**
@@ -62,14 +69,29 @@ export type ConcertData = Pick<
 >;
 
 /**
+ * 單一票種的資料結構
+ */
+export interface TicketType {
+  ticketTypeName: string;
+  entranceType: string;
+  ticketBenefits: string;
+  ticketRefundPolicy: string;
+  ticketTypePrice: number;
+  totalQuantity: number;
+  sellBeginDate: string; // yyyy/MM/dd HH:mm
+  sellEndDate: string;   // yyyy/MM/dd HH:mm
+}
+
+/**
  * 獲取單一活動的回應類型
  */
 export interface ConcertResponse extends ApiResponse<{
   concert: ConcertData;
+  ticketTypes?: TicketType[];
 }> {}
 
 /**
- * 獲取多個活動的回應類型
+ * 獲取多個活動的回應類型（含分頁）
  */
 export interface ConcertsResponse extends ApiResponse<{
   concerts: ConcertData[];
