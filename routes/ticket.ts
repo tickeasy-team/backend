@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 // import { isAuthenticated } from '../middlewares/auth.js';
+// import { isAuthenticated } from '../middlewares/auth.js';
 import { getConcertTickets } from '../controllers/ticket.js';
 
 const router: Router = express.Router();
