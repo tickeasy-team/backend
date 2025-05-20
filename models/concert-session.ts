@@ -7,8 +7,10 @@ import {
   Column, 
   CreateDateColumn,
   ManyToOne,
-  JoinColumn
+  JoinColumn,
+  OneToMany
 } from 'typeorm';
+import { TicketType } from './ticket-type';
 
 // 避免直接導入 Concert 類型，使用接口代替
 interface ConcertRef {
@@ -26,6 +28,12 @@ export class ConcertSession {
   @ManyToOne('Concert', 'sessions', { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'concertId' })
   concert: ConcertRef;
+
+  @OneToMany(() => TicketType, (ticketType) => ticketType.concertSession, {
+    cascade: true,
+  })
+  ticketTypes: TicketType[];
+  
 
   @Column({ type: 'date' })
   sessionDate: Date;
