@@ -1,3 +1,4 @@
+
 /**
  * 音樂會場次模型
  */
@@ -7,13 +8,18 @@ import {
   Column, 
   CreateDateColumn,
   ManyToOne,
-  JoinColumn
+  JoinColumn,
+  OneToMany
 } from 'typeorm';
+import { TicketType } from './ticket-type';
 
 // 避免直接導入 Concert 類型，使用接口代替
 interface ConcertRef {
   concertId: string;
 }
+
+export type SessionStatus = 'draft' | 'published' | 'finished';
+
 
 @Entity('concertSession')
 export class ConcertSession {
@@ -27,6 +33,12 @@ export class ConcertSession {
   @JoinColumn({ name: 'concertId' })
   concert: ConcertRef;
 
+  @OneToMany(() => TicketType, (ticketType) => ticketType.concertSession, {
+    cascade: true,
+  })
+  ticketTypes: TicketType[];
+  
+
   @Column({ type: 'date' })
   sessionDate: Date;
 
@@ -38,6 +50,17 @@ export class ConcertSession {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   sessionTitle: string;
+
+  @Column({ type: 'json', nullable: true })
+  imgSeattable: string[];
+
+  @Column({
+    type: 'enum',
+    enum: ['draft', 'published', 'finished'] as SessionStatus[],
+    nullable: true,
+    default:'draft'
+  })
+  SessionStatus: SessionStatus;
 
   @CreateDateColumn()
   createdAt: Date;

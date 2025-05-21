@@ -10,21 +10,22 @@ import {
   JoinColumn,
   OneToMany
 } from 'typeorm';
-import { Concert } from './concert.js';
 import { Order } from './order.js';
 import { Ticket } from './ticket.js';
+import { ConcertSession } from './concert-session.js';
+// import { Concert } from './concert.js';
 
 @Entity('ticketType')
 export class TicketType {
   @PrimaryGeneratedColumn('uuid', { name: 'ticketTypeId' })
   ticketTypeId: string;
 
-  @Column({ name: 'concertId', type: 'uuid', nullable: false })
-  concertId: string;
+  @Column({ name: 'concertSessionId', type: 'uuid', nullable: false })
+  concertSessionId: string;
 
-  @ManyToOne(() => Concert, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'concertId' })
-  concert: Concert;
+  @ManyToOne(() => ConcertSession, (session) => session.ticketTypes)
+  @JoinColumn({ name: 'concertSessionId' })
+  concertSession: ConcertSession;
 
   @Column({ type: 'varchar', length: 50, nullable: false })
   ticketTypeName: string;
@@ -38,13 +39,13 @@ export class TicketType {
   @Column({ type: 'text', nullable: true })
   ticketRefundPolicy: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   ticketTypePrice: number;
 
-  @Column({ type: 'int', nullable: false })
+  @Column({ type: 'int', nullable: true })
   totalQuantity: number;
 
-  @Column({ type: 'int', nullable: false })
+  @Column({ type: 'int', nullable: true })
   remainingQuantity: number;
 
   @Column({ type: 'timestamp', nullable: true })
@@ -61,4 +62,6 @@ export class TicketType {
   
   @OneToMany(() => Ticket, ticket => ticket.ticketType)
   tickets: Ticket[];
+
+
 } 
