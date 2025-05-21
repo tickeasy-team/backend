@@ -97,7 +97,8 @@ export class Concert {
   @Column({
     type: 'enum',
     enum: ['draft', 'published', 'finished'] as ConInfoStatus[],
-    nullable: true
+    default: 'draft',
+    nullable: false
   })
   conInfoStatus: ConInfoStatus;
 

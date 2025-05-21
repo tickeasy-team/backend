@@ -57,10 +57,10 @@ export class ConcertSession {
   @Column({
     type: 'enum',
     enum: ['draft', 'published', 'finished'] as SessionStatus[],
-    nullable: true
+    nullable: true,
+    default:'draft'
   })
   SessionStatus: SessionStatus;
-
 
   @CreateDateColumn()
   createdAt: Date;

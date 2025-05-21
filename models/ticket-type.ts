@@ -13,7 +13,7 @@ import {
 import { Order } from './order.js';
 import { Ticket } from './ticket.js';
 import { ConcertSession } from './concert-session.js';
-import { Concert } from './concert.js';
+// import { Concert } from './concert.js';
 
 @Entity('ticketType')
 export class TicketType {
@@ -63,7 +63,5 @@ export class TicketType {
   @OneToMany(() => Ticket, ticket => ticket.ticketType)
   tickets: Ticket[];
 
-  @ManyToOne(() => ConcertSession, session => session.ticketTypes, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'concertId' })
-  concert: Concert;
+
 } 
