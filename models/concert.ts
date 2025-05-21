@@ -16,7 +16,7 @@ import { Venue } from './venue.js';
 import { LocationTag } from './location-tag.js';
 import { MusicTag } from './music-tag.js';
 import { ConcertSession } from './concert-session.js';
-import { TicketType } from './ticket-type.js';
+// import { TicketType } from './ticket-type.js';
 
 export type ConInfoStatus = 'draft' | 'published' | 'finished';
 
@@ -40,21 +40,21 @@ export class Concert {
   @JoinColumn({ name: 'organizationId' })
   organization: Organization;
 
-  @Column({ name: 'venueId', type: 'uuid', nullable: false })
+  @Column({ name: 'venueId', type: 'uuid', nullable: true })
   venueId: string;
 
   @ManyToOne(() => Venue, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'venueId' })
   venue: Venue;
 
-  @Column({ name: 'locationTagId', type: 'uuid', nullable: false })
+  @Column({ name: 'locationTagId', type: 'uuid', nullable: true })
   locationTagId: string;
 
   @ManyToOne(() => LocationTag, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'locationTagId' })
   locationTag: LocationTag;
 
-  @Column({ name: 'musicTagId', type: 'uuid', nullable: false })
+  @Column({ name: 'musicTagId', type: 'uuid', nullable: true })
   musicTagId: string;
 
   @ManyToOne(() => MusicTag, { onDelete: 'RESTRICT' })
@@ -67,10 +67,10 @@ export class Concert {
   @Column({ type: 'varchar', length: 3000, nullable: true })
   conIntroduction: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   conLocation: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   conAddress: string;
 
   @Column({ type: 'date', nullable: true })
@@ -79,19 +79,19 @@ export class Concert {
   @Column({ type: 'date', nullable: true })
   eventEndDate: Date;
 
-  @Column({ type: 'varchar', length: 255, nullable: false })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   imgBanner: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: false })
-  imgSeattable: string;
+  // @Column({ type: 'varchar', length: 255, nullable: false })
+  // imgSeattable: string;
 
-  @Column({ type: 'varchar', length: 1000, nullable: false })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   ticketPurchaseMethod: string;
 
-  @Column({ type: 'varchar', length: 2000, nullable: false })
+  @Column({ type: 'varchar', length: 2000, nullable: true })
   precautions: string;
 
-  @Column({ type: 'varchar', length: 1000, nullable: false })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   refundPolicy: string;
 
   @Column({
@@ -112,7 +112,7 @@ export class Concert {
   visitCount: number; // 參觀人數
 
   @Column({ type: 'int', nullable: true })
-  promotion: number; // 權重數字？
+  promotion: number; // 權重數字
 
   @Column({ type: 'timestamp', nullable: true })
   cancelledAt: Date;
@@ -126,6 +126,6 @@ export class Concert {
   @OneToMany('ConcertSession', 'concert')
   sessions: ConcertSession[];
 
-  @OneToMany(() => TicketType, ticketType => ticketType.concert)
-  ticketTypes: TicketType[];
+  // @OneToMany(() => TicketType, ticketType => ticketType.concert)
+  // ticketTypes: TicketType[];
 } 

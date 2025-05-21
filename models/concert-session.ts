@@ -1,3 +1,4 @@
+
 /**
  * 音樂會場次模型
  */
@@ -16,6 +17,9 @@ import { TicketType } from './ticket-type';
 interface ConcertRef {
   concertId: string;
 }
+
+export type SessionStatus = 'draft' | 'published' | 'finished';
+
 
 @Entity('concertSession')
 export class ConcertSession {
@@ -46,6 +50,17 @@ export class ConcertSession {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   sessionTitle: string;
+
+  @Column({ type: 'json', nullable: true })
+  imgSeattable: string[];
+
+  @Column({
+    type: 'enum',
+    enum: ['draft', 'published', 'finished'] as SessionStatus[],
+    nullable: true
+  })
+  SessionStatus: SessionStatus;
+
 
   @CreateDateColumn()
   createdAt: Date;
