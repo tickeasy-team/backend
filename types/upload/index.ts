@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 export type UploadContext = 
   | 'USER_AVATAR'     // 使用者頭像
   | 'VENUE_PHOTO'     // 場地照片
-  | 'CONCERT_SEATTABLE'  // 音樂會座位表
+  | 'CONCERT_SEATING_TABLE'  // 音樂會座位表
   | 'CONCERT_BANNER'  // 音樂會橫幅
 /**
  * 上傳圖片服務的參數介面
