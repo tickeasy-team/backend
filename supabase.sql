@@ -62,13 +62,15 @@ CREATE TABLE "organization" (
 -- locationTag 表
 CREATE TABLE "locationTag" (
     "locationTagId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "locationTagName" character varying(50) NOT NULL
+    "locationTagName" character varying(50) NOT NULL,
+    "subLabel" character varying(50)
 );
 
 -- musicTag 表
 CREATE TABLE "musicTag" (
     "musicTagId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "musicTagName" character varying(50) NOT NULL
+    "musicTagName" character varying(50) NOT NULL,
+    "subLabel" character varying(100)
 );
 
 -- venues 表
@@ -123,7 +125,7 @@ CREATE TABLE "concertSession" (
     "sessionEnd" time without time zone,
     "sessionTitle" character varying(100),
     "imgSeattable" json,
-    "createdAt" timestamp without time zone NOT NULL DEFAULT now(),
+    "createdAt" timestamp without time zone NOT NULL DEFAULT now()
 );
 
 -- ticketType 表
@@ -210,6 +212,8 @@ ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_orderId" FOREIGN KEY ("orderId") 
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_ticketTypeId" FOREIGN KEY ("ticketTypeId") REFERENCES "ticketType"("ticketTypeId");
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
 ALTER TABLE "payment" ADD CONSTRAINT "FK_payment_orderId" FOREIGN KEY ("orderId") REFERENCES "order"("orderId");
+-- ALTER TABLE "musicTag" ADD COLUMN "subLabel" character varying(100);
+-- ALTER TABLE "locationTag" ADD COLUMN "subLabel" character varying(50);
 
 -- 創建 索引 (除了主鍵和唯一約束自帶的索引外)
 CREATE INDEX "IDX_users_role" ON "users" ("role");
