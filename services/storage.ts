@@ -33,7 +33,7 @@ function getBucketName(uploadContext: UploadContext): string {
       return 'avatar';
     case 'VENUE_PHOTO':
       return 'venue';
-    case 'CONCERT_SEATTABLE':
+    case 'CONCERT_SEATING_TABLE':
     case 'CONCERT_BANNER':
       return 'concert';
     default:
@@ -57,7 +57,7 @@ function getStoragePath(uploadContext: UploadContext, targetId: string | number 
       return `${targetId}/${fileName}`;
     case 'VENUE_PHOTO':
       return `${targetId}/${fileName}`;
-    case 'CONCERT_SEATTABLE':
+    case 'CONCERT_SEATING_TABLE':
       return `${targetId}/seatTable/${fileName}`;
     case 'CONCERT_BANNER':
       return `${targetId}/banner/${fileName}`;

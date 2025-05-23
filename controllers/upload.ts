@@ -206,11 +206,11 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     // 6. 回傳成功回應
     let responseData: any;
     if (uploadContext === 'CONCERT_SEATING_TABLE') {
-      // 座位表圖片：返回陣列格式
-      responseData = uploadResults.map(r => ({ url: r.url, path: r.path }));
+      // 座位表圖片：返回 URL 陣列格式
+      responseData = uploadResults.map(r => r.url);
     } else {
-      // 其他類型圖片：返回單一物件格式
-      responseData = { url: uploadResults[0].url, path: uploadResults[0].path };
+      // 其他類型圖片：返回單一 URL 格式
+      responseData = uploadResults[0].url;
     }
     
     res.status(200).json({
@@ -226,24 +226,34 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
 
 /**
  * 刪除圖片
- * 刪除特定路徑的圖片
+ * 刪除特定 URL 的圖片
  */
 async function deleteImage(req: Request, res: Response, next: NextFunction) {
   try {
-    const { path, paths, uploadContext } = req.body;
+    const { url, urls, uploadContext } = req.body;
     let targetIdFromBody = req.body.targetId; // 僅在非 USER_AVATAR 時需要
     const userIdFromToken = (req.user as any)?.userId;
     
     // 驗證
-    if (!path && (!Array.isArray(paths) || paths.length === 0)) {
-      return next(createHttpError(400, '缺少必要的 \'path\' 或 \'paths\' 欄位'));
+    if (!url && (!Array.isArray(urls) || urls.length === 0)) {
+      return next(createHttpError(400, '缺少必要的 \'url\' 或 \'urls\' 欄位'));
     }
     if (!uploadContext) {
       return next(createHttpError(400, '缺少必要的 \'uploadContext\' 欄位'));
     }
     
-    // 統一處理為路徑陣列
-    const pathsToDelete: string[] = path ? [path] : (paths as string[]);
+    // 統一處理為 URL 陣列
+    const urlsToDelete: string[] = url ? [url] : (urls as string[]);
+    
+    // 將 URL 轉換為 path
+    const pathsToDelete: string[] = [];
+    for (const urlToDelete of urlsToDelete) {
+      const path = getStoragePathFromUrl(urlToDelete);
+      if (!path) {
+        return next(createHttpError(400, `無法從 URL 解析出檔案路徑: ${urlToDelete}`));
+      }
+      pathsToDelete.push(path);
+    }
     
     // 確定目標 ID 和權限檢查
     let effectiveTargetId: string | number | undefined;
