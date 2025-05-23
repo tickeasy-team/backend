@@ -1,15 +1,15 @@
 /**
  * 音樂會模型
  */
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  OneToMany
+  OneToMany,
 } from 'typeorm';
 import { Organization } from './organization.js';
 import { Venue } from './venue.js';
@@ -25,7 +25,7 @@ export enum ReviewStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
-  SKIPPED = 'skipped'
+  SKIPPED = 'skipped',
 }
 
 @Entity('concert')
@@ -43,7 +43,7 @@ export class Concert {
   @Column({ name: 'venueId', type: 'uuid', nullable: true })
   venueId: string;
 
-  @ManyToOne(() => Venue, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne(() => Venue, { nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'venueId' })
   venue: Venue;
 
@@ -70,7 +70,7 @@ export class Concert {
   @Column({ type: 'varchar', length: 50, nullable: true })
   conLocation: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 200, nullable: true })
   conAddress: string;
 
   @Column({ type: 'date', nullable: true })
@@ -81,9 +81,6 @@ export class Concert {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   imgBanner: string;
-
-  // @Column({ type: 'varchar', length: 255, nullable: false })
-  // imgSeattable: string;
 
   @Column({ type: 'varchar', length: 1000, nullable: true })
   ticketPurchaseMethod: string;
@@ -98,14 +95,14 @@ export class Concert {
     type: 'enum',
     enum: ['draft', 'published', 'finished'] as ConInfoStatus[],
     default: 'draft',
-    nullable: false
+    nullable: false,
   })
   conInfoStatus: ConInfoStatus;
 
   @Column({
     type: 'enum',
     enum: ReviewStatus,
-    default: ReviewStatus.SKIPPED
+    default: ReviewStatus.SKIPPED,
   })
   reviewStatus: ReviewStatus;
 
@@ -124,9 +121,16 @@ export class Concert {
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToMany('ConcertSession', 'concert')
+  @OneToMany(() => ConcertSession, (session) => session.concert, {
+    cascade: true, // 建立 Concert 時自動建立 sessions
+    onDelete: 'CASCADE', // 刪除會連動刪除
+    eager: true, // 取資料時會自動帶入
+  })
   sessions: ConcertSession[];
 
   // @OneToMany(() => TicketType, ticketType => ticketType.concert)
   // ticketTypes: TicketType[];
-} 
+
+  // @Column({ type: 'varchar', length: 255, nullable: false })
+  // imgSeattable: string;
+}

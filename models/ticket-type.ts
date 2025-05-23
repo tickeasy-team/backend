@@ -1,14 +1,14 @@
 /**
  * 票種模型
  */
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
-  OneToMany
+  OneToMany,
 } from 'typeorm';
 import { Order } from './order.js';
 import { Ticket } from './ticket.js';
@@ -23,7 +23,10 @@ export class TicketType {
   @Column({ name: 'concertSessionId', type: 'uuid', nullable: false })
   concertSessionId: string;
 
-  @ManyToOne(() => ConcertSession, (session) => session.ticketTypes)
+  @ManyToOne(() => ConcertSession, (session) => session.ticketTypes, {
+    nullable: false,
+    onDelete: 'CASCADE', // 刪除場次時也刪掉票種
+  })
   @JoinColumn({ name: 'concertSessionId' })
   concertSession: ConcertSession;
 
@@ -56,12 +59,12 @@ export class TicketType {
 
   @CreateDateColumn({ nullable: false })
   createdAt: Date;
-  
-  @OneToMany(() => Order, order => order.ticketType)
+
+  @OneToMany(() => Order, (order) => order.ticketType)
   orders: Order[];
-  
-  @OneToMany(() => Ticket, ticket => ticket.ticketType)
+
+  @OneToMany(() => Ticket, (ticket) => ticket.ticketType, {
+    cascade: false, // 不要同時建立票券
+  })
   tickets: Ticket[];
-
-
-} 
+}
