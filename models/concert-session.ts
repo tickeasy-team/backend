@@ -1,25 +1,19 @@
-
 /**
  * 音樂會場次模型
  */
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
-  OneToMany
+  OneToMany,
 } from 'typeorm';
 import { TicketType } from './ticket-type';
+import { Concert } from './concert';
 
-// 避免直接導入 Concert 類型，使用接口代替
-interface ConcertRef {
-  concertId: string;
-}
-
-export type SessionStatus = 'draft' | 'published' | 'finished';
-
+// export type SessionStatus = 'draft' | 'published' | 'finished';
 
 @Entity('concertSession')
 export class ConcertSession {
@@ -29,20 +23,22 @@ export class ConcertSession {
   @Column({ name: 'concertId', type: 'uuid', nullable: false })
   concertId: string;
 
-  @ManyToOne('Concert', 'sessions', { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Concert, (concert) => concert.sessions, {
+    nullable: false,
+    onDelete: 'CASCADE', // 刪除音樂會時也刪掉場次
+  })
   @JoinColumn({ name: 'concertId' })
-  concert: ConcertRef;
+  concert: Concert;
 
   @OneToMany(() => TicketType, (ticketType) => ticketType.concertSession, {
-    cascade: true,
+    cascade: true, // 建立 session 時可同時建立 ticketTypes
   })
   ticketTypes: TicketType[];
-  
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   sessionDate: Date;
 
-  @Column({ type: 'time' })
+  @Column({ type: 'time', nullable: true })
   sessionStart: string;
 
   @Column({ type: 'time', nullable: true })
@@ -52,16 +48,8 @@ export class ConcertSession {
   sessionTitle: string;
 
   @Column({ type: 'json', nullable: true })
-  imgSeattable: string[];
-
-  @Column({
-    type: 'enum',
-    enum: ['draft', 'published', 'finished'] as SessionStatus[],
-    nullable: true,
-    default:'draft'
-  })
-  SessionStatus: SessionStatus;
+  imgSeattable: any;
 
   @CreateDateColumn()
   createdAt: Date;
-} 
+}
