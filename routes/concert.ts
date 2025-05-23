@@ -5,11 +5,9 @@ import { isAuthenticated } from '../middlewares/auth.js';
 const router = express.Router();
 
 // 新增活動
-router.post(
-    '/',
-    isAuthenticated,
-    concertController.createConcert
-);
+router.post('/', isAuthenticated, concertController.createConcert);
+
+/**暫時關掉
 
 // 修改活動（僅限草稿）
 router.put(
@@ -36,7 +34,6 @@ router.get('/search', concertController.searchConcerts);
 
 // 獲得首頁promo的banner
 router.get('/banners', concertController.getBannerConcerts);
-
-
+ */
 
 export default router;

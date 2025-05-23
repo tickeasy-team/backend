@@ -48,7 +48,7 @@ export class ConcertSession {
   sessionTitle: string;
 
   @Column({ type: 'json', nullable: true })
-  imgSeattable: string[];
+  imgSeattable: any;
 
   @CreateDateColumn()
   createdAt: Date;

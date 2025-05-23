@@ -130,7 +130,4 @@ export class Concert {
 
   // @OneToMany(() => TicketType, ticketType => ticketType.concert)
   // ticketTypes: TicketType[];
-
-  // @Column({ type: 'varchar', length: 255, nullable: false })
-  // imgSeattable: string;
 }
