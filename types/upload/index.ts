@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 export type UploadContext = 
   | 'USER_AVATAR'     // 使用者頭像
   | 'VENUE_PHOTO'     // 場地照片
-  | 'CONCERT_SEATTABLE'  // 音樂會座位表
+  | 'CONCERT_SEATING_TABLE'  // 音樂會座位表
   | 'CONCERT_BANNER'  // 音樂會橫幅
 
 /**
@@ -23,8 +23,7 @@ export interface UploadImageParams {
   originalName: string;     // 原始檔案名稱
   mimetype: string;         // 檔案MIME類型
   uploadContext: UploadContext; // 上傳上下文
-  targetId?: string | number;   // 目標ID (使用者ID, 音樂會ID等)，臨時上傳時可為空
-  isTemporary?: boolean;    // 是否為臨時上傳，不與特定實體關聯
+  targetId?: string | number;    // 目標ID (使用者ID, 音樂會ID等)，暫存模式下可為空
   userId?: string | number;     // 上傳者ID (可選，用於權限驗證)
   options?: {
     maxWidth?: number;      // 最大寬度 (像素)
