@@ -62,8 +62,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/organizations', organizationRouter);
 app.use('/api/v1/upload', uploadRouter);
-app.use('/api/v1/concert', concertRoute);
-app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/concerts', concertRoute);
 
 
 // 註冊錯誤處理中間件
