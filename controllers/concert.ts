@@ -12,6 +12,7 @@ import {
 } from './../types/concert/index.js';
 import { ErrorCode } from '../types/api.js';
 import { ConcertSession } from '../models/concert-session.js';
+import { Venue } from '../models/venue.js';
 
 /**
  * INDEX
@@ -55,11 +56,11 @@ export const createConcert = handleErrorAsync(
 
     // 是否為草稿狀態
     const isDraft = conInfoStatus === 'draft';
+    // 草稿後端不驗證
 
     // --- 基本驗證 ---
     // 驗證活動
     if (!isDraft) {
-      // 草稿後端不驗證
       if (
         !organizationId ||
         !venueId ||
@@ -155,7 +156,7 @@ export const createConcert = handleErrorAsync(
     }
 
     // 建立concert
-    const newConcert = concertRepository.create({
+    const concertData: Partial<Concert> = {
       organizationId,
       venueId,
       locationTagId,
@@ -164,14 +165,15 @@ export const createConcert = handleErrorAsync(
       conIntroduction: introduction ?? '',
       conLocation: location ?? '',
       conAddress: address ?? '',
-      eventStartDate: new Date(eventStartDate ?? ''),
-      eventEndDate: new Date(eventEndDate ?? ''),
+      eventStartDate: eventStartDate ? new Date(eventStartDate) : undefined,
+      eventEndDate: eventEndDate ? new Date(eventEndDate) : undefined,
       imgBanner,
       ticketPurchaseMethod,
       precautions,
       refundPolicy,
       conInfoStatus,
-    });
+    };
+    const newConcert = concertRepository.create(concertData);
     const savedConcert = await concertRepository.save(newConcert);
 
     // 建立 sessions 跟 ticketTypes
@@ -183,9 +185,7 @@ export const createConcert = handleErrorAsync(
         sessionDate: new Date(session.sessionDate),
         sessionStart: session.sessionStart,
         sessionEnd: session.sessionEnd,
-        imgSeattable: Array.isArray(session.imgSeattable)
-          ? session.imgSeattable
-          : [],
+        imgSeattable:session.imgSeattable
       });
       const savedSession = await sessionRepository.save(sessionEntity);
 
@@ -202,9 +202,9 @@ export const createConcert = handleErrorAsync(
           sellBeginDate: new Date(ticket.sellBeginDate),
           sellEndDate: new Date(ticket.sellEndDate),
         })
+        
       );
       const savedTickets = await ticketTypeRepository.save(ticketEntities);
-
       savedSessions.push({
         sessionId: savedSession.sessionId,
         sessionTitle: savedSession.sessionTitle,
@@ -227,6 +227,7 @@ export const createConcert = handleErrorAsync(
       });
     }
 
+
     // 成功！
     res.status(201).json({
       status: 'success',
@@ -242,8 +243,8 @@ export const createConcert = handleErrorAsync(
           conIntroduction: savedConcert.conIntroduction,
           conLocation: savedConcert.conLocation,
           conAddress: savedConcert.conAddress,
-          eventStartDate: savedConcert.eventStartDate?.toISOString() ?? null,
-          eventEndDate: savedConcert.eventEndDate?.toISOString() ?? null,
+          eventStartDate: savedConcert.eventStartDate?.toISOString() ?? undefined,
+          eventEndDate: savedConcert.eventEndDate?.toISOString() ?? undefined,
           imgBanner: savedConcert.imgBanner,
           ticketPurchaseMethod: savedConcert.ticketPurchaseMethod,
           precautions: savedConcert.precautions,
@@ -262,7 +263,7 @@ export const createConcert = handleErrorAsync(
   }
 );
 
-/**暫時關掉
+
 // ------------2. 修改活動-------------
 export const updateConcert = handleErrorAsync(
   async (req: Request, res: Response<ConcertResponse>) => {
@@ -289,17 +290,16 @@ export const updateConcert = handleErrorAsync(
       refundPolicy,
       conInfoStatus,
       imgBanner,
-      imgSeattable,
-      ticketTypes,
+      sessions,
     } = req.body as CreateConcertRequest;
 
     const concertRepository = AppDataSource.getRepository(Concert);
+    const sessionRepository = AppDataSource.getRepository(ConcertSession);
     const ticketTypeRepository = AppDataSource.getRepository(TicketType);
 
-    const concert = await concertRepository.findOne({
-      where: { concertId },
-    });
-
+    // const concert = await concertRepository.findOneBy({ concertId });
+    const concert = await concertRepository.findOne({ where: { concertId } });
+    
     if (!concert) {
       throw ApiError.notFound('演唱會不存在');
     }
@@ -310,7 +310,7 @@ export const updateConcert = handleErrorAsync(
 
     const isDraft = conInfoStatus === 'draft';
 
-    // ---------- 驗證活動主資料 ----------
+    // ---------- 驗證主資料 ----------
     if (!isDraft) {
       if (
         !organizationId ||
@@ -331,54 +331,21 @@ export const updateConcert = handleErrorAsync(
         throw ApiError.fieldRequired('所有欄位');
       }
 
-      if (!imgBanner || !imgSeattable) {
-        throw ApiError.fieldRequired('主視覺與座位圖');
+      if (!imgBanner) {
+        throw ApiError.fieldRequired('主視覺');
       }
 
       const startDate = new Date(eventStartDate);
       const endDate = new Date(eventEndDate);
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw ApiError.invalidFormat('活動開始與結束日期');
+        throw ApiError.invalidFormat('活動日期格式錯誤');
       }
       if (startDate >= endDate) {
-        throw ApiError.invalidFormat('活動結束時間必須晚於開始時間');
+        throw ApiError.invalidFormat('結束時間需晚於開始時間');
       }
     }
 
-    // ---------- 驗證票種 ----------
-    if (!isDraft) {
-      if (!Array.isArray(ticketTypes) || ticketTypes.length === 0) {
-        throw ApiError.fieldRequired('至少需要一種票種');
-      }
-
-      for (const ticket of ticketTypes) {
-        if (
-          !ticket.ticketTypeName ||
-          !ticket.entranceType ||
-          !ticket.ticketBenefits ||
-          !ticket.ticketRefundPolicy ||
-          typeof ticket.ticketTypePrice !== 'number' ||
-          ticket.ticketTypePrice < 0 ||
-          typeof ticket.totalQuantity !== 'number' ||
-          ticket.totalQuantity <= 0 ||
-          !ticket.sellBeginDate ||
-          !ticket.sellEndDate
-        ) {
-          throw ApiError.invalidFormat('票種資料格式錯誤');
-        }
-
-        const sellStart = new Date(ticket.sellBeginDate);
-        const sellEnd = new Date(ticket.sellEndDate);
-        if (isNaN(sellStart.getTime()) || isNaN(sellEnd.getTime())) {
-          throw ApiError.invalidFormat('票種售票開始與結束日期格式錯誤');
-        }
-        if (sellStart >= sellEnd) {
-          throw ApiError.invalidFormat('售票結束時間必須晚於開始時間');
-        }
-      }
-    }
-
-    // ---------- 更新演唱會 ----------
+    // ---------- 更新主資料 ----------
     concert.organizationId = organizationId;
     concert.venueId = venueId;
     concert.locationTagId = locationTagId;
@@ -387,43 +354,105 @@ export const updateConcert = handleErrorAsync(
     concert.conIntroduction = introduction ?? '';
     concert.conLocation = location ?? '';
     concert.conAddress = address ?? '';
-    if (eventStartDate) {
-      concert.eventStartDate = new Date(eventStartDate);
-    }
-    if (eventEndDate) {
-      concert.eventEndDate = new Date(eventEndDate);
-    }
+    concert.eventStartDate = eventStartDate ? new Date(eventStartDate) : null;
+    concert.eventEndDate = eventEndDate ? new Date(eventEndDate) : null;
     concert.ticketPurchaseMethod = ticketPurchaseMethod;
     concert.precautions = precautions;
     concert.refundPolicy = refundPolicy;
     concert.conInfoStatus = conInfoStatus;
     concert.imgBanner = imgBanner;
-    concert.imgSeattable = imgSeattable;
 
     await concertRepository.save(concert);
 
-    let savedTicketTypes: TicketType[] = [];
+    // ---------- 刪除並重建 sessions ----------
+    await sessionRepository.delete({ concert: { concertId } });
 
-    // ---------- 刪除舊票種並建立新票種 ----------
+    const savedSessions: ConcertSessionResponse[] = [];
+    for (const session of sessions) {
+      if (!isDraft) {
+        if (
+          !session.sessionTitle ||
+          !session.sessionDate ||
+          !session.sessionStart ||
+          !session.sessionEnd ||
+          !session.imgSeattable ||
+          !Array.isArray(session.ticketTypes)
+        ) {
+          throw ApiError.invalidFormat('場次格式錯誤');
+        }
+      }
 
-    await ticketTypeRepository.delete({ concert: { concertId } });
-
-    const ticketTypeEntities = ticketTypes.map((ticket) =>
-      ticketTypeRepository.create({
+      const sessionEntity = sessionRepository.create({
         concert,
-        ticketTypeName: ticket.ticketTypeName,
-        entranceType: ticket.entranceType,
-        ticketBenefits: ticket.ticketBenefits,
-        ticketRefundPolicy: ticket.ticketRefundPolicy,
-        ticketTypePrice: ticket.ticketTypePrice,
-        totalQuantity: ticket.totalQuantity,
-        remainingQuantity: ticket.totalQuantity,
-        sellBeginDate: new Date(ticket.sellBeginDate),
-        sellEndDate: new Date(ticket.sellEndDate),
-      })
-    );
+        sessionTitle: session.sessionTitle,
+        sessionDate: new Date(session.sessionDate),
+        sessionStart: session.sessionStart,
+        sessionEnd: session.sessionEnd,
+        imgSeattable: session.imgSeattable,
+      });
+      const savedSession = await sessionRepository.save(sessionEntity);
 
-    savedTicketTypes = await ticketTypeRepository.save(ticketTypeEntities);
+      const ticketEntities = session.ticketTypes?.map((ticket) => {
+        if (!isDraft) {
+          if (
+            !ticket.ticketTypeName ||
+            !ticket.entranceType ||
+            !ticket.ticketBenefits ||
+            !ticket.ticketRefundPolicy ||
+            typeof ticket.ticketTypePrice !== 'number' ||
+            ticket.ticketTypePrice < 0 ||
+            typeof ticket.totalQuantity !== 'number' ||
+            ticket.totalQuantity <= 0 ||
+            !ticket.sellBeginDate ||
+            !ticket.sellEndDate
+          ) {
+            throw ApiError.invalidFormat('票種格式錯誤');
+          }
+
+          const sellStart = new Date(ticket.sellBeginDate);
+          const sellEnd = new Date(ticket.sellEndDate);
+          if (sellStart >= sellEnd) {
+            throw ApiError.invalidFormat('售票結束需晚於開始');
+          }
+        }
+
+        return ticketTypeRepository.create({
+          concertSession: savedSession,
+          ticketTypeName: ticket.ticketTypeName,
+          entranceType: ticket.entranceType,
+          ticketBenefits: ticket.ticketBenefits,
+          ticketRefundPolicy: ticket.ticketRefundPolicy,
+          ticketTypePrice: ticket.ticketTypePrice,
+          totalQuantity: ticket.totalQuantity,
+          remainingQuantity: ticket.totalQuantity,
+          sellBeginDate: new Date(ticket.sellBeginDate),
+          sellEndDate: new Date(ticket.sellEndDate),
+        });
+      }) ?? [];
+
+      const savedTickets = await ticketTypeRepository.save(ticketEntities);
+
+      savedSessions.push({
+        sessionId: savedSession.sessionId,
+        sessionTitle: savedSession.sessionTitle,
+        sessionDate: savedSession.sessionDate.toISOString(),
+        sessionStart: savedSession.sessionStart,
+        sessionEnd: savedSession.sessionEnd,
+        imgSeattable: savedSession.imgSeattable,
+        ticketTypes: savedTickets.map((ticket) => ({
+          ticketTypeId: ticket.ticketTypeId,
+          ticketTypeName: ticket.ticketTypeName,
+          entranceType: ticket.entranceType,
+          ticketBenefits: ticket.ticketBenefits,
+          ticketRefundPolicy: ticket.ticketRefundPolicy,
+          ticketTypePrice: ticket.ticketTypePrice,
+          totalQuantity: ticket.totalQuantity,
+          remainingQuantity: ticket.remainingQuantity,
+          sellBeginDate: ticket.sellBeginDate.toISOString(),
+          sellEndDate: ticket.sellEndDate.toISOString(),
+        })),
+      });
+    }
 
     res.status(200).json({
       status: 'success',
@@ -439,37 +468,26 @@ export const updateConcert = handleErrorAsync(
           conIntroduction: concert.conIntroduction,
           conLocation: concert.conLocation,
           conAddress: concert.conAddress,
-          eventStartDate: concert.eventStartDate,
-          eventEndDate: concert.eventEndDate,
+          eventStartDate: concert.eventStartDate?.toISOString() ?? undefined,
+          eventEndDate: concert.eventEndDate?.toISOString() ?? undefined,
           imgBanner: concert.imgBanner,
-          imgSeattable: concert.imgSeattable,
           ticketPurchaseMethod: concert.ticketPurchaseMethod,
           precautions: concert.precautions,
           refundPolicy: concert.refundPolicy,
           conInfoStatus: concert.conInfoStatus,
           reviewStatus: concert.reviewStatus,
           visitCount: concert.visitCount,
-          promotion: concert.promotion,
-          cancelledAt: concert.cancelledAt,
-          createdAt: concert.createdAt,
-          updatedAt: concert.updatedAt,
+          promotion: concert.promotion ?? 0,
+          cancelledAt: concert.cancelledAt?.toISOString() ?? null,
+          createdAt: concert.createdAt.toISOString(),
+          updatedAt: concert.updatedAt.toISOString(),
+          sessions: savedSessions,
         },
-        ticketTypes: savedTicketTypes.map((ticket) => ({
-          ticketTypeId: ticket.ticketTypeId,
-          ticketTypeName: ticket.ticketTypeName,
-          entranceType: ticket.entranceType,
-          ticketBenefits: ticket.ticketBenefits,
-          ticketRefundPolicy: ticket.ticketRefundPolicy,
-          ticketTypePrice: ticket.ticketTypePrice,
-          totalQuantity: ticket.totalQuantity,
-          remainingQuantity: ticket.remainingQuantity,
-          sellBeginDate: ticket.sellBeginDate.toISOString(),
-          sellEndDate: ticket.sellEndDate.toISOString(),
-        })),
       },
     });
   }
 );
+
 
 // ------------3. 獲得場地的資料-------------
 export const getAllVenues = handleErrorAsync(
@@ -483,6 +501,8 @@ export const getAllVenues = handleErrorAsync(
     });
   }
 );
+
+/**
 
 // ------------4. 取得熱門活動-------------
 // 取得熱門活動, 首頁

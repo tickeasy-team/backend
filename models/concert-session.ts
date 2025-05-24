@@ -36,19 +36,19 @@ export class ConcertSession {
   ticketTypes: TicketType[];
 
   @Column({ type: 'date', nullable: true })
-  sessionDate: Date;
+  sessionDate: Date; // yyyy-mm-dd
 
   @Column({ type: 'time', nullable: true })
-  sessionStart: string;
+  sessionStart: string; // HH:mm
 
   @Column({ type: 'time', nullable: true })
-  sessionEnd: string;
+  sessionEnd: string; // HH:mm
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   sessionTitle: string;
 
-  @Column({ type: 'json', nullable: true })
-  imgSeattable: any;
+  @Column({ type: 'text', nullable: true })
+  imgSeattable: string; // 只會有一張
 
   @CreateDateColumn()
   createdAt: Date;
