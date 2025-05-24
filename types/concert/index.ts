@@ -130,3 +130,28 @@ export interface ConcertsResponse
       limit: number;
     };
   }> {}
+
+/**
+ * 獲取組織音樂會列表的查詢參數
+ */
+export interface GetConcertsByOrganizationQuery {
+  status?: 'draft' | 'published' | 'finished';
+  limit?: string | number;
+  page?: string | number;
+  sort?: string; // 格式：field:direction,field2:direction (例：eventStartDate:DESC,createdAt:ASC)
+}
+
+/**
+ * 允許排序的欄位清單
+ */
+export const VALID_SORT_FIELDS = [
+  'eventStartDate',
+  'eventEndDate',
+  'createdAt',
+  'updatedAt',
+  'conTitle',
+  'visitCount',
+  'promotion'
+] as const;
+
+export type ValidSortField = typeof VALID_SORT_FIELDS[number];

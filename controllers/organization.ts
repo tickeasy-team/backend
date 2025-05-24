@@ -13,7 +13,7 @@ import { ErrorCode, ApiResponse } from '../types/api.js';
 
 import { Not } from 'typeorm';
 import { Concert } from '../models/concert.js';
-import { ConcertsResponse } from '../types/concert/index.js';
+import { ConcertsResponse, VALID_SORT_FIELDS } from '../types/concert/index.js';
 
 // 獲取當前用戶擁有的所有組織
 export const getAllOrganizations = handleErrorAsync(
@@ -381,7 +381,7 @@ export const getConcertsByOrganization = handleErrorAsync(
 
     // 組合 where 條件
     const where: any = { organizationId };
-    if (status) where.reviewStatus = status;
+    if (status) where.conInfoStatus = status;
 
     // 組合排序
     let order: any = {};
@@ -391,8 +391,10 @@ export const getConcertsByOrganization = handleErrorAsync(
         .split(',')
         .forEach((s: string) => {
           const [field, dir] = s.split(':');
-          if (field)
+          // 驗證排序欄位是否有效
+          if (field && VALID_SORT_FIELDS.includes(field as any)) {
             order[field] = dir?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+          }
         });
     } else {
       order = { eventStartDate: 'DESC' };
@@ -410,30 +412,12 @@ export const getConcertsByOrganization = handleErrorAsync(
       order,
       skip,
       take,
-      select: [
-        'concertId',
-        'organizationId',
-        'venueId',
-        'locationTagId',
-        'musicTagId',
-        'conTitle',
-        'conIntroduction',
-        'conLocation',
-        'conAddress',
-        'eventStartDate',
-        'eventEndDate',
-        'imgBanner',
-        // 'imgSeattable',
-        'ticketPurchaseMethod',
-        'precautions',
-        'refundPolicy',
-        'conInfoStatus',
-        'reviewStatus',
-        'visitCount',
-        'promotion',
-        'cancelledAt',
-        'createdAt',
-        'updatedAt',
+      relations: [
+        'sessions',
+        'sessions.ticketTypes',
+        'venue',
+        'locationTag',
+        'musicTag'
       ],
     });
 
@@ -453,8 +437,12 @@ export const getConcertsByOrganization = handleErrorAsync(
           conIntroduction: concert.conIntroduction,
           conLocation: concert.conLocation,
           conAddress: concert.conAddress,
-          eventStartDate: concert.eventStartDate?.toISOString() ?? null,
-          eventEndDate: concert.eventEndDate?.toISOString() ?? null,
+          eventStartDate: concert.eventStartDate ? 
+            (concert.eventStartDate instanceof Date ? concert.eventStartDate.toISOString() : concert.eventStartDate) 
+            : undefined,
+          eventEndDate: concert.eventEndDate ? 
+            (concert.eventEndDate instanceof Date ? concert.eventEndDate.toISOString() : concert.eventEndDate) 
+            : undefined,
           imgBanner: concert.imgBanner,
           ticketPurchaseMethod: concert.ticketPurchaseMethod,
           precautions: concert.precautions,
@@ -463,10 +451,31 @@ export const getConcertsByOrganization = handleErrorAsync(
           reviewStatus: concert.reviewStatus,
           visitCount: concert.visitCount,
           promotion: concert.promotion ?? 0,
-          cancelledAt: concert.cancelledAt?.toISOString() ?? null,
+          cancelledAt: concert.cancelledAt ? 
+            (concert.cancelledAt instanceof Date ? concert.cancelledAt.toISOString() : concert.cancelledAt) 
+            : undefined,
           createdAt: concert.createdAt.toISOString(),
           updatedAt: concert.updatedAt.toISOString(),
-          sessions: [], // 如果不包含 sessions，可以給空陣列（符合型別）
+          sessions: concert.sessions?.map(session => ({
+            sessionId: session.sessionId,
+            sessionTitle: session.sessionTitle,
+            sessionDate: new Date(session.sessionDate).toISOString(),
+            sessionStart: session.sessionStart,
+            sessionEnd: session.sessionEnd,
+            imgSeattable: session.imgSeattable,
+            ticketTypes: session.ticketTypes?.map(ticket => ({
+              ticketTypeId: ticket.ticketTypeId,
+              ticketTypeName: ticket.ticketTypeName,
+              entranceType: ticket.entranceType,
+              ticketBenefits: ticket.ticketBenefits,
+              ticketRefundPolicy: ticket.ticketRefundPolicy,
+              ticketTypePrice: ticket.ticketTypePrice,
+              totalQuantity: ticket.totalQuantity,
+              remainingQuantity: ticket.remainingQuantity,
+              sellBeginDate: new Date(ticket.sellBeginDate).toISOString(),
+              sellEndDate: new Date(ticket.sellEndDate).toISOString(),
+            })) || []
+          })) || []
         })),
 
         pagination: {
