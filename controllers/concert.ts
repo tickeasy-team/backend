@@ -55,11 +55,11 @@ export const createConcert = handleErrorAsync(
 
     // 是否為草稿狀態
     const isDraft = conInfoStatus === 'draft';
+    // 草稿後端不驗證
 
     // --- 基本驗證 ---
     // 驗證活動
     if (!isDraft) {
-      // 草稿後端不驗證
       if (
         !organizationId ||
         !venueId ||
@@ -183,9 +183,7 @@ export const createConcert = handleErrorAsync(
         sessionDate: new Date(session.sessionDate),
         sessionStart: session.sessionStart,
         sessionEnd: session.sessionEnd,
-        imgSeattable: Array.isArray(session.imgSeattable)
-          ? session.imgSeattable
-          : [],
+        imgSeattable:session.imgSeattable
       });
       const savedSession = await sessionRepository.save(sessionEntity);
 

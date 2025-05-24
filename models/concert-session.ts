@@ -47,8 +47,8 @@ export class ConcertSession {
   @Column({ type: 'varchar', length: 100, nullable: true })
   sessionTitle: string;
 
-  @Column({ type: 'json', nullable: true })
-  imgSeattable: any;
+  @Column({ type: 'text', nullable: true })
+  imgSeattable: string; // 只會有一張
 
   @CreateDateColumn()
   createdAt: Date;

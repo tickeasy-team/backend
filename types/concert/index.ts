@@ -24,7 +24,7 @@ export interface Session {
   sessionStart: string; // HH:mm
   sessionEnd: string; // HH:mm
   sessionTitle: string;
-  imgSeattable: string[];
+  imgSeattable: string; // 只有一張
   ticketTypes: TicketType[]; // 每場次多張票
 }
 
@@ -58,7 +58,7 @@ export interface ConcertSessionResponse {
   sessionDate: string;
   sessionStart: string;
   sessionEnd: string;
-  imgSeattable: string[];
+  imgSeattable: string;
   ticketTypes: TicketTypeResponse[];
 }
 
