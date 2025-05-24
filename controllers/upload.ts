@@ -63,10 +63,11 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     const singleFile = files?.file?.[0];
     
     const { uploadContext } = req.body;
-    let targetIdFromBody = req.body.targetId; // 可能為空，表示臨時上傳模式
+    let targetIdFromBody = req.body.targetId; // 可能為空，表示暫存上傳模式
     const userIdFromToken = (req.user as any)?.userId;
     const userRoleFromToken = (req.user as any)?.role; // 取得 user role
-    const isTempUpload = req.body.isTemp === 'true' || req.body.isTemp === true; // 是否為暫存上傳
+    // 自動判斷 isTemp：沒帶 targetId 就是暫存
+    const isTempUpload = !targetIdFromBody;
     
     // 2. 驗證請求參數
     // 2.1 驗證是否有檔案（統一使用單檔案模式）
@@ -97,47 +98,34 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     let sessionToUpdate: ConcertSession | null = null;
     let oldImageUrls: string | string[] | null | undefined = null; // 用於存儲待刪除的舊圖片 URL(s)
     
-    // 暫存模式不需要 targetId
+    // 沒帶 targetId 一律當作暫存上傳
     if (isTempUpload) {
-      console.log('暫存上傳模式，不需要 targetId');
       effectiveTargetId = undefined;
-    }
-    // 非暫存模式下的處理邏輯
-    else if (uploadContext === 'USER_AVATAR') {
+    } else if (uploadContext === 'USER_AVATAR') {
       if (!userIdFromToken) return next(createHttpError(401, '用戶未經驗證'));
       effectiveTargetId = userIdFromToken;
       const userRepository = AppDataSource.getRepository(User);
       userToUpdate = await userRepository.findOne({ where: { userId: String(effectiveTargetId) } });
       if (!userToUpdate) return next(createHttpError(404, '找不到用戶'));
       oldImageUrls = userToUpdate.avatar;
-    } else if (uploadContext === 'VENUE_PHOTO' && !isTempUpload) {
-      // 非暫存模式下，只允許 admin 上傳，且需要 targetId
+    } else if (uploadContext === 'VENUE_PHOTO') {
       if (userRoleFromToken !== 'admin') {
         return next(createHttpError(403, '僅限管理員上傳場館圖片'));
       }
-      if (!targetIdFromBody) {
-        return next(createHttpError(400, `缺少必要的 'targetId' 欄位 (針對 ${uploadContext})`));
-      }
       effectiveTargetId = targetIdFromBody;
     } else if (uploadContext === 'CONCERT_SEATING_TABLE') {
-      // 座位表圖片：需要 sessionId 而不是 concertId
-      if (!targetIdFromBody) return next(createHttpError(400, `缺少必要的 'targetId' 欄位 (針對 ${uploadContext})，請提供 sessionId`));
       effectiveTargetId = targetIdFromBody;
       const sessionRepository = AppDataSource.getRepository(ConcertSession);
       sessionToUpdate = await sessionRepository.findOne({ where: { sessionId: effectiveTargetId as string } });
       if (!sessionToUpdate) return next(createHttpError(404, '找不到音樂會場次'));
       oldImageUrls = sessionToUpdate.imgSeattable;
     } else if (uploadContext === 'CONCERT_BANNER') {
-      // 音樂會橫幅：需要 concertId
-      if (!targetIdFromBody) return next(createHttpError(400, `缺少必要的 'targetId' 欄位 (針對 ${uploadContext})，請提供 concertId`));
       effectiveTargetId = targetIdFromBody;
       const concertRepository = AppDataSource.getRepository(Concert);
       concertToUpdate = await concertRepository.findOne({ where: { concertId: effectiveTargetId as string } });
       if (!concertToUpdate) return next(createHttpError(404, '找不到音樂會'));
       oldImageUrls = concertToUpdate.imgBanner;
     } else {
-      // 直接關聯模式，需要驗證 targetId 有效性
-      if (!targetIdFromBody) return next(createHttpError(400, `缺少必要的 'targetId' 欄位 (針對 ${uploadContext})`));
       effectiveTargetId = targetIdFromBody;
     }
     
@@ -153,42 +141,29 @@ async function uploadImage(req: Request, res: Response, next: NextFunction) {
     }
     const uploadResult = await storageService.uploadImage(uploadImagePayload);
     
-    // 4. 僅在非暫存模式下更新資料庫欄位
+    // 4. 僅在有 targetId（非暫存）時更新資料庫欄位
     if (!isTempUpload) {
       try {
         if (userToUpdate) {
-          // 使用者頭像：單一圖片
           userToUpdate.avatar = uploadResult.url;
           await AppDataSource.getRepository(User).save(userToUpdate);
         } else if (sessionToUpdate) {
-          // 座位表圖片：單一圖片
           sessionToUpdate.imgSeattable = uploadResult.url;
           await AppDataSource.getRepository(ConcertSession).save(sessionToUpdate);
         } else if (concertToUpdate) {
-          // Banner：單一圖片
           concertToUpdate.imgBanner = uploadResult.url;
           await AppDataSource.getRepository(Concert).save(concertToUpdate);
         }
-        // VENUE_PHOTO 不需更新資料庫，由建立場館 API 處理
       } catch (dbError) {
-        // 如果資料庫更新失敗，最好也嘗試刪除剛剛上傳的圖片以保持一致性
-        console.error('資料庫更新失敗，嘗試刪除已上傳圖片:', dbError);
         try {
           await storageService.deleteImage(uploadResult.path);
-          console.log(`因資料庫更新失敗，已刪除圖片: ${uploadResult.path}`);
-        } catch (rollbackDeleteError) {
-          console.error(`刪除圖片失敗 (${uploadResult.path}):`, rollbackDeleteError);
-        }
+        } catch {}
         return next(createHttpError(500, '更新資料庫失敗'));
       }
-      
-      // 5. 異步刪除舊圖片 (不阻塞回應)
-      deleteOldImage(oldImageUrls).catch(err => {
-        console.error('異步刪除舊圖片過程中發生未捕獲錯誤:', err);
-      }); 
+      deleteOldImage(oldImageUrls).catch(() => {});
     }
     
-    // 6. 回傳成功回應
+    // 5. 回傳成功回應
     res.status(200).json({
       status: 'success',
       message: isTempUpload ? '圖片暫存成功' : '圖片上傳成功',
