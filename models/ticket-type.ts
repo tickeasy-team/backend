@@ -30,7 +30,7 @@ export class TicketType {
   @JoinColumn({ name: 'concertSessionId' })
   concertSession: ConcertSession;
 
-  @Column({ type: 'varchar', length: 50, nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   ticketTypeName: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })

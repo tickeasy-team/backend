@@ -74,10 +74,10 @@ export class Concert {
   conAddress: string;
 
   @Column({ type: 'date', nullable: true })
-  eventStartDate: Date;
+  eventStartDate: Date | null;
 
   @Column({ type: 'date', nullable: true })
-  eventEndDate: Date;
+  eventEndDate: Date | null; // yyyy-mm-dd
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   imgBanner: string;
