@@ -7,6 +7,8 @@ const router = express.Router();
 // 新增活動
 router.post('/', isAuthenticated, concertController.createConcert);
 
+
+
 // 修改活動（僅限草稿）
 router.put('/:concertId', isAuthenticated, concertController.updateConcert);
 
@@ -16,6 +18,7 @@ router.delete(
     isAuthenticated,
     concertController.deleteConcert
 );
+
 
 // 增加visitCount
 router.patch('/:concertId/visit', concertController.incrementVisitCount);
