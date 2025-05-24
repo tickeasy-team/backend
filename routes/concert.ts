@@ -7,7 +7,7 @@ const router = express.Router();
 // 新增活動
 router.post('/', isAuthenticated, concertController.createConcert);
 
-/**暫時關掉
+
 
 // 修改活動（僅限草稿）
 router.put(
@@ -15,6 +15,7 @@ router.put(
     isAuthenticated,
     concertController.updateConcert
 );
+
 
 // 增加visitCount
 router.patch('/:concertId/visit', concertController.incrementVisitCount);
@@ -34,6 +35,5 @@ router.get('/search', concertController.searchConcerts);
 
 // 獲得首頁promo的banner
 router.get('/banners', concertController.getBannerConcerts);
- */
 
 export default router;
