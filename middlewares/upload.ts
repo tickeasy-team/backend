@@ -28,8 +28,7 @@ export const uploadMiddleware = multer({
   },
   fileFilter
 }).fields([
-  { name: 'file', maxCount: 1 },
-  { name: 'files', maxCount: 10 }
+  { name: 'file', maxCount: 1 }
 ]);
 
 // 處理 multer 錯誤
