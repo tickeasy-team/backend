@@ -502,7 +502,7 @@ export const getAllVenues = handleErrorAsync(
   }
 );
 
-/**
+
 
 // ------------4. 取得熱門活動-------------
 // 取得熱門活動, 首頁
@@ -714,4 +714,3 @@ export const getBannerConcerts = handleErrorAsync(
     });
   }
 );
- */
