@@ -319,7 +319,7 @@ export const createConcert = handleErrorAsync(
           reviewStatus: savedConcert.reviewStatus,
           visitCount: savedConcert.visitCount,
           promotion: savedConcert.promotion ?? 0,
-          cancelledAt: savedConcert.cancelledAt?.toISOString() ?? null,
+          cancelledAt: savedConcert.cancelledAt?.toISOString() ?? undefined,
           createdAt: savedConcert.createdAt.toISOString(),
           updatedAt: savedConcert.updatedAt.toISOString(),
           sessions: savedSessions,
@@ -370,8 +370,8 @@ export const updateConcert = handleErrorAsync(
       throw ApiError.notFound('演唱會不存在');
     }
 
-        if (concert.conInfoStatus !== 'draft') {
-            throw ApiError.badRequest('僅能編輯草稿中的演唱會');
+        if (concert.conInfoStatus !== 'draft' && concert.conInfoStatus !== 'rejected') {
+            throw ApiError.badRequest('僅能編輯草稿或被退回的演唱會');
         }
 
         const isDraft = conInfoStatus === 'draft';
@@ -618,7 +618,7 @@ export const updateConcert = handleErrorAsync(
           reviewStatus: concert.reviewStatus,
           visitCount: concert.visitCount,
           promotion: concert.promotion ?? 0,
-          cancelledAt: concert.cancelledAt?.toISOString() ?? null,
+          cancelledAt: concert.cancelledAt?.toISOString() ?? undefined,
           createdAt: concert.createdAt.toISOString(),
           updatedAt: concert.updatedAt.toISOString(),
           sessions: savedSessions,

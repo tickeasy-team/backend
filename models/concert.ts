@@ -18,7 +18,7 @@ import { MusicTag } from './music-tag.js';
 import { ConcertSession } from './concert-session.js';
 // import { TicketType } from './ticket-type.js';
 
-export type ConInfoStatus = 'draft' | 'reviewing' | 'published' | 'finished';
+export type ConInfoStatus = 'draft' | 'reviewing' | 'published' | 'rejected' | 'finished';
 
 /* eslint-disable no-unused-vars */
 export enum ReviewStatus {
@@ -93,7 +93,7 @@ export class Concert {
 
   @Column({
     type: 'enum',
-    enum: ['draft', 'reviewing', 'published', 'finished'] as ConInfoStatus[],
+    enum: ['draft', 'reviewing', 'published', 'rejected', 'finished'] as ConInfoStatus[],
     default: 'draft',
     nullable: false,
   })
@@ -106,6 +106,9 @@ export class Concert {
   })
   reviewStatus: ReviewStatus;
 
+  @Column({ type: 'text', nullable: true })
+  reviewNote: string; // 審核備註：記錄審核通過或退回的理由
+
   @Column({ type: 'int', default: 0 })
   visitCount: number; // 參觀人數
 
@@ -113,7 +116,7 @@ export class Concert {
   promotion: number; // 權重數字
 
   @Column({ type: 'timestamp', nullable: true })
-  cancelledAt: Date;
+  cancelledAt: Date | null;
 
   @UpdateDateColumn()
   updatedAt: Date;
@@ -130,4 +133,34 @@ export class Concert {
 
   // @OneToMany(() => TicketType, ticketType => ticketType.concert)
   // ticketTypes: TicketType[];
+
+  // 軟刪除相關方法
+  /**
+   * 檢查演唱會是否已被軟刪除
+   */
+  public isDeleted(): boolean {
+    return this.cancelledAt !== null && this.cancelledAt !== undefined;
+  }
+
+  /**
+   * 軟刪除演唱會
+   */
+  public softDelete(): void {
+    this.cancelledAt = new Date();
+  }
+
+  /**
+   * 恢復演唱會（取消軟刪除）
+   */
+  public restore(): void {
+    this.cancelledAt = null;
+  }
+
+  /**
+   * 檢查演唱會是否可以被刪除
+   * 只有 draft、rejected、reviewing 狀態的演唱會可以被刪除
+   */
+  public canBeDeleted(): boolean {
+    return ['draft', 'rejected', 'reviewing'].includes(this.conInfoStatus);
+  }
 }
