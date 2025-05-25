@@ -13,6 +13,7 @@ import {
 import { ErrorCode } from '../types/api.js';
 import { ConcertSession } from '../models/concert-session.js';
 import { Venue } from '../models/venue.js';
+import imageManagement from '../services/imageManagement.js';
 
 /**
  * INDEX
@@ -172,10 +173,29 @@ export const createConcert = handleErrorAsync(
       ticketPurchaseMethod,
       precautions,
       refundPolicy,
-      conInfoStatus,
+      conInfoStatus: 'draft', // 強制設為草稿狀態
     };
     const newConcert = concertRepository.create(concertData);
     const savedConcert = await concertRepository.save(newConcert);
+
+    // 處理音樂會橫幅圖片：如果是 temp 圖片，移動到正式位置
+    if (imgBanner && imageManagement.isTempUrl(imgBanner)) {
+      try {
+        const bannerResult = await imageManagement.moveImageFromTempToOfficial({
+          tempUrl: imgBanner,
+          uploadContext: 'CONCERT_BANNER',
+          targetId: savedConcert.concertId
+        });
+        savedConcert.imgBanner = bannerResult.newUrl;
+        await concertRepository.save(savedConcert);
+        console.log(`音樂會橫幅已移動到正式位置: ${bannerResult.newUrl}`);
+      } catch (error) {
+        console.error('移動音樂會橫幅失敗:', error);
+        // 如果圖片移動失敗，刪除已建立的 concert 記錄
+        await concertRepository.remove(savedConcert);
+        throw ApiError.create(500, '圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
+      }
+    }
 
     // 建立 sessions 跟 ticketTypes
     const savedSessions: ConcertSessionResponse[] = [];
@@ -186,9 +206,28 @@ export const createConcert = handleErrorAsync(
         sessionDate: new Date(session.sessionDate),
         sessionStart: session.sessionStart,
         sessionEnd: session.sessionEnd,
-        imgSeattable:session.imgSeattable
+        imgSeattable: session.imgSeattable
       });
       const savedSession = await sessionRepository.save(sessionEntity);
+
+      // 處理座位表圖片：如果是 temp 圖片，移動到正式位置
+      if (session.imgSeattable && imageManagement.isTempUrl(session.imgSeattable)) {
+        try {
+          const seattableResult = await imageManagement.moveImageFromTempToOfficial({
+            tempUrl: session.imgSeattable,
+            uploadContext: 'CONCERT_SEATING_TABLE',
+            targetId: savedSession.sessionId
+          });
+          savedSession.imgSeattable = seattableResult.newUrl;
+          await sessionRepository.save(savedSession);
+          console.log(`座位表圖片已移動到正式位置: ${seattableResult.newUrl}`);
+        } catch (error) {
+          console.error('移動座位表圖片失敗:', error);
+          // 如果圖片移動失敗，刪除已建立的 concert 和相關 session 記錄
+          await concertRepository.remove(savedConcert);
+          throw ApiError.create(500, '座位表圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
+        }
+      }
 
       const ticketEntities = session.ticketTypes.map((ticket) =>
         ticketTypeRepository.create({
@@ -346,6 +385,39 @@ export const updateConcert = handleErrorAsync(
       }
     }
 
+    // ---------- 處理音樂會橫幅圖片更新 ----------
+    const oldBannerUrl = concert.imgBanner;
+    let newBannerUrl = imgBanner;
+
+    if (imgBanner && imgBanner !== oldBannerUrl) {
+      // 如果是新的 temp 圖片，移動到正式位置
+      if (imageManagement.isTempUrl(imgBanner)) {
+        try {
+          const bannerResult = await imageManagement.moveImageFromTempToOfficial({
+            tempUrl: imgBanner,
+            uploadContext: 'CONCERT_BANNER',
+            targetId: concertId
+          });
+          newBannerUrl = bannerResult.newUrl;
+          console.log(`音樂會橫幅已更新: ${bannerResult.newUrl}`);
+        } catch (error) {
+          console.error('移動新音樂會橫幅失敗:', error);
+          throw ApiError.create(500, '新橫幅圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
+        }
+      }
+
+      // 如果有舊圖片且不是 temp 圖片，刪除舊圖片
+      if (oldBannerUrl && !imageManagement.isTempUrl(oldBannerUrl)) {
+        try {
+          await imageManagement.deleteOfficialImage(oldBannerUrl);
+          console.log(`舊音樂會橫幅已刪除: ${oldBannerUrl}`);
+        } catch (error) {
+          console.warn('刪除舊音樂會橫幅失敗:', error);
+          // 不拋出錯誤，因為主要操作是更新
+        }
+      }
+    }
+
     // ---------- 更新主資料 ----------
     concert.organizationId = organizationId;
     concert.venueId = venueId;
@@ -361,7 +433,7 @@ export const updateConcert = handleErrorAsync(
     concert.precautions = precautions;
     concert.refundPolicy = refundPolicy;
     concert.conInfoStatus = conInfoStatus;
-    concert.imgBanner = imgBanner;
+    concert.imgBanner = newBannerUrl;
 
         await concertRepository.save(concert);
 
@@ -392,6 +464,23 @@ export const updateConcert = handleErrorAsync(
         imgSeattable: session.imgSeattable,
       });
       const savedSession = await sessionRepository.save(sessionEntity);
+
+      // ---------- 處理座位表圖片 ----------
+      if (session.imgSeattable && imageManagement.isTempUrl(session.imgSeattable)) {
+        try {
+          const seattableResult = await imageManagement.moveImageFromTempToOfficial({
+            tempUrl: session.imgSeattable,
+            uploadContext: 'CONCERT_SEATING_TABLE',
+            targetId: savedSession.sessionId
+          });
+          savedSession.imgSeattable = seattableResult.newUrl;
+          await sessionRepository.save(savedSession);
+          console.log(`座位表圖片已更新: ${seattableResult.newUrl}`);
+        } catch (error) {
+          console.error('移動座位表圖片失敗:', error);
+          throw ApiError.create(500, '座位表圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
+        }
+      }
 
       const ticketEntities = session.ticketTypes?.map((ticket) => {
         if (!isDraft) {
@@ -714,6 +803,115 @@ export const getBannerConcerts = handleErrorAsync(
       message: '取得資料成功',
       status: 'success',
       data: concerts,
+    });
+  }
+);
+
+// ------------3. 提交演唱會審核-------------
+export const submitConcertForReview = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const authenticatedUser = req.user as { userId: string };
+    if (!authenticatedUser?.userId) {
+      throw ApiError.unauthorized();
+    }
+
+    const concertId = req.params.concertId;
+    const concertRepository = AppDataSource.getRepository(Concert);
+
+    // 查找演唱會
+    const concert = await concertRepository.findOne({ 
+      where: { concertId },
+      relations: ['sessions', 'sessions.ticketTypes']
+    });
+
+    if (!concert) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    // 檢查權限：只能操作自己組織的演唱會
+    // TODO: 這裡可能需要檢查用戶是否屬於該組織
+    
+    // 檢查狀態：只有草稿可以提交審核
+    if (concert.conInfoStatus !== 'draft') {
+      throw ApiError.badRequest('只有草稿狀態的演唱會可以提交審核');
+    }
+
+    // 驗證演唱會是否完整
+    if (
+      !concert.organizationId ||
+      !concert.venueId ||
+      !concert.locationTagId ||
+      !concert.musicTagId ||
+      !concert.conTitle ||
+      !concert.conIntroduction ||
+      !concert.conLocation ||
+      !concert.conAddress ||
+      !concert.eventStartDate ||
+      !concert.eventEndDate ||
+      !concert.ticketPurchaseMethod ||
+      !concert.precautions ||
+      !concert.refundPolicy ||
+      !concert.imgBanner
+    ) {
+      throw ApiError.fieldRequired('演唱會資料不完整，請補齊所有必要欄位');
+    }
+
+    // 驗證場次
+    if (!concert.sessions || concert.sessions.length === 0) {
+      throw ApiError.fieldRequired('至少需要一個場次');
+    }
+
+    for (const session of concert.sessions) {
+      if (
+        !session.sessionTitle ||
+        !session.sessionDate ||
+        !session.sessionStart ||
+        !session.sessionEnd ||
+        !session.imgSeattable
+      ) {
+        throw ApiError.invalidFormat('場次資料不完整');
+      }
+
+      if (!session.ticketTypes || session.ticketTypes.length === 0) {
+        throw ApiError.fieldRequired('每個場次至少需要一種票種');
+      }
+
+      for (const ticket of session.ticketTypes) {
+        if (
+          !ticket.ticketTypeName ||
+          !ticket.entranceType ||
+          !ticket.ticketBenefits ||
+          !ticket.ticketRefundPolicy ||
+          typeof ticket.ticketTypePrice !== 'number' ||
+          ticket.ticketTypePrice < 0 ||
+          typeof ticket.totalQuantity !== 'number' ||
+          ticket.totalQuantity <= 0 ||
+          !ticket.sellBeginDate ||
+          !ticket.sellEndDate
+        ) {
+          throw ApiError.invalidFormat('票種資料不完整');
+        }
+
+        const sellStart = new Date(ticket.sellBeginDate);
+        const sellEnd = new Date(ticket.sellEndDate);
+        if (sellStart >= sellEnd) {
+          throw ApiError.invalidFormat('售票結束時間必須晚於開始時間');
+        }
+      }
+    }
+
+    // 更新狀態為審核中
+    concert.conInfoStatus = 'reviewing';
+    await concertRepository.save(concert);
+
+    res.status(200).json({
+      status: 'success',
+      message: '演唱會已提交審核，請等待管理員審核',
+      data: {
+        concertId: concert.concertId,
+        conInfoStatus: concert.conInfoStatus,
+        submittedAt: new Date().toISOString()
+      }
     });
   }
 );

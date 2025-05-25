@@ -18,7 +18,7 @@ import { MusicTag } from './music-tag.js';
 import { ConcertSession } from './concert-session.js';
 // import { TicketType } from './ticket-type.js';
 
-export type ConInfoStatus = 'draft' | 'published' | 'finished';
+export type ConInfoStatus = 'draft' | 'reviewing' | 'published' | 'finished';
 
 /* eslint-disable no-unused-vars */
 export enum ReviewStatus {
@@ -93,7 +93,7 @@ export class Concert {
 
   @Column({
     type: 'enum',
-    enum: ['draft', 'published', 'finished'] as ConInfoStatus[],
+    enum: ['draft', 'reviewing', 'published', 'finished'] as ConInfoStatus[],
     default: 'draft',
     nullable: false,
   })
