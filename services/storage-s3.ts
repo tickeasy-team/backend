@@ -14,8 +14,6 @@
 //   },
 // });
 
-// const S3_BUCKET = process.env.AWS_S3_BUCKET || 'tickeasy-images';
-// const CLOUDFRONT_DOMAIN = process.env.AWS_CLOUDFRONT_DOMAIN || '';
 
 // /**
 //  * 根據上傳上下文確定儲存的 bucket 前綴
@@ -106,16 +104,6 @@
 //   };
 // }
 
-// /**
-//  * 生成 CloudFront URL
-//  */
-// function getPublicUrl(key: string): string {
-//   if (CLOUDFRONT_DOMAIN) {
-//     return `${CLOUDFRONT_DOMAIN}/${key}`;
-//   }
-//   // 如果沒有 CloudFront，使用 S3 直接 URL
-//   return `https://${S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-// }
 
 // /**
 //  * 上傳圖片到 AWS S3
