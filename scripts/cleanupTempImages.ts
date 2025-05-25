@@ -8,7 +8,7 @@
  */
 
 import 'dotenv/config';
-import storageService from '../services/storage';
+import storageService from '../services/storage-supabase';
 
 // 預設清理 24 小時前的暫存圖片
 const HOURS = process.env.CLEANUP_TEMP_IMAGES_HOURS 

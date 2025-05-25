@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import createHttpError from 'http-errors';
-import storageService from '../services/storage.js';
+import storageService from '../services/storage-supabase.js';
 
 /**
  * 清理臨時上傳的圖片檔案

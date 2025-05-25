@@ -195,6 +195,19 @@ export const createConcert = handleErrorAsync(
         await concertRepository.remove(savedConcert);
         throw ApiError.create(500, '圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
       }
+    } else if (imgBanner) {
+      // 驗證非 temp URL 是否有效
+      try {
+        const isValidUrl = await imageManagement.validateImageUrl(imgBanner);
+        if (!isValidUrl) {
+          await concertRepository.remove(savedConcert);
+          throw ApiError.create(400, '橫幅圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
+        }
+        console.log(`橫幅圖片 URL 驗證通過: ${imgBanner}`);
+      } catch (error) {
+        console.error('驗證橫幅圖片 URL 失敗:', error);
+        throw ApiError.create(400, '橫幅圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
+      }
     }
 
     // 建立 sessions 跟 ticketTypes
@@ -226,6 +239,19 @@ export const createConcert = handleErrorAsync(
           // 如果圖片移動失敗，刪除已建立的 concert 和相關 session 記錄
           await concertRepository.remove(savedConcert);
           throw ApiError.create(500, '座位表圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
+        }
+      } else if (session.imgSeattable) {
+        // 驗證非 temp URL 是否有效
+        try {
+          const isValidUrl = await imageManagement.validateImageUrl(session.imgSeattable);
+          if (!isValidUrl) {
+            await concertRepository.remove(savedConcert);
+            throw ApiError.create(400, '座位表圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
+          }
+          console.log(`座位表圖片 URL 驗證通過: ${session.imgSeattable}`);
+        } catch (error) {
+          console.error('驗證座位表圖片 URL 失敗:', error);
+          throw ApiError.create(400, '座位表圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
         }
       }
 
@@ -404,6 +430,18 @@ export const updateConcert = handleErrorAsync(
           console.error('移動新音樂會橫幅失敗:', error);
           throw ApiError.create(500, '新橫幅圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
         }
+      } else {
+        // 驗證非 temp URL 是否有效
+        try {
+          const isValidUrl = await imageManagement.validateImageUrl(imgBanner);
+          if (!isValidUrl) {
+            throw ApiError.create(400, '橫幅圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
+          }
+          console.log(`橫幅圖片 URL 驗證通過: ${imgBanner}`);
+        } catch (error) {
+          console.error('驗證橫幅圖片 URL 失敗:', error);
+          throw ApiError.create(400, '橫幅圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
+        }
       }
 
       // 如果有舊圖片且不是 temp 圖片，刪除舊圖片
@@ -479,6 +517,18 @@ export const updateConcert = handleErrorAsync(
         } catch (error) {
           console.error('移動座位表圖片失敗:', error);
           throw ApiError.create(500, '座位表圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
+        }
+      } else if (session.imgSeattable) {
+        // 驗證非 temp URL 是否有效
+        try {
+          const isValidUrl = await imageManagement.validateImageUrl(session.imgSeattable);
+          if (!isValidUrl) {
+            throw ApiError.create(400, '座位表圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
+          }
+          console.log(`座位表圖片 URL 驗證通過: ${session.imgSeattable}`);
+        } catch (error) {
+          console.error('驗證座位表圖片 URL 失敗:', error);
+          throw ApiError.create(400, '座位表圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
         }
       }
 

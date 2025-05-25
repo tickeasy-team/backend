@@ -25,6 +25,7 @@ export interface UploadImageParams {
   uploadContext: UploadContext; // 上傳上下文
   targetId?: string | number;    // 目標ID (使用者ID, 音樂會ID等)，暫存模式下可為空
   userId?: string | number;     // 上傳者ID (可選，用於權限驗證)
+  isTemporary?: boolean;    // 是否為臨時檔案
   options?: {
     maxWidth?: number;      // 最大寬度 (像素)
     maxHeight?: number;     // 最大高度 (像素)

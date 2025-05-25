@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import createHttpError from 'http-errors';
-import { UploadContext } from '../types/upload/index.js';
 
 // Supabase 客戶端初始化
 const supabaseUrl = process.env.DB_URL;
@@ -38,13 +37,14 @@ export function isTempUrl(url: string): boolean {
 }
 
 /**
- * 從暫存 URL 提取檔案路徑資訊
+ * 從 URL 提取檔案路徑資訊（支援 temp 和正式 URL）
  */
-function extractTempPathInfo(tempUrl: string): { bucket: string; filePath: string } {
+function extractPathInfo(imageUrl: string): { bucket: string; filePath: string } {
   try {
     // 解析 Supabase URL 格式
     // 例如：https://xxx.supabase.co/storage/v1/object/public/concert/temp/concert_seating_table/uuid.webp
-    const urlParts = tempUrl.split('/storage/v1/object/public/');
+    // 或：https://xxx.supabase.co/storage/v1/object/public/concert/concerts/abc-123/banner.webp
+    const urlParts = imageUrl.split('/storage/v1/object/public/');
     if (urlParts.length !== 2) {
       throw new Error('無效的 Supabase Storage URL 格式');
     }
@@ -54,8 +54,49 @@ function extractTempPathInfo(tempUrl: string): { bucket: string; filePath: strin
     const filePath = pathParts.slice(1).join('/');
     
     return { bucket, filePath };
+  } catch {
+    throw createHttpError(400, `無法解析圖片 URL: ${imageUrl}`);
+  }
+}
+
+/**
+ * 驗證圖片 URL 是否實際存在
+ * 只接受 Supabase Storage URL，拒絕外部 URL 以確保可靠性
+ */
+export async function validateImageUrl(imageUrl: string): Promise<boolean> {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.warn('Supabase 環境變數未設定，跳過圖片驗證');
+    return true; // 如果環境變數未設定，假設 URL 有效
+  }
+
+  try {
+    // 如果是 temp URL，使用現有的移動邏輯會自動驗證
+    if (isTempUrl(imageUrl)) {
+      return true;
+    }
+
+    // 只接受 Supabase URL，拒絕外部 URL
+    if (!imageUrl.includes('/storage/v1/object/public/')) {
+      console.warn(`拒絕外部圖片 URL: ${imageUrl}`);
+      return false; // 直接拒絕外部 URL
+    }
+
+    // Supabase URL，檢查檔案是否存在
+    const { bucket, filePath } = extractPathInfo(imageUrl);
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .download(filePath);
+
+    if (error || !data) {
+      console.error('Supabase 圖片驗證失敗:', error);
+      return false;
+    }
+
+    return true;
   } catch (error) {
-    throw createHttpError(400, `無法解析暫存圖片 URL: ${tempUrl}`);
+    console.error('驗證圖片 URL 失敗:', error);
+    return false;
   }
 }
 
@@ -85,7 +126,7 @@ export async function moveImageFromTempToOfficial(options: MoveImageOptions): Pr
 
   try {
     // 1. 解析暫存圖片路徑
-    const { bucket, filePath: tempPath } = extractTempPathInfo(tempUrl);
+    const { bucket, filePath: tempPath } = extractPathInfo(tempUrl);
     
     // 2. 生成正式路徑
     const officialPath = getOfficialPath(uploadContext, targetId);
@@ -177,7 +218,7 @@ export async function deleteOfficialImage(imageUrl: string): Promise<boolean> {
   }
   
   try {
-    const { bucket, filePath } = extractTempPathInfo(imageUrl);
+    const { bucket, filePath } = extractPathInfo(imageUrl);
     
     const { error } = await supabase.storage
       .from(bucket)
@@ -200,4 +241,5 @@ export default {
   moveImageFromTempToOfficial,
   batchMoveImages,
   deleteOfficialImage,
+  validateImageUrl,
 }; 

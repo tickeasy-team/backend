@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, Express } from 'express';
 import createHttpError from 'http-errors';
-import storageService from '../services/storage.js';
+import storageService from '../services/storage-supabase.js';
 import { UploadContext } from '../types/upload/index.js';
 import { AppDataSource } from '../config/database.js';
 import { User } from '../models/user.js';

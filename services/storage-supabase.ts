@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 // import path from 'path';
 import createHttpError from 'http-errors';
-import { UploadContext, UploadImageParams, UploadImageResult, TEMP_DIRECTORY } from '../types/upload/index.js';
+import { UploadContext, UploadImageParams, UploadImageResult } from '../types/upload/index.js';
 
 // 從環境變數讀取 Supabase URL 和 Service Key
 const supabaseUrl = process.env.DB_URL;
@@ -44,11 +44,11 @@ function getBucketName(uploadContext: UploadContext): string {
 /**
  * 根據上傳上下文和目標 ID 建立儲存路徑
  */
-function getStoragePath(uploadContext: UploadContext, targetId: string | number | undefined, fileExtension: string): string {
+function getStoragePath(uploadContext: UploadContext, targetId: string | number | undefined, fileExtension: string, isTemporary: boolean = false): string {
   const fileName = `${uuidv4()}${fileExtension}`;
   
-  // 如果沒有 targetId，則視為暫存圖片
-  if (targetId === undefined) {
+  // 如果沒有 targetId 或明確標示為臨時檔案，則視為暫存圖片
+  if (targetId === undefined || isTemporary) {
     return `temp/${uploadContext.toLowerCase()}/${fileName}`;
   }
   
