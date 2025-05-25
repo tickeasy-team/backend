@@ -222,25 +222,31 @@ async function cleanupTempImages(hours: number = 24): Promise<number> {
   }
 
   try {
-    // 獲取所有 bucket
-    const buckets = ['avatar', 'venue', 'concert'];
     let totalDeleted = 0;
-
-    for (const bucket of buckets) {
-      // 獲取 temp 目錄下所有檔案
+    
+    // 只檢查 concert bucket，因為只有它會有暫存圖片
+    const bucket = 'concert';
+    
+    // 需要檢查的暫存目錄
+    const tempDirs = ['temp/concert_banner', 'temp/concert_seating_table'];
+    
+    for (const tempDir of tempDirs) {
+      console.log(`檢查 ${bucket}/${tempDir} 目錄...`);
+      
+      // 獲取暫存目錄下的檔案
       const { data: files, error: listError } = await supabase.storage
         .from(bucket)
-        .list('temp', {
+        .list(tempDir, {
           sortBy: { column: 'created_at', order: 'asc' },
         });
 
       if (listError) {
-        console.error(`獲取 ${bucket} bucket 的暫存檔案列表失敗:`, listError);
+        console.error(`獲取 ${bucket}/${tempDir} 的暫存檔案列表失敗:`, listError);
         continue;
       }
 
       if (!files || files.length === 0) {
-        console.log(`${bucket} bucket 中沒有暫存檔案`);
+        console.log(`${bucket}/${tempDir} 中沒有暫存檔案`);
         continue;
       }
 
@@ -256,22 +262,22 @@ async function cleanupTempImages(hours: number = 24): Promise<number> {
       });
 
       if (filesToDelete.length === 0) {
-        console.log(`${bucket} bucket 中沒有過期的暫存檔案`);
+        console.log(`${bucket}/${tempDir} 中沒有過期的暫存檔案`);
         continue;
       }
 
       // 刪除過期檔案
-      const filePaths = filesToDelete.map(file => `temp/${file.name}`);
+      const filePaths = filesToDelete.map(file => `${tempDir}/${file.name}`);
       const { error: deleteError } = await supabase.storage
         .from(bucket)
         .remove(filePaths);
 
       if (deleteError) {
-        console.error(`刪除 ${bucket} bucket 的暫存檔案失敗:`, deleteError);
+        console.error(`刪除 ${bucket}/${tempDir} 的暫存檔案失敗:`, deleteError);
         continue;
       }
 
-      console.log(`已從 ${bucket} bucket 中刪除 ${filePaths.length} 個暫存檔案`);
+      console.log(`已從 ${bucket}/${tempDir} 中刪除 ${filePaths.length} 個暫存檔案`);
       totalDeleted += filePaths.length;
     }
 
