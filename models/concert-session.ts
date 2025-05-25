@@ -10,8 +10,8 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { TicketType } from './ticket-type';
-import { Concert } from './concert';
+import { TicketType } from './ticket-type.js';
+import { Concert } from './concert.js';
 
 // export type SessionStatus = 'draft' | 'published' | 'finished';
 
