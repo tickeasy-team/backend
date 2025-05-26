@@ -13,7 +13,7 @@ import {
 import { ErrorCode } from '../types/api.js';
 import { ConcertSession } from '../models/concert-session.js';
 import { Venue } from '../models/venue.js';
-import imageManagement from '../services/imageManagement.js';
+import concertImageService from '../services/concertImageService.js';
 
 /**
  * INDEX
@@ -178,35 +178,19 @@ export const createConcert = handleErrorAsync(
     const newConcert = concertRepository.create(concertData);
     const savedConcert = await concertRepository.save(newConcert);
 
-    // 處理音樂會橫幅圖片：如果是 temp 圖片，移動到正式位置
-    if (imgBanner && imageManagement.isTempUrl(imgBanner)) {
+    // 處理音樂會橫幅圖片
+    if (imgBanner) {
       try {
-        const bannerResult = await imageManagement.moveImageFromTempToOfficial({
-          tempUrl: imgBanner,
-          uploadContext: 'CONCERT_BANNER',
-          targetId: savedConcert.concertId
-        });
-        savedConcert.imgBanner = bannerResult.newUrl;
+        savedConcert.imgBanner = await concertImageService.processConcertBanner(
+          imgBanner, 
+          savedConcert.concertId, 
+          savedConcert.conTitle
+        );
         await concertRepository.save(savedConcert);
-        console.log(`音樂會橫幅已移動到正式位置: ${bannerResult.newUrl}`);
       } catch (error) {
-        console.error('移動音樂會橫幅失敗:', error);
-        // 如果圖片移動失敗，刪除已建立的 concert 記錄
+        // 如果圖片處理失敗，刪除已建立的 concert 記錄
         await concertRepository.remove(savedConcert);
-        throw ApiError.create(500, '圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
-      }
-    } else if (imgBanner) {
-      // 驗證非 temp URL 是否有效
-      try {
-        const isValidUrl = await imageManagement.validateImageUrl(imgBanner);
-        if (!isValidUrl) {
-          await concertRepository.remove(savedConcert);
-          throw ApiError.create(400, '橫幅圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
-        }
-        console.log(`橫幅圖片 URL 驗證通過: ${imgBanner}`);
-      } catch (error) {
-        console.error('驗證橫幅圖片 URL 失敗:', error);
-        throw ApiError.create(400, '橫幅圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
+        throw error; // 重新拋出錯誤
       }
     }
 
@@ -223,35 +207,19 @@ export const createConcert = handleErrorAsync(
       });
       const savedSession = await sessionRepository.save(sessionEntity);
 
-      // 處理座位表圖片：如果是 temp 圖片，移動到正式位置
-      if (session.imgSeattable && imageManagement.isTempUrl(session.imgSeattable)) {
+      // 處理座位表圖片
+      if (session.imgSeattable) {
         try {
-          const seattableResult = await imageManagement.moveImageFromTempToOfficial({
-            tempUrl: session.imgSeattable,
-            uploadContext: 'CONCERT_SEATING_TABLE',
-            targetId: savedSession.sessionId
-          });
-          savedSession.imgSeattable = seattableResult.newUrl;
+          savedSession.imgSeattable = await concertImageService.processConcertSeatingTable(
+            session.imgSeattable, 
+            savedSession.sessionId, 
+            savedSession.sessionTitle
+          );
           await sessionRepository.save(savedSession);
-          console.log(`座位表圖片已移動到正式位置: ${seattableResult.newUrl}`);
         } catch (error) {
-          console.error('移動座位表圖片失敗:', error);
-          // 如果圖片移動失敗，刪除已建立的 concert 和相關 session 記錄
+          // 如果圖片處理失敗，刪除已建立的 concert 和相關 session 記錄
           await concertRepository.remove(savedConcert);
-          throw ApiError.create(500, '座位表圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
-        }
-      } else if (session.imgSeattable) {
-        // 驗證非 temp URL 是否有效
-        try {
-          const isValidUrl = await imageManagement.validateImageUrl(session.imgSeattable);
-          if (!isValidUrl) {
-            await concertRepository.remove(savedConcert);
-            throw ApiError.create(400, '座位表圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
-          }
-          console.log(`座位表圖片 URL 驗證通過: ${session.imgSeattable}`);
-        } catch (error) {
-          console.error('驗證座位表圖片 URL 失敗:', error);
-          throw ApiError.create(400, '座位表圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
+          throw error; // 重新拋出錯誤
         }
       }
 
@@ -412,49 +380,7 @@ export const updateConcert = handleErrorAsync(
     }
 
     // ---------- 處理音樂會橫幅圖片更新 ----------
-    const oldBannerUrl = concert.imgBanner;
-    let newBannerUrl = imgBanner;
-
-    if (imgBanner && imgBanner !== oldBannerUrl) {
-      // 如果是新的 temp 圖片，移動到正式位置
-      if (imageManagement.isTempUrl(imgBanner)) {
-        try {
-          const bannerResult = await imageManagement.moveImageFromTempToOfficial({
-            tempUrl: imgBanner,
-            uploadContext: 'CONCERT_BANNER',
-            targetId: concertId
-          });
-          newBannerUrl = bannerResult.newUrl;
-          console.log(`音樂會橫幅已更新: ${bannerResult.newUrl}`);
-        } catch (error) {
-          console.error('移動新音樂會橫幅失敗:', error);
-          throw ApiError.create(500, '新橫幅圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
-        }
-      } else {
-        // 驗證非 temp URL 是否有效
-        try {
-          const isValidUrl = await imageManagement.validateImageUrl(imgBanner);
-          if (!isValidUrl) {
-            throw ApiError.create(400, '橫幅圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
-          }
-          console.log(`橫幅圖片 URL 驗證通過: ${imgBanner}`);
-        } catch (error) {
-          console.error('驗證橫幅圖片 URL 失敗:', error);
-          throw ApiError.create(400, '橫幅圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
-        }
-      }
-
-      // 如果有舊圖片且不是 temp 圖片，刪除舊圖片
-      if (oldBannerUrl && !imageManagement.isTempUrl(oldBannerUrl)) {
-        try {
-          await imageManagement.deleteOfficialImage(oldBannerUrl);
-          console.log(`舊音樂會橫幅已刪除: ${oldBannerUrl}`);
-        } catch (error) {
-          console.warn('刪除舊音樂會橫幅失敗:', error);
-          // 不拋出錯誤，因為主要操作是更新
-        }
-      }
-    }
+    const newBannerUrl = await concertImageService.updateConcertBanner(imgBanner, concert.imgBanner, concertId);
 
     // ---------- 更新主資料 ----------
     concert.organizationId = organizationId;
@@ -504,31 +430,16 @@ export const updateConcert = handleErrorAsync(
       const savedSession = await sessionRepository.save(sessionEntity);
 
       // ---------- 處理座位表圖片 ----------
-      if (session.imgSeattable && imageManagement.isTempUrl(session.imgSeattable)) {
+      if (session.imgSeattable) {
         try {
-          const seattableResult = await imageManagement.moveImageFromTempToOfficial({
-            tempUrl: session.imgSeattable,
-            uploadContext: 'CONCERT_SEATING_TABLE',
-            targetId: savedSession.sessionId
-          });
-          savedSession.imgSeattable = seattableResult.newUrl;
+          savedSession.imgSeattable = await concertImageService.processConcertSeatingTable(
+            session.imgSeattable, 
+            savedSession.sessionId, 
+            savedSession.sessionTitle
+          );
           await sessionRepository.save(savedSession);
-          console.log(`座位表圖片已更新: ${seattableResult.newUrl}`);
         } catch (error) {
-          console.error('移動座位表圖片失敗:', error);
-          throw ApiError.create(500, '座位表圖片處理失敗，請重新上傳', ErrorCode.SYSTEM_ERROR);
-        }
-      } else if (session.imgSeattable) {
-        // 驗證非 temp URL 是否有效
-        try {
-          const isValidUrl = await imageManagement.validateImageUrl(session.imgSeattable);
-          if (!isValidUrl) {
-            throw ApiError.create(400, '座位表圖片必須使用系統上傳的圖片，不接受外部 URL', ErrorCode.DATA_INVALID);
-          }
-          console.log(`座位表圖片 URL 驗證通過: ${session.imgSeattable}`);
-        } catch (error) {
-          console.error('驗證座位表圖片 URL 失敗:', error);
-          throw ApiError.create(400, '座位表圖片驗證失敗，請使用系統上傳功能', ErrorCode.DATA_INVALID);
+          throw error;
         }
       }
 

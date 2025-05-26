@@ -16,19 +16,6 @@ const supabase = createClient(supabaseUrl || '', supabaseServiceKey || '', {
   },
 });
 
-// 介面定義
-export interface MoveImageOptions {
-  tempUrl: string;
-  uploadContext: 'CONCERT_BANNER' | 'CONCERT_SEATING_TABLE';
-  targetId: string;
-}
-
-export interface MoveImageResult {
-  newUrl: string;
-  oldPath: string;
-  newPath: string;
-}
-
 /**
  * 檢查 URL 是否為暫存圖片
  */
@@ -39,11 +26,10 @@ export function isTempUrl(url: string): boolean {
 /**
  * 從 URL 提取檔案路徑資訊（支援 temp 和正式 URL）
  */
-function extractPathInfo(imageUrl: string): { bucket: string; filePath: string } {
+export function extractPathInfo(imageUrl: string): { bucket: string; filePath: string } {
   try {
     // 解析 Supabase URL 格式
     // 例如：https://xxx.supabase.co/storage/v1/object/public/concert/temp/concert_seating_table/uuid.webp
-    // 或：https://xxx.supabase.co/storage/v1/object/public/concert/concerts/abc-123/banner.webp
     const urlParts = imageUrl.split('/storage/v1/object/public/');
     if (urlParts.length !== 2) {
       throw new Error('無效的 Supabase Storage URL 格式');
@@ -70,7 +56,7 @@ export async function validateImageUrl(imageUrl: string): Promise<boolean> {
   }
 
   try {
-    // 如果是 temp URL，使用現有的移動邏輯會自動驗證
+    // 如果是 temp URL，直接返回 true（暫存圖片在移動時會自動驗證）
     if (isTempUrl(imageUrl)) {
       return true;
     }
@@ -101,79 +87,54 @@ export async function validateImageUrl(imageUrl: string): Promise<boolean> {
 }
 
 /**
- * 生成正式檔案路徑
+ * 通用的圖片移動功能
+ * 從一個路徑移動到另一個路徑
  */
-function getOfficialPath(uploadContext: 'CONCERT_BANNER' | 'CONCERT_SEATING_TABLE', targetId: string): string {
-  switch (uploadContext) {
-    case 'CONCERT_BANNER':
-      return `concerts/${targetId}/banner.webp`;
-    case 'CONCERT_SEATING_TABLE':
-      return `sessions/${targetId}/seattable.webp`;
-    default:
-      throw new Error(`不支援的上傳類型: ${uploadContext}`);
-  }
-}
-
-/**
- * 將暫存圖片移動到正式位置
- */
-export async function moveImageFromTempToOfficial(options: MoveImageOptions): Promise<MoveImageResult> {
-  const { tempUrl, uploadContext, targetId } = options;
-  
+export async function moveImage(fromPath: string, toPath: string, bucket: string): Promise<string> {
   if (!supabaseUrl || !supabaseServiceKey) {
     throw createHttpError(500, 'Supabase 環境變數未設定');
   }
 
   try {
-    // 1. 解析暫存圖片路徑
-    const { bucket, filePath: tempPath } = extractPathInfo(tempUrl);
-    
-    // 2. 生成正式路徑
-    const officialPath = getOfficialPath(uploadContext, targetId);
-    
-    // 3. 下載暫存圖片
-    const { data: tempImageData, error: downloadError } = await supabase.storage
+    // 1. 下載原圖片
+    const { data: imageData, error: downloadError } = await supabase.storage
       .from(bucket)
-      .download(tempPath);
+      .download(fromPath);
     
     if (downloadError) {
-      throw createHttpError(404, `無法下載暫存圖片: ${downloadError.message}`);
+      throw createHttpError(404, `無法下載圖片: ${downloadError.message}`);
     }
     
-    // 4. 上傳到正式位置
+    // 2. 上傳到新位置
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(officialPath, tempImageData, {
+      .upload(toPath, imageData, {
         contentType: 'image/webp',
         upsert: true, // 如果檔案已存在則覆蓋
       });
     
     if (uploadError) {
-      throw createHttpError(500, `無法上傳到正式位置: ${uploadError.message}`);
+      throw createHttpError(500, `無法上傳到新位置: ${uploadError.message}`);
     }
     
-    // 5. 刪除暫存圖片
+    // 3. 刪除原圖片
     const { error: deleteError } = await supabase.storage
       .from(bucket)
-      .remove([tempPath]);
+      .remove([fromPath]);
     
     if (deleteError) {
-      console.warn(`刪除暫存圖片失敗 (${tempPath}):`, deleteError.message);
+      console.warn(`刪除原圖片失敗 (${fromPath}):`, deleteError.message);
       // 不拋出錯誤，因為主要操作已成功
     }
     
-    // 6. 生成新的公開 URL
+    // 4. 生成新的公開 URL
     const { data: publicUrlData } = supabase.storage
       .from(bucket)
-      .getPublicUrl(officialPath);
+      .getPublicUrl(toPath);
     
-    console.log(`圖片移動成功: ${tempPath} → ${officialPath}`);
+    console.log(`圖片移動成功: ${fromPath} → ${toPath}`);
     
-    return {
-      newUrl: publicUrlData.publicUrl,
-      oldPath: `${bucket}/${tempPath}`,
-      newPath: `${bucket}/${officialPath}`,
-    };
+    return publicUrlData.publicUrl;
     
   } catch (error) {
     console.error('移動圖片失敗:', error);
@@ -185,34 +146,9 @@ export async function moveImageFromTempToOfficial(options: MoveImageOptions): Pr
 }
 
 /**
- * 批次移動多個圖片
+ * 根據 URL 刪除圖片
  */
-export async function batchMoveImages(imageList: MoveImageOptions[]): Promise<MoveImageResult[]> {
-  const results: MoveImageResult[] = [];
-  const errors: string[] = [];
-  
-  for (const options of imageList) {
-    try {
-      const result = await moveImageFromTempToOfficial(options);
-      results.push(result);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
-      errors.push(`移動圖片失敗 (${options.tempUrl}): ${errorMessage}`);
-    }
-  }
-  
-  if (errors.length > 0) {
-    console.error('批次移動圖片時發生錯誤:', errors);
-    // 如果部分失敗，仍回傳成功的結果，但記錄錯誤
-  }
-  
-  return results;
-}
-
-/**
- * 刪除正式圖片（用於更新時刪除舊圖片）
- */
-export async function deleteOfficialImage(imageUrl: string): Promise<boolean> {
+export async function deleteImageByUrl(imageUrl: string): Promise<boolean> {
   if (!supabaseUrl || !supabaseServiceKey) {
     throw createHttpError(500, 'Supabase 環境變數未設定');
   }
@@ -225,21 +161,21 @@ export async function deleteOfficialImage(imageUrl: string): Promise<boolean> {
       .remove([filePath]);
     
     if (error) {
-      console.error('刪除正式圖片失敗:', error);
+      console.error('刪除圖片失敗:', error);
       return false;
     }
     
     return true;
   } catch (error) {
-    console.error('刪除正式圖片時發生錯誤:', error);
+    console.error('刪除圖片時發生錯誤:', error);
     return false;
   }
 }
 
 export default {
   isTempUrl,
-  moveImageFromTempToOfficial,
-  batchMoveImages,
-  deleteOfficialImage,
+  extractPathInfo,
   validateImageUrl,
+  moveImage,
+  deleteImageByUrl,
 }; 
