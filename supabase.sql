@@ -8,10 +8,10 @@ CREATE TYPE "ReviewStatus" AS ENUM ('pending', 'approved', 'rejected', 'skipped'
 CREATE TYPE "OrderStatus" AS ENUM ('held', 'expired', 'paid', 'cancelled', 'refunded');
 CREATE TYPE "TicketStatus" AS ENUM ('purchased', 'refunded', 'used');
 CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'completed', 'failed', 'refunded');
-CREATE TYPE "ConInfoStatus" AS ENUM ('draft', 'published', 'finished');
+CREATE TYPE "ConInfoStatus" AS ENUM ('draft', 'reviewing', 'published', 'rejected', 'finished');
+CREATE TYPE "SessionStatus" AS ENUM ('draft', 'published', 'finished');
 CREATE TYPE "Region" AS ENUM ('北部', '南部', '東部', '中部', '離島', '海外');
 CREATE TYPE "EventType" AS ENUM ('流行音樂', '搖滾', '電子音樂', '嘻哈', '爵士藍調', '古典音樂', '其他');
-
 
 -- 創建 表格
 
@@ -62,13 +62,15 @@ CREATE TABLE "organization" (
 -- locationTag 表
 CREATE TABLE "locationTag" (
     "locationTagId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "locationTagName" character varying(50) NOT NULL
+    "locationTagName" character varying(50) NOT NULL,
+    "subLabel" character varying(50)
 );
 
 -- musicTag 表
 CREATE TABLE "musicTag" (
     "musicTagId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "musicTagName" character varying(50) NOT NULL
+    "musicTagName" character varying(50) NOT NULL,
+    "subLabel" character varying(100)
 );
 
 -- venues 表
@@ -91,22 +93,22 @@ CREATE TABLE "venues" (
 CREATE TABLE "concert" (
     "concertId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     "organizationId" uuid NOT NULL,
-    "venueId" uuid NOT NULL,
-    "locationTagId" uuid NOT NULL,
-    "musicTagId" uuid NOT NULL,
+    "venueId" uuid,
+    "locationTagId" uuid,
+    "musicTagId" uuid, 
     "conTitle" character varying(50) NOT NULL,
     "conIntroduction" character varying(3000),
-    "conLocation" character varying(50) NOT NULL,
-    "conAddress" character varying(200) NOT NULL,
+    "conLocation" character varying(50) ,
+    "conAddress" character varying(200) ,
     "eventStartDate" date,
     "eventEndDate" date,
-    "imgBanner" character varying(255) NOT NULL,
-    "imgSeattable" character varying(255) NOT NULL,
-    "ticketPurchaseMethod" character varying(1000) NOT NULL,
-    "precautions" character varying(2000) NOT NULL,
-    "refundPolicy" character varying(1000) NOT NULL,
-    "conInfoStatus" "ConInfoStatus",
+    "imgBanner" character varying(255) ,
+    "ticketPurchaseMethod" character varying(1000) ,
+    "precautions" character varying(2000),
+    "refundPolicy" character varying(1000),
+    "conInfoStatus" "ConInfoStatus" NOT NULL DEFAULT 'draft',
     "reviewStatus" "ReviewStatus" DEFAULT 'skipped',
+    "reviewNote" text, -- 審核備註：記錄審核通過或退回的理由
     "visitCount" integer DEFAULT 0, -- 假設默認為 0
     "promotion" integer,
     "cancelledAt" timestamp without time zone,
@@ -118,10 +120,11 @@ CREATE TABLE "concert" (
 CREATE TABLE "concertSession" (
     "sessionId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     "concertId" uuid NOT NULL,
-    "sessionDate" date NOT NULL,
-    "sessionStart" time without time zone NOT NULL,
+    "sessionDate" date,
+    "sessionStart" time without time zone,
     "sessionEnd" time without time zone,
     "sessionTitle" character varying(100),
+    "imgSeattable" json,
     "createdAt" timestamp without time zone NOT NULL DEFAULT now()
 );
 
@@ -133,9 +136,9 @@ CREATE TABLE "ticketType" (
     "entranceType" character varying(50),
     "ticketBenefits" text,
     "ticketRefundPolicy" text,
-    "ticketTypePrice" numeric(10, 2) NOT NULL,
-    "totalQuantity" integer NOT NULL,
-    "remainingQuantity" integer NOT NULL,
+    "ticketTypePrice" numeric(10, 2),
+    "totalQuantity" integer,
+    "remainingQuantity" integer,
     "sellBeginDate" timestamp without time zone, -- datetime 映射為 timestamp
     "sellEndDate" timestamp without time zone,   -- datetime 映射為 timestamp
     "createdAt" timestamp without time zone NOT NULL DEFAULT now()
@@ -202,13 +205,16 @@ ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_venueId" FOREIGN KEY ("venueId"
 ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_locationTagId" FOREIGN KEY ("locationTagId") REFERENCES "locationTag"("locationTagId");
 ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_musicTagId" FOREIGN KEY ("musicTagId") REFERENCES "musicTag"("musicTagId");
 ALTER TABLE "concertSession" ADD CONSTRAINT "FK_concertSession_concertId" FOREIGN KEY ("concertId") REFERENCES "concert"("concertId") ON DELETE CASCADE;
-ALTER TABLE "ticketType" ADD CONSTRAINT "FK_ticketType_concertId" FOREIGN KEY ("concertId") REFERENCES "concert"("concertId") ON DELETE CASCADE;
+ALTER TABLE "ticketType" ADD CONSTRAINT "FK_ticketType_concertSessionId" FOREIGN KEY ("concertSessionId") REFERENCES "concertSession"("sessionId") ON DELETE CASCADE;
+ALTER TABLE "ticketType" ADD COLUMN "concertSessionId" uuid NOT NULL;
 ALTER TABLE "order" ADD CONSTRAINT "FK_order_ticketTypeId" FOREIGN KEY ("ticketTypeId") REFERENCES "ticketType"("ticketTypeId");
 ALTER TABLE "order" ADD CONSTRAINT "FK_order_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_orderId" FOREIGN KEY ("orderId") REFERENCES "order"("orderId");
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_ticketTypeId" FOREIGN KEY ("ticketTypeId") REFERENCES "ticketType"("ticketTypeId");
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
 ALTER TABLE "payment" ADD CONSTRAINT "FK_payment_orderId" FOREIGN KEY ("orderId") REFERENCES "order"("orderId");
+-- ALTER TABLE "musicTag" ADD COLUMN "subLabel" character varying(100);
+-- ALTER TABLE "locationTag" ADD COLUMN "subLabel" character varying(50);
 
 -- 創建 索引 (除了主鍵和唯一約束自帶的索引外)
 CREATE INDEX "IDX_users_role" ON "users" ("role");
