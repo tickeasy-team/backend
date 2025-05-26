@@ -396,7 +396,7 @@ export const updateConcert = handleErrorAsync(
     concert.ticketPurchaseMethod = ticketPurchaseMethod;
     concert.precautions = precautions;
     concert.refundPolicy = refundPolicy;
-    concert.conInfoStatus = conInfoStatus;
+    // conInfoStatus 不允許前端修改，保持原本狀態，只能透過專門的端點改變
     concert.imgBanner = newBannerUrl;
 
         await concertRepository.save(concert);
