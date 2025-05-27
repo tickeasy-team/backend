@@ -24,6 +24,13 @@ router.put(
 //     concertController.deleteConcert
 // );
 
+// 軟刪除活動
+router.patch(
+  '/:concertId/cancel',
+  isAuthenticated,
+  concertController.softDeleteConcert
+);
+
 // 增加visitCount
 router.patch('/:concertId/visit', concertController.incrementVisitCount);
 

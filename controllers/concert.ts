@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database.js';
+import { IsNull } from 'typeorm';
 import { Concert } from '../models/concert.js';
 // import { Venue } from '../models/venue.js';
 import { TicketType } from '../models/ticket-type.js';
@@ -31,6 +32,7 @@ import { MusicTag } from '../models/music-tag.js';
  * 10. 獲得演唱會詳細資料
  * 11. 獲得location tags
  * 12. 獲得music tags
+ * 13. 軟刪除演唱會
  */
 
 // ------------1. 建立活動-------------
@@ -330,7 +332,9 @@ export const updateConcert = handleErrorAsync(
     const ticketTypeRepository = AppDataSource.getRepository(TicketType);
 
     // const concert = await concertRepository.findOneBy({ concertId });
-    const concert = await concertRepository.findOne({ where: { concertId } });
+    const concert = await concertRepository.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+    });
 
     if (!concert) {
       throw ApiError.notFound('演唱會不存在');
@@ -566,6 +570,7 @@ export const getPopularConcerts = handleErrorAsync(
     const popularConcerts = await concertRepository.find({
       where: {
         conInfoStatus: 'published', // 僅顯示已發佈活動
+        cancelledAt: IsNull(), // 不顯示已取消的活動
       },
       order: {
         promotion: 'ASC',
@@ -600,7 +605,9 @@ export const incrementVisitCount = handleErrorAsync(
     const concertId = req.params.concertId;
     const concertRepo = AppDataSource.getRepository(Concert);
 
-    const concert = await concertRepo.findOne({ where: { concertId } });
+    const concert = await concertRepo.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+    });
     if (!concert) throw ApiError.notFound('演唱會不存在');
 
     concert.visitCount += 1;
@@ -625,7 +632,9 @@ export const updatePromotion = handleErrorAsync(
     }
 
     const concertRepo = AppDataSource.getRepository(Concert);
-    const concert = await concertRepo.findOne({ where: { concertId } });
+    const concert = await concertRepo.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+    });
 
     if (!concert) throw ApiError.notFound('演唱會不存在');
 
@@ -663,7 +672,10 @@ export const searchConcerts = handleErrorAsync(
       .leftJoinAndSelect('concert.venue', 'venue')
       .leftJoinAndSelect('concert.locationTag', 'locationTag')
       .leftJoinAndSelect('concert.musicTag', 'musicTag')
-      .where('concert.conInfoStatus = :status', { status: 'published' });
+      .where(
+        'concert.conInfoStatus = :status AND concert.cancelledAt IS NULL',
+        { status: 'published' }
+      );
 
     if (keyword) {
       query.andWhere(
@@ -740,6 +752,7 @@ export const getBannerConcerts = handleErrorAsync(
     const concerts = await concertRepository.find({
       where: {
         conInfoStatus: 'published',
+        cancelledAt: IsNull(),
       },
       order: {
         promotion: 'ASC',
@@ -910,7 +923,10 @@ export const getConcertById = handleErrorAsync(
 
     const concertRepository = AppDataSource.getRepository(Concert);
     const concert = await concertRepository.findOne({
-      where: { concertId: concertId },
+      where: {
+        concertId: concertId,
+        cancelledAt: IsNull(),
+      },
       relations: ['sessions', 'sessions.ticketTypes'],
     });
     if (!concert) {
@@ -958,6 +974,47 @@ export const getMusicTags = handleErrorAsync(
       status: 'success',
       message: '成功取得音樂標籤',
       data: musicTags,
+    });
+  }
+);
+
+// ------------13. 軟刪除演唱會-------------
+export const softDeleteConcert = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const authenticatedUser = req.user as { userId: string };
+    if (!authenticatedUser?.userId) {
+      throw ApiError.unauthorized();
+    }
+
+    const concertId = req.params.concertId;
+    console.log('要刪除的 concertId:', concertId);
+    const concertRepository = AppDataSource.getRepository(Concert);
+
+    const concert = await concertRepository.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+      relations: ['organization'],
+    });
+
+    if (!concert) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    // 檢查是否可以刪除
+    if (!concert.canBeDeleted()) {
+      throw ApiError.badRequest('只能刪除草稿、退回或審核中的演唱會');
+    }
+
+    // 軟刪除
+    concert.softDelete();
+    await concertRepository.save(concert);
+
+    res.status(200).json({
+      status: 'success',
+      message: '演唱會已成功軟刪除',
+      data: {
+        concertId: concert.concertId,
+        cancelledAt: concert.cancelledAt,
+      },
     });
   }
 );
