@@ -14,6 +14,8 @@ import { ErrorCode } from '../types/api.js';
 import { ConcertSession } from '../models/concert-session.js';
 import { Venue } from '../models/venue.js';
 import concertImageService from '../services/concertImageService.js';
+import { LocationTag } from '../models/location-tag.js';
+import { MusicTag } from '../models/music-tag.js';
 
 /**
  * INDEX
@@ -27,6 +29,8 @@ import concertImageService from '../services/concertImageService.js';
  * 8. 獲得首頁promo的banner
  * 9. 提交演唱會審核
  * 10. 獲得演唱會詳細資料
+ * 11. 獲得location tags
+ * 12. 獲得music tags
  */
 
 // ------------1. 建立活動-------------
@@ -834,6 +838,25 @@ export const submitConcertForReview = handleErrorAsync(
       }
 
       for (const ticket of session.ticketTypes) {
+        /**------除錯用--------
+         *         
+         * console.log('[Ticket Debug]', {
+          ticketTypeName: ticket.ticketTypeName,
+          entranceType: ticket.entranceType,
+          ticketBenefits: ticket.ticketBenefits,
+          ticketRefundPolicy: ticket.ticketRefundPolicy,
+          ticketTypePrice: ticket.ticketTypePrice,
+          typeofPrice: typeof ticket.ticketTypePrice,
+          totalQuantity: ticket.totalQuantity,
+          sellBeginDate: ticket.sellBeginDate,
+          sellEndDate: ticket.sellEndDate,
+        });
+         */
+
+        // 強制轉型
+        ticket.ticketTypePrice = Number(ticket.ticketTypePrice);
+        ticket.totalQuantity = Number(ticket.totalQuantity);
+
         if (
           !ticket.ticketTypeName ||
           !ticket.entranceType ||
@@ -897,6 +920,44 @@ export const getConcertById = handleErrorAsync(
     res.status(200).json({
       status: 'success',
       data: concert,
+    });
+  }
+);
+
+//------------11. 獲得 location tags -------------
+export const getLocationTags = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const locationTagRepository = AppDataSource.getRepository(LocationTag);
+
+    const locationTags = await locationTagRepository.find();
+
+    if (!locationTags.length) {
+      throw ApiError.notFound('地點標籤資料');
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功取得地點標籤',
+      data: locationTags,
+    });
+  }
+);
+
+//------------12. 獲得music tags-------------
+export const getMusicTags = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const musicTagRepository = AppDataSource.getRepository(MusicTag);
+
+    const musicTags = await musicTagRepository.find();
+
+    if (!musicTags.length) {
+      throw ApiError.notFound('音樂類型標籤資料');
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功取得音樂標籤',
+      data: musicTags,
     });
   }
 );
