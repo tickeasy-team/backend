@@ -22,6 +22,8 @@ router.put('/:concertId/submit', isAuthenticated, concertController.submitConcer
 //     concertController.deleteConcert
 // );
 
+// 單一演唱會資訊
+router.get('/:concertId', concertController.getConcertById);
 
 // 增加visitCount
 router.patch('/:concertId/visit', concertController.incrementVisitCount);
@@ -41,5 +43,6 @@ router.get('/search', concertController.searchConcerts);
 
 // 獲得首頁promo的banner
 router.get('/banners', concertController.getBannerConcerts);
+
 
 export default router;
