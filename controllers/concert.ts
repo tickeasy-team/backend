@@ -25,7 +25,8 @@ import concertImageService from '../services/concertImageService.js';
  * 6. 設定promotion權重
  * 7. 搜尋活動
  * 8. 獲得首頁promo的banner
- * 9. 取消活動
+ * 9. 提交演唱會審核
+ * 10. 獲得演唱會詳細資料
  */
 
 // ------------1. 建立活動-------------
@@ -768,7 +769,7 @@ export const getBannerConcerts = handleErrorAsync(
   }
 );
 
-// ------------3. 提交演唱會審核-------------
+// ------------09. 提交演唱會審核-------------
 export const submitConcertForReview = handleErrorAsync(
   async (req: Request, res: Response) => {
     const authenticatedUser = req.user as { userId: string };
@@ -876,3 +877,28 @@ export const submitConcertForReview = handleErrorAsync(
     });
   }
 );
+
+// ------------10. 獲得演唱會詳細資料-------------
+export const getConcertById = handleErrorAsync(
+  async (req: Request, res: Response) => {
+      const { concertId } = req.params;
+
+      // 驗證 concertId的UUID 格式
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(concertId)) {
+          throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
+      }
+
+      const concertRepository = AppDataSource.getRepository(Concert);
+      const concert = await concertRepository.findOne({
+          where: { concertId: concertId },
+          relations: ['sessions', 'sessions.ticketTypes']
+      });
+      if (!concert) {
+          throw ApiError.notFound('演唱會不存在');
+      }
+
+      res.status(200).json({
+          status: 'success',
+          data: concert
+      });
