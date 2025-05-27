@@ -208,15 +208,15 @@ export async function processConcertBanner(
 
       // 根據錯誤類型提供更具體的錯誤訊息
       if (error instanceof Error) {
-        if (error.message.includes("無法解析圖片 URL")) {
+        if (error.message.includes('無法解析圖片 URL')) {
           throw ApiError.invalidFormat(
             `${concertInfo} 的橫幅圖片 URL：${imgBanner}`
           );
-        } else if (error.message.includes("無法下載圖片")) {
+        } else if (error.message.includes('無法下載圖片')) {
           throw ApiError.notFound(`${concertInfo} 的暫存橫幅圖片，請重新上傳`);
-        } else if (error.message.includes("無法上傳到新位置")) {
+        } else if (error.message.includes('無法上傳到新位置')) {
           throw ApiError.systemError();
-        } else if (error.message.includes("Supabase 環境變數未設定")) {
+        } else if (error.message.includes('Supabase 環境變數未設定')) {
           throw ApiError.systemError();
         }
       }
@@ -334,11 +334,11 @@ PUT /api/v1/concerts/{concertId}
 // 1. 查找現有演唱會
 const concert = await concertRepository.findOne({ where: { concertId } });
 if (!concert) {
-  throw ApiError.notFound("演唱會不存在");
+  throw ApiError.notFound('演唱會不存在');
 }
 
-if (concert.conInfoStatus !== "draft" && concert.conInfoStatus !== "rejected") {
-  throw ApiError.badRequest("僅能編輯草稿或被退回的演唱會");
+if (concert.conInfoStatus !== 'draft' && concert.conInfoStatus !== 'rejected') {
+  throw ApiError.badRequest('僅能編輯草稿或被退回的演唱會');
 }
 
 // 2. 處理橫幅圖片更新（包含刪除舊圖片）
@@ -354,9 +354,9 @@ concert.venueId = venueId;
 concert.locationTagId = locationTagId;
 concert.musicTagId = musicTagId;
 concert.conTitle = title;
-concert.conIntroduction = introduction ?? "";
-concert.conLocation = location ?? "";
-concert.conAddress = address ?? "";
+concert.conIntroduction = introduction ?? '';
+concert.conLocation = location ?? '';
+concert.conAddress = address ?? '';
 concert.eventStartDate = eventStartDate ? new Date(eventStartDate) : null;
 concert.eventEndDate = eventEndDate ? new Date(eventEndDate) : null;
 concert.ticketPurchaseMethod = ticketPurchaseMethod;
@@ -421,7 +421,7 @@ export async function updateConcertBanner(
       await imageService.deleteImageByUrl(oldImgBanner);
       console.log(`舊音樂會橫幅已刪除: ${oldImgBanner}`);
     } catch (error) {
-      console.warn("刪除舊音樂會橫幅失敗:", error);
+      console.warn('刪除舊音樂會橫幅失敗:', error);
       // 不拋出錯誤，因為主要操作是更新
     }
   }
@@ -513,7 +513,7 @@ try {
   await imageService.deleteImageByUrl(oldImgBanner);
   console.log(`舊音樂會橫幅已刪除: ${oldImgBanner}`);
 } catch (error) {
-  console.warn("刪除舊音樂會橫幅失敗:", error);
+  console.warn('刪除舊音樂會橫幅失敗:', error);
   // 不拋出錯誤，因為主要操作是更新
 }
 ```
@@ -594,10 +594,10 @@ async function cleanupTempImages(hours: number = 24): Promise<number> {
   let totalDeleted = 0;
 
   // 只檢查 concert bucket，因為只有它會有暫存圖片
-  const bucket = "concert";
+  const bucket = 'concert';
 
   // 需要檢查的暫存目錄
-  const tempDirs = ["temp/concert_banner", "temp/concert_seating_table"];
+  const tempDirs = ['temp/concert_banner', 'temp/concert_seating_table'];
 
   for (const tempDir of tempDirs) {
     console.log(`檢查 ${bucket}/${tempDir} 目錄...`);
@@ -606,7 +606,7 @@ async function cleanupTempImages(hours: number = 24): Promise<number> {
     const { data: files, error: listError } = await supabase.storage
       .from(bucket)
       .list(tempDir, {
-        sortBy: { column: "created_at", order: "asc" },
+        sortBy: { column: 'created_at', order: 'asc' },
       });
 
     if (listError) {
