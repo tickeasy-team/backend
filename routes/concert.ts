@@ -12,6 +12,9 @@ router.post('/', isAuthenticated, concertController.createConcert);
 // 修改活動（僅限草稿）
 router.put('/:concertId', isAuthenticated, concertController.updateConcert);
 
+// 提交演唱會審核
+router.put('/:concertId/submit', isAuthenticated, concertController.submitConcertForReview);
+
 // // 取消活動
 // router.delete(
 //     '/:concertId/cancel',
