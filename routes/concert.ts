@@ -31,6 +31,14 @@ router.patch(
   concertController.softDeleteConcert
 );
 
+
+// 複製活動
+router.post(
+  '/:concertId/duplicate',
+  isAuthenticated,
+  concertController.duplicateConcert
+);
+
 // 增加visitCount
 router.patch('/:concertId/visit', concertController.incrementVisitCount);
 
