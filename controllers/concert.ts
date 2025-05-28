@@ -33,6 +33,7 @@ import { MusicTag } from '../models/music-tag.js';
  * 11. 獲得location tags
  * 12. 獲得music tags
  * 13. 軟刪除演唱會
+ * 14. 複製演唱會
  */
 
 // ------------1. 建立活動-------------
@@ -154,7 +155,7 @@ export const createConcert = handleErrorAsync(
 
     // 檢查名稱是否重複
     const existingConcert = await concertRepository.findOne({
-      where: { conTitle: title },
+      where: { conTitle: title,cancelledAt: IsNull() },
     });
     if (existingConcert) {
       throw ApiError.create(
@@ -1014,6 +1015,91 @@ export const softDeleteConcert = handleErrorAsync(
       data: {
         concertId: concert.concertId,
         cancelledAt: concert.cancelledAt,
+      },
+    });
+  }
+);
+
+
+// ------------14. 複製演唱會 -------------
+export const duplicateConcert = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+    const authenticatedUser = req.user as { userId: string };
+    if (!authenticatedUser?.userId) throw ApiError.unauthorized();
+
+    const concertRepo = AppDataSource.getRepository(Concert);
+    const sessionRepo = AppDataSource.getRepository(ConcertSession);
+    const ticketTypeRepo = AppDataSource.getRepository(TicketType);
+
+    const originalConcert = await concertRepo.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+      relations: ['sessions', 'sessions.ticketTypes'],
+    });
+    if (!originalConcert) throw ApiError.notFound('演唱會不存在');
+
+    // 複製 concert 主資料
+    const concertData: Partial<Concert> = {
+      organizationId: originalConcert.organizationId,
+      venueId: originalConcert.venueId,
+      locationTagId: originalConcert.locationTagId,
+      musicTagId: originalConcert.musicTagId,
+      conTitle: `${originalConcert.conTitle} (複製)`,
+      conIntroduction: originalConcert.conIntroduction,
+      conLocation: originalConcert.conLocation,
+      conAddress: originalConcert.conAddress,
+      eventStartDate: originalConcert.eventStartDate,
+      eventEndDate: originalConcert.eventEndDate,
+      imgBanner: originalConcert.imgBanner,
+      ticketPurchaseMethod: originalConcert.ticketPurchaseMethod,
+      precautions: originalConcert.precautions,
+      refundPolicy: originalConcert.refundPolicy,
+      conInfoStatus: 'draft',
+      visitCount: 0,
+      promotion: 0,
+      cancelledAt: null,
+    };
+
+    const duplicatedConcert = concertRepo.create(concertData);
+    const savedConcert: Concert = await concertRepo.save(duplicatedConcert);
+
+    // 複製 sessions 和 ticketTypes
+    for (const originalSession of originalConcert.sessions) {
+      const duplicatedSession = sessionRepo.create({
+        concert: savedConcert,
+        sessionTitle: originalSession.sessionTitle,
+        sessionDate: originalSession.sessionDate,
+        sessionStart: originalSession.sessionStart,
+        sessionEnd: originalSession.sessionEnd,
+        imgSeattable: originalSession.imgSeattable,
+      });
+      const savedSession = await sessionRepo.save(duplicatedSession);
+
+      const duplicatedTickets = originalSession.ticketTypes.map((ticket) =>
+        ticketTypeRepo.create({
+          concertSession: savedSession,
+          ticketTypeName: ticket.ticketTypeName,
+          entranceType: ticket.entranceType,
+          ticketBenefits: ticket.ticketBenefits,
+          ticketRefundPolicy: ticket.ticketRefundPolicy,
+          ticketTypePrice: ticket.ticketTypePrice,
+          totalQuantity: ticket.totalQuantity,
+          remainingQuantity: ticket.totalQuantity,
+          sellBeginDate: ticket.sellBeginDate,
+          sellEndDate: ticket.sellEndDate,
+        })
+      );
+
+      await ticketTypeRepo.save(duplicatedTickets);
+    }
+
+    res.status(201).json({
+      status: 'success',
+      message: '演唱會複製成功，已儲存為草稿',
+      data: {
+        concertId: savedConcert.concertId,
+        conTitle: savedConcert.conTitle,
+        conInfoStatus: savedConcert.conInfoStatus,
       },
     });
   }
