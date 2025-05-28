@@ -7,6 +7,8 @@
 import app from '../app.js';
 import debug from 'debug';
 import http from 'http';
+import { AppDataSource } from '../config/database.js';
+import { scheduleConcertFinishJobs } from '../scheduler/concertScheduler.js';
 
 /**
  * Get port from environment and store in Express.
@@ -58,9 +60,7 @@ function onError(error: any) {
     throw error;
   }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
@@ -83,8 +83,15 @@ function onError(error: any) {
 
 function onListening() {
   const addr = server.address();
-  const bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr?.port;
+  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr?.port;
   debug('Listening on ' + bind);
 }
+
+/**
+ * Schedule for finishing concerts
+ */
+
+AppDataSource.initialize().then(async () => {
+  console.log('啟動排程任務...');
+  await scheduleConcertFinishJobs(); // 啟動排程任務
+});
