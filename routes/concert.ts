@@ -24,6 +24,13 @@ router.put(
 //     concertController.deleteConcert
 // );
 
+// 確認活動名稱是否重複
+router.get(
+  '/check-title',
+  // isAuthenticated,
+  concertController.checkConcertTitleExists
+);
+
 // 軟刪除活動
 router.patch(
   '/:concertId/cancel',
