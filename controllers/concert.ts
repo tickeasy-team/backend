@@ -34,6 +34,7 @@ import { MusicTag } from '../models/music-tag.js';
  * 12. 獲得music tags
  * 13. 軟刪除演唱會
  * 14. 複製演唱會
+ * 15. 檢查演唱會名字是否重複
  */
 
 // ------------1. 建立活動-------------
@@ -155,7 +156,7 @@ export const createConcert = handleErrorAsync(
 
     // 檢查名稱是否重複
     const existingConcert = await concertRepository.findOne({
-      where: { conTitle: title,cancelledAt: IsNull() },
+      where: { conTitle: title, cancelledAt: IsNull() },
     });
     if (existingConcert) {
       throw ApiError.create(
@@ -1020,7 +1021,6 @@ export const softDeleteConcert = handleErrorAsync(
   }
 );
 
-
 // ------------14. 複製演唱會 -------------
 export const duplicateConcert = handleErrorAsync(
   async (req: Request, res: Response) => {
@@ -1101,6 +1101,28 @@ export const duplicateConcert = handleErrorAsync(
         conTitle: savedConcert.conTitle,
         conInfoStatus: savedConcert.conInfoStatus,
       },
+    });
+  }
+);
+
+// ------------15. 檢查演唱會名字是否重複-------------
+export const checkConcertTitleExists = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { title } = req.query as { title: string };
+
+    if (!title) {
+      throw ApiError.fieldRequired('演唱會名稱');
+    }
+
+    const concertRepository = AppDataSource.getRepository(Concert);
+    const existingConcert = await concertRepository.findOne({
+      where: { conTitle: title, cancelledAt: IsNull() },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: existingConcert ? '演唱會名稱已存在' : '演唱會名稱可用',
+      data: { exists: !!existingConcert },
     });
   }
 );
