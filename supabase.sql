@@ -19,7 +19,7 @@ CREATE TYPE "EventType" AS ENUM ('流行音樂', '搖滾', '電子音樂', '嘻�
 CREATE TABLE "users" (
     "userId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     "email" character varying(100) UNIQUE NOT NULL,
-    "password" character varying(60),
+    "password" character varying(60) NULL,
     "name" character varying(50) NOT NULL,
     "nickname" character varying(20),
     "role" "UserRole" NOT NULL DEFAULT 'user',
@@ -39,7 +39,7 @@ CREATE TABLE "users" (
     "lastVerificationAttempt" timestamp without time zone,
     "lastPasswordResetAttempt" timestamp without time zone,
     "oauthProviders" jsonb NOT NULL DEFAULT '[]'::jsonb,
-    "searchHistory" jsonb DEFAULT '[]'::jsonb,
+    "searchHistory" jsonb NULL,
     "createdAt" timestamp without time zone NOT NULL DEFAULT now(),
     "updatedAt" timestamp without time zone NOT NULL DEFAULT now(),
     "deletedAt" timestamp without time zone
@@ -100,8 +100,8 @@ CREATE TABLE "concert" (
     "conIntroduction" character varying(3000),
     "conLocation" character varying(50) ,
     "conAddress" character varying(200) ,
-    "eventStartDate" date,
-    "eventEndDate" date,
+    "eventStartDate" date NULL,
+    "eventEndDate" date NULL,
     "imgBanner" character varying(255) ,
     "ticketPurchaseMethod" character varying(1000) ,
     "precautions" character varying(2000),
@@ -124,15 +124,14 @@ CREATE TABLE "concertSession" (
     "sessionStart" time without time zone,
     "sessionEnd" time without time zone,
     "sessionTitle" character varying(100),
-    "imgSeattable" json,
+    "imgSeattable" text,
     "createdAt" timestamp without time zone NOT NULL DEFAULT now()
 );
 
 -- ticketType 表
 CREATE TABLE "ticketType" (
     "ticketTypeId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "concertId" uuid NOT NULL,
-    "ticketTypeName" character varying(50) NOT NULL,
+    "ticketTypeName" character varying(50),
     "entranceType" character varying(50),
     "ticketBenefits" text,
     "ticketRefundPolicy" text,
@@ -141,7 +140,8 @@ CREATE TABLE "ticketType" (
     "remainingQuantity" integer,
     "sellBeginDate" timestamp without time zone, -- datetime 映射為 timestamp
     "sellEndDate" timestamp without time zone,   -- datetime 映射為 timestamp
-    "createdAt" timestamp without time zone NOT NULL DEFAULT now()
+    "createdAt" timestamp without time zone NOT NULL DEFAULT now(),
+    "concertSessionId" uuid NOT NULL
 );
 
 -- order 表
@@ -149,7 +149,7 @@ CREATE TABLE "order" (
     "orderId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     "ticketTypeId" uuid NOT NULL,
     "userId" uuid NOT NULL,
-    "orderStatus" "OrderStatus",
+    "orderStatus" "OrderStatus" NOT NULL,
     "isLocked" boolean NOT NULL DEFAULT true,
     "lockToken" character varying(100) NOT NULL, -- 應考慮是否需要 unique
     "lockExpireTime" timestamp without time zone NOT NULL,
@@ -175,9 +175,9 @@ CREATE TABLE "ticket" (
     "purchaserName" character varying(100),
     "purchaserEmail" character varying(100),
     "concertStartTime" timestamp without time zone NOT NULL, -- datetime 映射為 timestamp
-    "seatNumber" character varying(50),
+    "seatNumber" character varying(100),
     "qrCode" character varying(255) UNIQUE, -- <--- 添加 UNIQUE 約束
-    "status" "TicketStatus",
+    "status" "TicketStatus" NOT NULL,
     "purchaseTime" timestamp without time zone NOT NULL
 );
 
@@ -187,11 +187,11 @@ CREATE TABLE "payment" (
     "orderId" uuid NOT NULL,
     "method" character varying(50) NOT NULL,
     "provider" character varying(50),
-    "status" "PaymentStatus",
+    "status" "PaymentStatus" NOT NULL,
     "amount" numeric(10, 2) NOT NULL,
     "currency" character varying(10) DEFAULT 'TWD',
     "paidAt" timestamp without time zone,
-    "transactionId" character varying(100) UNIQUE, -- <--- 添加 UNIQUE 約束
+    "transactionId" uuid UNIQUE, -- <--- 添加 UNIQUE 約束，類型改為 uuid
     "rawPayload" jsonb, -- 使用 jsonb 通常更好
     "createdAt" timestamp without time zone NOT NULL DEFAULT now(),
     "updatedAt" timestamp without time zone
@@ -220,7 +220,6 @@ ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_musicTagId" FOREIGN KEY ("music
 ALTER TABLE "concertReview" ADD CONSTRAINT "FK_concertReview_concertId" FOREIGN KEY ("concertId") REFERENCES "concert"("concertId") ON DELETE CASCADE;
 ALTER TABLE "concertSession" ADD CONSTRAINT "FK_concertSession_concertId" FOREIGN KEY ("concertId") REFERENCES "concert"("concertId") ON DELETE CASCADE;
 ALTER TABLE "ticketType" ADD CONSTRAINT "FK_ticketType_concertSessionId" FOREIGN KEY ("concertSessionId") REFERENCES "concertSession"("sessionId") ON DELETE CASCADE;
-ALTER TABLE "ticketType" ADD COLUMN "concertSessionId" uuid NOT NULL;
 ALTER TABLE "order" ADD CONSTRAINT "FK_order_ticketTypeId" FOREIGN KEY ("ticketTypeId") REFERENCES "ticketType"("ticketTypeId");
 ALTER TABLE "order" ADD CONSTRAINT "FK_order_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_orderId" FOREIGN KEY ("orderId") REFERENCES "order"("orderId");
@@ -242,7 +241,6 @@ CREATE INDEX "IDX_concertReview_concertId" ON "concertReview" ("concertId");
 CREATE INDEX "IDX_concertReview_reviewType" ON "concertReview" ("reviewType");
 CREATE INDEX "IDX_concertReview_reviewStatus" ON "concertReview" ("reviewStatus");
 CREATE INDEX "IDX_concertSession_concertId" ON "concertSession" ("concertId");
-CREATE INDEX "IDX_ticketType_concertId" ON "ticketType" ("concertId");
 CREATE INDEX "IDX_order_ticketTypeId" ON "order" ("ticketTypeId");
 CREATE INDEX "IDX_order_userId" ON "order" ("userId");
 CREATE INDEX "IDX_ticket_orderId" ON "ticket" ("orderId");
