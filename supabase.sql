@@ -197,6 +197,19 @@ CREATE TABLE "payment" (
     "updatedAt" timestamp without time zone
 );
 
+-- concertReview 審核記錄表
+CREATE TABLE "concertReview" (
+    "reviewId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "concertId" uuid NOT NULL,
+    "reviewType" character varying(20) NOT NULL, -- 'ai_auto', 'manual_admin', 'manual_system'
+    "reviewStatus" "ReviewStatus" NOT NULL DEFAULT 'pending',
+    "reviewNote" text, -- 詳細審核說明
+    "aiResponse" jsonb, -- AI 審核的完整回應資料
+    "reviewerId" character varying(100), -- 手動審核者 ID（AI 審核時為 null）
+    "reviewerNote" text, -- 審核者補充備註
+    "createdAt" timestamp without time zone NOT NULL DEFAULT now(),
+    "updatedAt" timestamp without time zone NOT NULL DEFAULT now()
+);
 
 -- 添加 外鍵 約束
 ALTER TABLE "organization" ADD CONSTRAINT "FK_organization_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
@@ -204,6 +217,7 @@ ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_organizationId" FOREIGN KEY ("o
 ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_venueId" FOREIGN KEY ("venueId") REFERENCES "venues"("venueId");
 ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_locationTagId" FOREIGN KEY ("locationTagId") REFERENCES "locationTag"("locationTagId");
 ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_musicTagId" FOREIGN KEY ("musicTagId") REFERENCES "musicTag"("musicTagId");
+ALTER TABLE "concertReview" ADD CONSTRAINT "FK_concertReview_concertId" FOREIGN KEY ("concertId") REFERENCES "concert"("concertId") ON DELETE CASCADE;
 ALTER TABLE "concertSession" ADD CONSTRAINT "FK_concertSession_concertId" FOREIGN KEY ("concertId") REFERENCES "concert"("concertId") ON DELETE CASCADE;
 ALTER TABLE "ticketType" ADD CONSTRAINT "FK_ticketType_concertSessionId" FOREIGN KEY ("concertSessionId") REFERENCES "concertSession"("sessionId") ON DELETE CASCADE;
 ALTER TABLE "ticketType" ADD COLUMN "concertSessionId" uuid NOT NULL;
@@ -224,6 +238,9 @@ CREATE INDEX "IDX_concert_organizationId" ON "concert" ("organizationId");
 CREATE INDEX "IDX_concert_venueId" ON "concert" ("venueId");
 CREATE INDEX "IDX_concert_locationTagId" ON "concert" ("locationTagId");
 CREATE INDEX "IDX_concert_musicTagId" ON "concert" ("musicTagId");
+CREATE INDEX "IDX_concertReview_concertId" ON "concertReview" ("concertId");
+CREATE INDEX "IDX_concertReview_reviewType" ON "concertReview" ("reviewType");
+CREATE INDEX "IDX_concertReview_reviewStatus" ON "concertReview" ("reviewStatus");
 CREATE INDEX "IDX_concertSession_concertId" ON "concertSession" ("concertId");
 CREATE INDEX "IDX_ticketType_concertId" ON "ticketType" ("concertId");
 CREATE INDEX "IDX_order_ticketTypeId" ON "order" ("ticketTypeId");
