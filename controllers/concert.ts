@@ -51,10 +51,10 @@ export const createConcert = handleErrorAsync(
       venueId,
       locationTagId,
       musicTagId,
-      title,
-      introduction,
-      location,
-      address,
+      conTitle,
+      conIntroduction,
+      conLocation,
+      conAddress,
       eventStartDate,
       eventEndDate,
       ticketPurchaseMethod,
@@ -77,10 +77,10 @@ export const createConcert = handleErrorAsync(
         !venueId ||
         !locationTagId ||
         !musicTagId ||
-        !title ||
-        !introduction ||
-        !location ||
-        !address ||
+        !conTitle ||
+        !conIntroduction ||
+        !conLocation ||
+        !conAddress ||
         !eventStartDate ||
         !eventEndDate ||
         !ticketPurchaseMethod ||
@@ -156,7 +156,7 @@ export const createConcert = handleErrorAsync(
 
     // 檢查名稱是否重複
     const existingConcert = await concertRepository.findOne({
-      where: { conTitle: title, cancelledAt: IsNull() },
+      where: { conTitle: conTitle, cancelledAt: IsNull() },
     });
     if (existingConcert) {
       throw ApiError.create(
@@ -172,10 +172,10 @@ export const createConcert = handleErrorAsync(
       venueId,
       locationTagId,
       musicTagId,
-      conTitle: title,
-      conIntroduction: introduction ?? '',
-      conLocation: location ?? '',
-      conAddress: address ?? '',
+      conTitle: conTitle,
+      conIntroduction: conIntroduction ?? '',
+      conLocation: conLocation ?? '',
+      conAddress: conAddress ?? '',
       eventStartDate: eventStartDate ? new Date(eventStartDate) : undefined,
       eventEndDate: eventEndDate ? new Date(eventEndDate) : undefined,
       imgBanner,
@@ -315,10 +315,10 @@ export const updateConcert = handleErrorAsync(
       venueId,
       locationTagId,
       musicTagId,
-      title,
-      introduction,
-      location,
-      address,
+      conTitle,
+      conIntroduction,
+      conLocation,
+      conAddress,
       eventStartDate,
       eventEndDate,
       ticketPurchaseMethod,
@@ -358,10 +358,10 @@ export const updateConcert = handleErrorAsync(
         !venueId ||
         !locationTagId ||
         !musicTagId ||
-        !title ||
-        !introduction ||
-        !location ||
-        !address ||
+        !conTitle ||
+        !conIntroduction ||
+        !conLocation ||
+        !conAddress ||
         !eventStartDate ||
         !eventEndDate ||
         !ticketPurchaseMethod ||
@@ -398,10 +398,10 @@ export const updateConcert = handleErrorAsync(
     concert.venueId = venueId;
     concert.locationTagId = locationTagId;
     concert.musicTagId = musicTagId;
-    concert.conTitle = title;
-    concert.conIntroduction = introduction ?? '';
-    concert.conLocation = location ?? '';
-    concert.conAddress = address ?? '';
+    concert.conTitle = conTitle;
+    concert.conIntroduction = conIntroduction ?? '';
+    concert.conLocation = conLocation ?? '';
+    concert.conAddress = conAddress ?? '';
     concert.eventStartDate = eventStartDate ? new Date(eventStartDate) : null;
     concert.eventEndDate = eventEndDate ? new Date(eventEndDate) : null;
     concert.ticketPurchaseMethod = ticketPurchaseMethod;
@@ -723,6 +723,7 @@ export const searchConcerts = handleErrorAsync(
       conIntroduction: concert.conIntroduction,
       conAddress: concert.conAddress,
       eventStartDate: concert.eventStartDate,
+      conLocation: concert.conLocation,
       eventEndDate: concert.eventEndDate,
       imgBanner: concert.imgBanner,
       venueName: (concert as any).venue?.venueName,
@@ -1109,15 +1110,15 @@ export const duplicateConcert = handleErrorAsync(
 // ------------15. 檢查演唱會名字是否重複-------------
 export const checkConcertTitleExists = handleErrorAsync(
   async (req: Request, res: Response) => {
-    const { title } = req.query as { title: string };
+    const { conTitle } = req.query as { conTitle: string };
 
-    if (!title) {
+    if (!conTitle) {
       throw ApiError.fieldRequired('演唱會名稱');
     }
 
     const concertRepository = AppDataSource.getRepository(Concert);
     const existingConcert = await concertRepository.findOne({
-      where: { conTitle: title, cancelledAt: IsNull() },
+      where: { conTitle: conTitle, cancelledAt: IsNull() },
     });
 
     res.status(200).json({
