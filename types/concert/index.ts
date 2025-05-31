@@ -37,10 +37,10 @@ export interface CreateConcertRequest {
   venueId: string;
   locationTagId: string;
   musicTagId: string;
-  title: string;
-  introduction?: string;
-  location: string;
-  address: string;
+  conTitle: string;
+  conIntroduction?: string;
+  conLocation: string;
+  conAddress: string;
   eventStartDate?: string; // yyyy/MM/dd
   eventEndDate?: string; // yyyy/MM/dd
   ticketPurchaseMethod: string;
