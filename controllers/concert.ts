@@ -808,9 +808,11 @@ export const submitConcertForReview = handleErrorAsync(
     // 檢查權限：只能操作自己組織的演唱會
     // TODO: 這裡可能需要檢查用戶是否屬於該組織
 
-    // 檢查狀態：只有草稿可以提交審核
-    if (concert.conInfoStatus !== 'draft') {
-      throw ApiError.badRequest('只有草稿狀態的演唱會可以提交審核');
+    // 檢查狀態：草稿或被退回的演唱會可以提交審核
+    if (concert.conInfoStatus !== 'draft' && concert.conInfoStatus !== 'rejected') {
+      throw ApiError.badRequest(
+        `無法提交審核：當前狀態為 ${concert.conInfoStatus}，只有草稿或被退回的演唱會可以提交審核`
+      );
     }
 
     // 驗證演唱會是否完整
