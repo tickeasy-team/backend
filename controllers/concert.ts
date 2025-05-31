@@ -716,11 +716,12 @@ export const searchConcerts = handleErrorAsync(
       .skip(skip)
       .take(take)
       .getManyAndCount();
-
+    console.log('concerts', concerts);
     const result = concerts.map((concert) => ({
       concertId: concert.concertId,
       conTitle: concert.conTitle,
       conIntroduction: concert.conIntroduction,
+      conAddress: concert.conAddress,
       eventStartDate: concert.eventStartDate,
       eventEndDate: concert.eventEndDate,
       imgBanner: concert.imgBanner,
