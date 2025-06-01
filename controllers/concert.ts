@@ -36,6 +36,7 @@ import concertReviewService from '../services/concertReviewService.js';
  * 13. 軟刪除演唱會
  * 14. 複製演唱會
  * 15. 檢查演唱會名字是否重複
+ * 16. 獲取演唱會審核記錄
  */
 
 // ------------1. 建立活動-------------
@@ -1136,6 +1137,35 @@ export const checkConcertTitleExists = handleErrorAsync(
       status: 'success',
       message: existingConcert ? '演唱會名稱已存在' : '演唱會名稱可用',
       data: { exists: !!existingConcert },
+    });
+  }
+);
+
+// ------------16. 獲取演唱會審核記錄-------------
+export const getConcertReviews = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+
+    // 驗證 concertId的UUID 格式
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(concertId)) {
+      throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
+    }
+
+    // 檢查演唱會是否存在 (可選，但建議)
+    const concertRepository = AppDataSource.getRepository(Concert);
+    const concertExists = await concertRepository.findOneBy({ concertId });
+    if (!concertExists) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    const reviews = await concertReviewService.getConcertReviews(concertId);
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功取得演唱會審核記錄',
+      data: reviews,
     });
   }
 );
