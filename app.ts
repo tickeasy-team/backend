@@ -22,7 +22,7 @@ import organizationRouter from './routes/organization.js';
 import uploadRouter from './routes/upload.js';
 import concertRoute from './routes/concert.js';
 import ticketRoute from './routes/ticket.js';
-import orderRoute from './routes/order.js';
+import ordersRoute from './routes/orders.js';
 
 import healthRouter from './routes/health.js';
 
@@ -67,7 +67,7 @@ app.use('/api/v1/organizations', organizationRouter);
 app.use('/api/v1/upload', uploadRouter);
 app.use('/api/v1/concerts', concertRoute);
 app.use('/api/v1/ticket', ticketRoute);
-app.use('/api/v1/order', orderRoute);
+app.use('/api/v1/orders', ordersRoute);
 app.use('/api/v1/health', healthRouter);
 
 

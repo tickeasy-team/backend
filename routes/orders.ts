@@ -1,11 +1,10 @@
 import express, { Router } from 'express';
-// import { isAuthenticated } from '../middlewares/auth.js';
-// import { isAuthenticated } from '../middlewares/auth.js';
-import { getConcertTickets } from '../controllers/ticket.js';
+import { isAuthenticated } from '../middlewares/auth.js';
+import { createOrder } from '../controllers/orders.js';
 
 const router: Router = express.Router();
 
-router.get('/:concerSessiontId', getConcertTickets);
+router.post('/', isAuthenticated, createOrder);
 
 // router.put('/profile', isAuthenticated, updateUserProfile);
 
