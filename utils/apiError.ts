@@ -124,6 +124,11 @@ export class ApiError {
   static badRequest(fieldName: string) {
     return this.create(400, `${fieldName} 僅能編輯草稿中的演唱會`, ErrorCode.DATA_INVALID);
   }
+  
+  // 僅能編輯草稿
+  static outOfTimeRange(fieldName: string) {
+    return this.create(400, `${fieldName} 目前非販售時間`, ErrorCode.DATA_INVALID);
+  }
 
 
 
