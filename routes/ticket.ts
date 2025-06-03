@@ -5,7 +5,7 @@ import { getConcertTickets } from '../controllers/ticket.js';
 
 const router: Router = express.Router();
 
-router.get('/:concerSessiontId', getConcertTickets);
+router.get('/:concertSessionId', getConcertTickets);
 
 // router.put('/profile', isAuthenticated, updateUserProfile);
 
