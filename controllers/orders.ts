@@ -10,7 +10,7 @@ import { Order, OrderStatus } from '../models/order.js';
 import { v4 as uuidv4 } from 'uuid'; // 用來產生 lockToken
 
 export const createOrder = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
-  try{
+  
   const { ticketTypeId, purchaserName, purchaserEmail, purchaserPhone } = req.body;
   const authenticatedUser = req.user as Express.User; // 從 middleware 拿到 userId
 
@@ -34,7 +34,7 @@ export const createOrder = handleErrorAsync(async (req: Request, res: Response<A
 
   const now = new Date();
   if (now < selectedTicket.sellBeginDate || now > selectedTicket.sellEndDate) {
-    throw ApiError.badRequest('目前非販售時間');
+    throw ApiError.outOfTimeRange(selectedTicket.ticketTypeName);
   }
 
   // 扣庫存
@@ -84,13 +84,6 @@ export const createOrder = handleErrorAsync(async (req: Request, res: Response<A
       orderId: savedOrder.orderId,
       lockExpireTime: savedOrder.lockExpireTime,
     },
-  });
-  }catch(error){
-    console.log(error);
-    return res.status(500).json({
-    status: 'failed',
-    message: 'server error'
-    });
-  } 
+  }); 
 });
 
