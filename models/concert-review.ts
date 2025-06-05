@@ -22,7 +22,7 @@ export class ConcertReview {
   @Column({ name: 'concertId', type: 'uuid', nullable: false })
   concertId: string;
 
-  @ManyToOne(() => Concert, { onDelete: 'CASCADE' })
+  @ManyToOne('Concert', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'concertId' })
   concert: Concert;
 
