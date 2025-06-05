@@ -132,7 +132,7 @@ export class Concert {
   })
   sessions: ConcertSession[];
 
-  @OneToMany(() => ConcertReview, (review) => review.concert, {
+  @OneToMany('ConcertReview', (review: ConcertReview) => review.concert, {
     cascade: false, // 不自動建立審核記錄
     onDelete: 'CASCADE', // 刪除 Concert 時連動刪除 reviews
   })
