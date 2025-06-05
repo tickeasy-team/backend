@@ -78,6 +78,9 @@ router.get(
   concertController.getConcertReviews
 );
 
+// 取得指定演唱會的所有場次及票種
+router.get('/:concertId/sessions', concertController.getConcertSessions);
+
 // 單一演唱會資訊
 router.get('/:concertId', concertController.getConcertById);
 
