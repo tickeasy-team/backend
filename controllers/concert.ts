@@ -1156,19 +1156,39 @@ export const getConcertReviews = handleErrorAsync(
       throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
     }
 
-    // 檢查演唱會是否存在 (可選，但建議)
     const concertRepository = AppDataSource.getRepository(Concert);
-    const concertExists = await concertRepository.findOneBy({ concertId });
-    if (!concertExists) {
+    const concert = await concertRepository.findOne({
+      where: { concertId },
+      select: ['concertId', 'conInfoStatus'], // 只需要 concertId 和 conInfoStatus
+    });
+
+    if (!concert) {
       throw ApiError.notFound('演唱會不存在');
     }
 
-    const reviews = await concertReviewService.getConcertReviews(concertId);
+    if (concert.conInfoStatus === 'draft') {
+      return res.status(200).json({
+        status: 'success',
+        message: '演唱會為草稿狀態，尚無審核記錄。',
+        data: {
+          concertId: concert.concertId,
+          conInfoStatus: concert.conInfoStatus,
+          reviews: [],
+        },
+      });
+    }
+
+    // 如果不是草稿，則從服務獲取審核記錄
+    const reviewsArray = await concertReviewService.getConcertReviews(concertId);
 
     res.status(200).json({
       status: 'success',
       message: '成功取得演唱會審核記錄',
-      data: reviews,
+      data: {
+        concertId: concert.concertId,
+        conInfoStatus: concert.conInfoStatus,
+        reviews: reviewsArray, // reviewsArray 是從服務取得的審核記錄陣列
+      },
     });
   }
 );
