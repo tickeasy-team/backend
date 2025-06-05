@@ -17,6 +17,7 @@ import { Venue } from '../models/venue.js';
 import concertImageService from '../services/concertImageService.js';
 import { LocationTag } from '../models/location-tag.js';
 import { MusicTag } from '../models/music-tag.js';
+import concertReviewService from '../services/concertReviewService.js';
 
 /**
  * INDEX
@@ -35,6 +36,8 @@ import { MusicTag } from '../models/music-tag.js';
  * 13. 軟刪除演唱會
  * 14. 複製演唱會
  * 15. 檢查演唱會名字是否重複
+ * 16. 獲取演唱會審核記錄
+ * 17. 取得指定演唱會的所有場次及票種
  */
 
 // ------------1. 建立活動-------------
@@ -809,9 +812,11 @@ export const submitConcertForReview = handleErrorAsync(
     // 檢查權限：只能操作自己組織的演唱會
     // TODO: 這裡可能需要檢查用戶是否屬於該組織
 
-    // 檢查狀態：只有草稿可以提交審核
-    if (concert.conInfoStatus !== 'draft') {
-      throw ApiError.badRequest('只有草稿狀態的演唱會可以提交審核');
+    // 檢查狀態：草稿或被退回的演唱會可以提交審核
+    if (concert.conInfoStatus !== 'draft' && concert.conInfoStatus !== 'rejected') {
+      throw ApiError.badRequest(
+        `無法提交審核：當前狀態為 ${concert.conInfoStatus}，只有草稿或被退回的演唱會可以提交審核`
+      );
     }
 
     // 驗證演唱會是否完整
@@ -900,6 +905,16 @@ export const submitConcertForReview = handleErrorAsync(
     // 更新狀態為審核中
     concert.conInfoStatus = 'reviewing';
     await concertRepository.save(concert);
+
+    // 非同步觸發 AI 審核，不影響主流程
+    concertReviewService.triggerAIReview(concert.concertId)
+      .then((aiReview) => {
+        console.log(`[AI審核] 演唱會 ${concert.concertId} AI審核已完成，狀態：${aiReview.reviewStatus}`);
+      })
+      .catch((err) => {
+        console.error(`[AI審核] 演唱會 ${concert.concertId} AI審核失敗：`, err);
+      });
+    //
 
     res.status(200).json({
       status: 'success',
@@ -1125,6 +1140,96 @@ export const checkConcertTitleExists = handleErrorAsync(
       status: 'success',
       message: existingConcert ? '演唱會名稱已存在' : '演唱會名稱可用',
       data: { exists: !!existingConcert },
+    });
+  }
+);
+
+// ------------16. 獲取演唱會審核記錄-------------
+export const getConcertReviews = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+
+    // 驗證 concertId的UUID 格式
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(concertId)) {
+      throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
+    }
+
+    // 檢查演唱會是否存在 (可選，但建議)
+    const concertRepository = AppDataSource.getRepository(Concert);
+    const concertExists = await concertRepository.findOneBy({ concertId });
+    if (!concertExists) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    const reviews = await concertReviewService.getConcertReviews(concertId);
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功取得演唱會審核記錄',
+      data: reviews,
+    });
+  }
+);
+
+// ------------17. 取得指定演唱會的所有場次及票種-------------
+export const getConcertSessions = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+
+    // 驗證 UUID 格式
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(concertId)) {
+      throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
+    }
+
+    const concertRepository = AppDataSource.getRepository(Concert);
+    const concert = await concertRepository.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+      relations: ['organization', 'sessions', 'sessions.ticketTypes'], // 確保載入關聯資料
+    });
+
+    if (!concert) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    // 確保 organization 存在，再進行下一步
+    if (!concert.organization) {
+      // 理論上 concert schema 要求 organizationId，所以應該會有 organization
+      // 但以防萬一，如果真的沒有，可以拋出錯誤或回傳特定訊息
+      throw ApiError.create(500, '演唱會資料不完整：缺少組織資訊', ErrorCode.DATA_INVALID);
+    }
+
+    const result = {
+      organization: {
+        organizationId: concert.organization.organizationId,
+        orgName: concert.organization.orgName,
+      },
+      concert: {
+        concertId: concert.concertId,
+        conTitle: concert.conTitle,
+        sessions: (concert.sessions || []).map(session => ({
+          sessionId: session.sessionId,
+          // 日期格式處理為 YYYY-MM-DD
+          sessionDate: session.sessionDate instanceof Date 
+            ? session.sessionDate.toISOString().slice(0, 10) 
+            : session.sessionDate, 
+          ticketTypes: (session.ticketTypes || []).map(ticket => ({
+            ticketTypeId: ticket.ticketTypeId,
+            ticketTypeName: ticket.ticketTypeName,
+            ticketTypePrice: ticket.ticketTypePrice,
+            remainingQuantity: ticket.remainingQuantity,
+            totalQuantity: ticket.totalQuantity,
+          })),
+        })),
+      }
+    };
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功獲取音樂會場次及票種資訊',
+      data: result,
     });
   }
 );
