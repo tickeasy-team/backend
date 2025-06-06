@@ -18,6 +18,7 @@ import concertImageService from '../services/concertImageService.js';
 import { LocationTag } from '../models/location-tag.js';
 import { MusicTag } from '../models/music-tag.js';
 import concertReviewService from '../services/concertReviewService.js';
+import { ReviewStatus } from '../models/concert.js';
 
 /**
  * INDEX
@@ -38,6 +39,7 @@ import concertReviewService from '../services/concertReviewService.js';
  * 15. 檢查演唱會名字是否重複
  * 16. 獲取演唱會審核記錄
  * 17. 取得指定演唱會的所有場次及票種
+ * 18. 手動審核演唱會
  */
 
 // ------------1. 建立活動-------------
@@ -1250,6 +1252,57 @@ export const getConcertSessions = handleErrorAsync(
       status: 'success',
       message: '成功獲取音樂會場次及票種資訊',
       data: result,
+    });
+  }
+);
+
+// ------------18. 手動審核演唱會-------------
+export const submitManualConcertReview = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+    const {
+      reviewStatus,
+      reviewerNote,
+    }: {
+      reviewStatus: ReviewStatus.APPROVED | ReviewStatus.REJECTED;
+      reviewerNote: string;
+    } = req.body;
+
+    // 1. 驗證使用者身份與權限
+    const authenticatedUser = req.user as { userId: string; role: string };
+    if (!authenticatedUser?.userId) {
+      throw ApiError.unauthorized();
+    }
+    // TODO: 在未來更精確的角色管理中，這裡應檢查 user.role === 'admin'
+    const reviewerId = authenticatedUser.userId;
+
+    // 2. 驗證輸入參數
+    if (
+      !reviewStatus ||
+      (reviewStatus !== ReviewStatus.APPROVED &&
+        reviewStatus !== ReviewStatus.REJECTED)
+    ) {
+      throw ApiError.badRequest(
+        '審核狀態 (reviewStatus) 為必填，且必須是 "approved" 或 "rejected"'
+      );
+    }
+    if (typeof reviewerNote !== 'string' || reviewerNote.trim() === '') {
+      throw ApiError.badRequest('審核意見 (reviewerNote) 為必填且不可為空');
+    }
+
+    // 3. 呼叫服務層進行審核
+    const newReview = await concertReviewService.submitManualReview(
+      concertId,
+      reviewerId,
+      reviewStatus,
+      reviewerNote
+    );
+
+    // 4. 回傳成功回應
+    res.status(201).json({
+      status: 'success',
+      message: `演唱會已手動審核完畢，狀態為: ${reviewStatus}`,
+      data: newReview,
     });
   }
 );
