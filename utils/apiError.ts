@@ -125,9 +125,14 @@ export class ApiError {
     return this.create(400, `${fieldName} 僅能編輯草稿中的演唱會`, ErrorCode.DATA_INVALID);
   }
   
-  // 僅能編輯草稿
+  // 不是販售時間
   static outOfTimeRange(fieldName: string) {
     return this.create(400, `${fieldName} 目前非販售時間`, ErrorCode.DATA_INVALID);
+  }
+  
+  // 訂單已過期
+  static orderExpired(fieldName: string) {
+    return this.create(400, `${fieldName} 訂單已過期`, ErrorCode.DATA_INVALID);
   }
 
 

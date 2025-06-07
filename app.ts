@@ -15,6 +15,10 @@ import { connectToDatabase } from './config/database.js';
 // 確保模型初始化
 import './models/index.js';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
 // 引入路由
 import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
@@ -39,6 +43,15 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('未處理的 Promise 拒絕:', promise, '原因:', reason);
 });
+
+// ESM friendly __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 設定 View 引擎
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
 
 connectToDatabase()
   .then(() => console.log('資料庫連接成功'))

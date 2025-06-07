@@ -10,7 +10,7 @@ import { Order, OrderStatus } from '../models/order.js';
 import { v4 as uuidv4 } from 'uuid'; // 用來產生 lockToken
 
 export const createOrder = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
-  
+
   const { ticketTypeId, purchaserName, purchaserEmail, purchaserPhone } = req.body;
   // const authenticatedUser = req.user as Express.User; // 從 middleware 拿到 userId
   const authenticatedUser = req.user as { userId: string; role: string; email: string; };

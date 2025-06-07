@@ -5,15 +5,9 @@ import { getECpayurl, getECpayReturn } from '../controllers/payment.js';
 
 const router: Router = express.Router();
 
-router.post('/:orderId',  getECpayurl);
+router.post('/return',  getECpayReturn);
 
-router.post('/res/return',  getECpayReturn);
-
-// router.put('/profile', isAuthenticated, updateUserProfile);
-
-// router.get('/profile/regions', getRegionOptions);
-
-// router.get('/profile/event-types', getEventTypeOptions);
+router.get('/:orderId', isAuthenticated, getECpayurl);
 
 export default router; 
 
