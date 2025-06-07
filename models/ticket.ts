@@ -48,19 +48,19 @@ export class Ticket {
   user: any; // 或者可以使用 Record<string, any> 類型
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  purchaserName: string;
+  purchaserName: string | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  purchaserEmail: string;
+  purchaserEmail: string | null;
 
   @Column({ type: 'timestamp', nullable: false })
   concertStartTime: Date;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  seatNumber: string;
+  seatNumber: string | null;
 
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
-  qrCode: string;
+  qrCode: string | null;
 
   @Column({
     type: 'enum',

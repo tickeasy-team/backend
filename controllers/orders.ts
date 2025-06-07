@@ -76,7 +76,7 @@ export const createOrder = handleErrorAsync(async (req: Request, res: Response<A
 
   const savedOrder = await orderRepository.save(newOrder);
 
-  console.log(`✅ 訂單 ${savedOrder.orderId} 創建成功`);
+  // console.log(`✅ 訂單 ${savedOrder.orderId} 創建成功`);
 
   return res.status(200).json({
     status: 'success',

@@ -23,8 +23,8 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
   const orderId = req.params.orderId;
   const authenticatedUser = req.user as { userId: string; role: string; email: string; };
   
-  console.log('用戶信息:', authenticatedUser);
-  console.log('訂單ID:', orderId);
+  // console.log('用戶信息:', authenticatedUser);
+  // console.log('訂單ID:', orderId);
   
   if (!orderId) {
     throw ApiError.fieldRequired('orderId');
@@ -41,7 +41,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
     where: { orderId: orderId }
   });
   
-  console.log('訂單信息:', selectedOrder);
+  // console.log('訂單信息:', selectedOrder);
   if (!selectedOrder) {
     throw ApiError.notFound('訂單');
   }
@@ -63,7 +63,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
   });
   
   if (existingPayment) {
-    console.log('發現現有的待處理支付記錄:', existingPayment.transactionId);
+    // console.log('發現現有的待處理支付記錄:', existingPayment.transactionId);
     // 可以選擇返回現有的支付頁面或創建新的
   }
 
@@ -77,7 +77,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
     throw ApiError.notFound('票種');
   }
   
-  console.log('票種信息:', ticketTypeData);
+  // console.log('票種信息:', ticketTypeData);
 
   // 獲取演唱會場次信息
   const ConcertSessionRepository = AppDataSource.getRepository(ConcertSessionEntity);
@@ -89,7 +89,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
     throw ApiError.notFound('演唱會場次');
   }
   
-  console.log('演唱會場次信息:', ConcertSessionData);
+  // console.log('演唱會場次信息:', ConcertSessionData);
 
   // ECPay 設定
   const options = {
@@ -105,7 +105,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
 
   const payment = new ecpay_payment(options);
   const MerchantTradeDate = getMerchantTradeDate();
-  console.log('交易時間:', MerchantTradeDate);
+  // console.log('交易時間:', MerchantTradeDate);
   
   const sessionTitle = ConcertSessionData.sessionTitle;
   const sessionDate = ConcertSessionData.sessionDate;
@@ -151,7 +151,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
   });
   
   await PaymentRepository.save(paymentRecord);
-  console.log('支付記錄已創建:', MerchantTradeNo);
+  // console.log('支付記錄已創建:', MerchantTradeNo);
 
   const ItemName = ticketTypeData.ticketTypeName || '演唱會門票';
   
@@ -167,14 +167,14 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
     TotalAmount: TotalAmount.toString(),
     TradeDesc: limitedTradeDesc,
     ItemName: limitedItemName,
-    ReturnURL: `${HOST}/return`,
+    ReturnURL: `${HOST}`,
     PaymentType: 'aio',
     ChoosePayment: 'Credit',
     IgnorePayment: 'ATM#CVS#BARCODE#WebATM',
     ClientBackURL: REDIRECTURL
   };
 
-  console.log('ECPay 參數:', base_param);
+  // console.log('ECPay 參數:', base_param);
   
   try {
     const html = payment.payment_client.aio_check_out_all(base_param, {}, {});
@@ -194,7 +194,7 @@ return;
 
 export const getECpayReturn = handleErrorAsync(async (req: Request, res: Response) => {
   const raw = req.body;
-  console.log('ECPay 回調數據:', raw);
+  // console.log('ECPay 回調數據:', raw);
 
   if (!raw || !raw.MerchantTradeNo) {
     throw new Error('無效的回調數據');
@@ -208,8 +208,8 @@ export const getECpayReturn = handleErrorAsync(async (req: Request, res: Respons
   }
   
   const checkMac = generateCheckMacValue(raw, HASHKEY, HASHIV);
-  console.log('計算的 CheckMacValue:', checkMac);
-  console.log('ECPay 的 CheckMacValue:', raw.CheckMacValue);
+  // console.log('計算的 CheckMacValue:', checkMac);
+  // console.log('ECPay 的 CheckMacValue:', raw.CheckMacValue);
 
   if (checkMac !== raw.CheckMacValue) {
     console.error('CheckMacValue 驗證失敗');
@@ -234,7 +234,7 @@ export const getECpayReturn = handleErrorAsync(async (req: Request, res: Respons
 
     // 防止重複處理
     if (payment.status !== 'pending') {
-      console.log(`支付記錄 ${merchantTradeNo} 已處理，狀態: ${payment.status}`);
+      // console.log(`支付記錄 ${merchantTradeNo} 已處理，狀態: ${payment.status}`);
       await queryRunner.commitTransaction();
       res.send('1|OK');
       return;
@@ -249,7 +249,7 @@ export const getECpayReturn = handleErrorAsync(async (req: Request, res: Respons
     
 
     await PaymentRepository.save(payment);
-    console.log(`支付記錄已更新: ${merchantTradeNo}, 狀態: ${payment.status}`);
+    // console.log(`支付記錄已更新: ${merchantTradeNo}, 狀態: ${payment.status}`);
 
     // 只有在支付成功時才處理訂單和票券
     if (isSuccess) {
@@ -274,7 +274,7 @@ export const getECpayReturn = handleErrorAsync(async (req: Request, res: Respons
       order.orderStatus = 'paid';
       order.updatedAt = new Date();
       await OrderRepository.save(order);
-      console.log(`訂單 ${order.orderId} 狀態已更新為 paid`);
+      // // console.log(`訂單 ${order.orderId} 狀態已更新為 paid`);
 
       // 3. 創建票券
       const TicketRepository = queryRunner.manager.getRepository(TicketEntity);
@@ -317,14 +317,14 @@ export const getECpayReturn = handleErrorAsync(async (req: Request, res: Respons
         });
 
         await TicketRepository.save(ticket);
-        console.log(`為訂單 ${order.orderId} 創建票券成功`);
+        // // console.log(`為訂單 ${order.orderId} 創建票券成功`);
       } else {
-        console.log(`訂單 ${order.orderId} 的票券已存在，跳過創建`);
+        // // console.log(`訂單 ${order.orderId} 的票券已存在，跳過創建`);
       }
     }
 
     await queryRunner.commitTransaction();
-    console.log('交易處理完成');
+    // console.log('交易處理完成');
     
   } catch (error) {
     await queryRunner.rollbackTransaction();
@@ -374,7 +374,7 @@ function generateCheckMacValue(
     .join('&');
   raw += `&HashIV=${hashIV}`;
 
-  console.log('原始字符串:', raw);
+  // console.log('原始字符串:', raw);
 
   // 3. URL encode 並轉小寫，套用綠界特殊規則
   const encoded = encodeURIComponent(raw)
@@ -385,7 +385,7 @@ function generateCheckMacValue(
     .replace(/%29/g, ')')
     .replace(/%2a/g, '*');
 
-  console.log('編碼後字符串:', encoded);
+  // console.log('編碼後字符串:', encoded);
 
   // 4. SHA256 加密並轉大寫
   const hash = crypto.createHash('sha256').update(encoded).digest('hex').toUpperCase();
