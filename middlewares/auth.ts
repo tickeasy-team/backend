@@ -110,24 +110,21 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
 /**
  * 驗證用戶是否為管理員的中間件
  */
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      throw ApiError.unauthorized();
-    }
+export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    // 這個中介軟體應該在 isAuthenticated 之後使用
+    const user = req.user as { role: string; [key: string]: any };
 
-    // 確保有正確的類型檢查
-    const user = req.user as any;
-    const userRole = String(user.role).toLowerCase();
-    if (userRole !== 'admin') {
-      throw ApiError.forbidden();
+    if (!user) {
+      return next(ApiError.unauthorized());
     }
-
+    
+    if (user.role !== 'admin' && user.role !== 'superuser') {
+      return next(
+        ApiError.forbidden()
+      );
+    }
     next();
-  } catch (error) {
-    next(error);
-  }
-};
+  };
 
 /**
  * 管理員權限驗證中間件

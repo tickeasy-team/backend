@@ -78,6 +78,13 @@ router.get(
   concertController.getConcertReviews
 );
 
+// 手動審核演唱會 (管理員)
+router.post(
+  '/:concertId/manual-review',
+  isAuthenticated, // TODO: 應更換為 isAdmin 中介軟體
+  concertController.submitManualConcertReview
+);
+
 // 取得指定演唱會的所有場次及票種
 router.get('/:concertId/sessions', concertController.getConcertSessions);
 
