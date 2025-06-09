@@ -65,4 +65,8 @@ export class Payment {
 
   @UpdateDateColumn({ nullable: true })
   updatedAt?: Date;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  tradeNo: string;
+
 } 
