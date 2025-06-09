@@ -948,7 +948,7 @@ export const getConcertById = handleErrorAsync(
         concertId: concertId,
         cancelledAt: IsNull(),
       },
-      relations: ['sessions', 'sessions.ticketTypes'],
+      relations: ['sessions', 'sessions.ticketTypes','venue'],
     });
     if (!concert) {
       throw ApiError.notFound('演唱會不存在');
