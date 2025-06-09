@@ -11,7 +11,7 @@ import {
 } from '../types/organization/index.js';
 import { ErrorCode, ApiResponse } from '../types/api.js';
 
-import { Not } from 'typeorm';
+import { Not, IsNull } from 'typeorm';
 import { Concert } from '../models/concert.js';
 import { ConcertsResponse, VALID_SORT_FIELDS } from '../types/concert/index.js';
 
@@ -380,7 +380,7 @@ export const getConcertsByOrganization = handleErrorAsync(
     }
 
     // 組合 where 條件
-    const where: any = { organizationId };
+    const where: any = { organizationId, cancelledAt: IsNull() };
     if (status) where.conInfoStatus = status;
 
     // 組合排序

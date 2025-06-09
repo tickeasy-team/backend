@@ -17,6 +17,8 @@ import { Venue } from '../models/venue.js';
 import concertImageService from '../services/concertImageService.js';
 import { LocationTag } from '../models/location-tag.js';
 import { MusicTag } from '../models/music-tag.js';
+import concertReviewService from '../services/concertReviewService.js';
+import { ReviewStatus } from '../models/concert.js';
 
 /**
  * INDEX
@@ -35,6 +37,9 @@ import { MusicTag } from '../models/music-tag.js';
  * 13. 軟刪除演唱會
  * 14. 複製演唱會
  * 15. 檢查演唱會名字是否重複
+ * 16. 獲取演唱會審核記錄
+ * 17. 取得指定演唱會的所有場次及票種
+ * 18. 手動審核演唱會
  */
 
 // ------------1. 建立活動-------------
@@ -809,9 +814,11 @@ export const submitConcertForReview = handleErrorAsync(
     // 檢查權限：只能操作自己組織的演唱會
     // TODO: 這裡可能需要檢查用戶是否屬於該組織
 
-    // 檢查狀態：只有草稿可以提交審核
-    if (concert.conInfoStatus !== 'draft') {
-      throw ApiError.badRequest('只有草稿狀態的演唱會可以提交審核');
+    // 檢查狀態：草稿或被退回的演唱會可以提交審核
+    if (concert.conInfoStatus !== 'draft' && concert.conInfoStatus !== 'rejected') {
+      throw ApiError.badRequest(
+        `無法提交審核：當前狀態為 ${concert.conInfoStatus}，只有草稿或被退回的演唱會可以提交審核`
+      );
     }
 
     // 驗證演唱會是否完整
@@ -901,6 +908,16 @@ export const submitConcertForReview = handleErrorAsync(
     concert.conInfoStatus = 'reviewing';
     await concertRepository.save(concert);
 
+    // 非同步觸發 AI 審核，不影響主流程
+    concertReviewService.triggerAIReview(concert.concertId)
+      .then((aiReview) => {
+        console.log(`[AI審核] 演唱會 ${concert.concertId} AI審核已完成，狀態：${aiReview.reviewStatus}`);
+      })
+      .catch((err) => {
+        console.error(`[AI審核] 演唱會 ${concert.concertId} AI審核失敗：`, err);
+      });
+    //
+
     res.status(200).json({
       status: 'success',
       message: '演唱會已提交審核，請等待管理員審核',
@@ -931,7 +948,7 @@ export const getConcertById = handleErrorAsync(
         concertId: concertId,
         cancelledAt: IsNull(),
       },
-      relations: ['sessions', 'sessions.ticketTypes'],
+      relations: ['sessions', 'sessions.ticketTypes','venue'],
     });
     if (!concert) {
       throw ApiError.notFound('演唱會不存在');
@@ -1125,6 +1142,167 @@ export const checkConcertTitleExists = handleErrorAsync(
       status: 'success',
       message: existingConcert ? '演唱會名稱已存在' : '演唱會名稱可用',
       data: { exists: !!existingConcert },
+    });
+  }
+);
+
+// ------------16. 獲取演唱會審核記錄-------------
+export const getConcertReviews = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+
+    // 驗證 concertId的UUID 格式
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(concertId)) {
+      throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
+    }
+
+    const concertRepository = AppDataSource.getRepository(Concert);
+    const concert = await concertRepository.findOne({
+      where: { concertId },
+      select: ['concertId', 'conInfoStatus'], // 只需要 concertId 和 conInfoStatus
+    });
+
+    if (!concert) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    if (concert.conInfoStatus === 'draft') {
+      return res.status(200).json({
+        status: 'success',
+        message: '演唱會為草稿狀態，尚無審核記錄。',
+        data: {
+          concertId: concert.concertId,
+          conInfoStatus: concert.conInfoStatus,
+          reviews: [],
+        },
+      });
+    }
+
+    // 如果不是草稿，則從服務獲取審核記錄
+    const reviewsArray = await concertReviewService.getConcertReviews(concertId);
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功取得演唱會審核記錄',
+      data: {
+        concertId: concert.concertId,
+        conInfoStatus: concert.conInfoStatus,
+        reviews: reviewsArray, // reviewsArray 是從服務取得的審核記錄陣列
+      },
+    });
+  }
+);
+
+// ------------17. 取得指定演唱會的所有場次及票種-------------
+export const getConcertSessions = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+
+    // 驗證 UUID 格式
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(concertId)) {
+      throw ApiError.invalidFormat('演唱會 ID 格式錯誤');
+    }
+
+    const concertRepository = AppDataSource.getRepository(Concert);
+    const concert = await concertRepository.findOne({
+      where: { concertId, cancelledAt: IsNull() },
+      relations: ['organization', 'sessions', 'sessions.ticketTypes'], // 確保載入關聯資料
+    });
+
+    if (!concert) {
+      throw ApiError.notFound('演唱會不存在');
+    }
+
+    // 確保 organization 存在，再進行下一步
+    if (!concert.organization) {
+      // 理論上 concert schema 要求 organizationId，所以應該會有 organization
+      // 但以防萬一，如果真的沒有，可以拋出錯誤或回傳特定訊息
+      throw ApiError.create(500, '演唱會資料不完整：缺少組織資訊', ErrorCode.DATA_INVALID);
+    }
+
+    const result = {
+      organization: {
+        organizationId: concert.organization.organizationId,
+        orgName: concert.organization.orgName,
+      },
+      concert: {
+        concertId: concert.concertId,
+        conTitle: concert.conTitle,
+        sessions: (concert.sessions || []).map(session => ({
+          sessionId: session.sessionId,
+          // 日期格式處理為 YYYY-MM-DD
+          sessionDate: session.sessionDate instanceof Date 
+            ? session.sessionDate.toISOString().slice(0, 10) 
+            : session.sessionDate, 
+          ticketTypes: (session.ticketTypes || []).map(ticket => ({
+            ticketTypeId: ticket.ticketTypeId,
+            ticketTypeName: ticket.ticketTypeName,
+            ticketTypePrice: ticket.ticketTypePrice,
+            remainingQuantity: ticket.remainingQuantity,
+            totalQuantity: ticket.totalQuantity,
+          })),
+        })),
+      }
+    };
+
+    res.status(200).json({
+      status: 'success',
+      message: '成功獲取音樂會場次及票種資訊',
+      data: result,
+    });
+  }
+);
+
+// ------------18. 手動審核演唱會-------------
+export const submitManualConcertReview = handleErrorAsync(
+  async (req: Request, res: Response) => {
+    const { concertId } = req.params;
+    const {
+      reviewStatus,
+      reviewerNote,
+    }: {
+      reviewStatus: ReviewStatus.APPROVED | ReviewStatus.REJECTED;
+      reviewerNote: string;
+    } = req.body;
+
+    // 1. 驗證使用者身份與權限
+    const authenticatedUser = req.user as { userId: string; role: string };
+    if (!authenticatedUser?.userId) {
+      throw ApiError.unauthorized();
+    }
+    // TODO: 在未來更精確的角色管理中，這裡應檢查 user.role === 'admin'
+    const reviewerId = authenticatedUser.userId;
+
+    // 2. 驗證輸入參數
+    if (
+      !reviewStatus ||
+      (reviewStatus !== ReviewStatus.APPROVED &&
+        reviewStatus !== ReviewStatus.REJECTED)
+    ) {
+      throw ApiError.badRequest(
+        '審核狀態 (reviewStatus) 為必填，且必須是 "approved" 或 "rejected"'
+      );
+    }
+    if (typeof reviewerNote !== 'string' || reviewerNote.trim() === '') {
+      throw ApiError.badRequest('審核意見 (reviewerNote) 為必填且不可為空');
+    }
+
+    // 3. 呼叫服務層進行審核
+    const newReview = await concertReviewService.submitManualReview(
+      concertId,
+      reviewerId,
+      reviewStatus,
+      reviewerNote
+    );
+
+    // 4. 回傳成功回應
+    res.status(201).json({
+      status: 'success',
+      message: `演唱會已手動審核完畢，狀態為: ${reviewStatus}`,
+      data: newReview,
     });
   }
 );

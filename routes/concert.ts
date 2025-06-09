@@ -71,6 +71,23 @@ router.get('/location-tags', concertController.getLocationTags);
 // 獲得music tags
 router.get('/music-tags', concertController.getMusicTags);
 
+// 獲取演唱會審核記錄
+router.get(
+  '/:concertId/reviews',
+  isAuthenticated,
+  concertController.getConcertReviews
+);
+
+// 手動審核演唱會 (管理員)
+router.post(
+  '/:concertId/manual-review',
+  isAuthenticated, // TODO: 應更換為 isAdmin 中介軟體
+  concertController.submitManualConcertReview
+);
+
+// 取得指定演唱會的所有場次及票種
+router.get('/:concertId/sessions', concertController.getConcertSessions);
+
 // 單一演唱會資訊
 router.get('/:concertId', concertController.getConcertById);
 
