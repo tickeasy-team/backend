@@ -8,7 +8,6 @@ import { Order as OrderEntity} from '../models/order.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
 import { ApiResponse } from '../types/api.js';
 import crypto from 'crypto';
-
 const { MERCHANTID, HASHKEY, HASHIV, HOST, REDIRECTURL} = process.env;
 
 // 環境變數檢查
@@ -177,7 +176,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
   // console.log('ECPay 參數:', base_param);
   
   try {
-    const html = payment.payment_client.aio_check_out_all(base_param, {}, {});
+    const html = payment.payment_client.aio_check_out_credit_onetime(base_param, {}, {});
     res.render('ecpay', { html });
   } catch (error) {
     console.error('ECPay 支付頁面生成失敗:', error);
@@ -245,6 +244,8 @@ export const getECpayReturn = handleErrorAsync(async (req: Request, res: Respons
     payment.paidAt = raw.PaymentDate ? new Date(raw.PaymentDate) : new Date();
     payment.rawPayload = raw;
     payment.updatedAt = new Date();
+    payment.tradeNo = raw.TradeNo;
+
 
     
 

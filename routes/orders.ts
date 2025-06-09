@@ -1,12 +1,12 @@
 import express, { Router } from 'express';
 import { isAuthenticated } from '../middlewares/auth.js';
-import { createOrder } from '../controllers/orders.js';
+import { createOrder, refundOrder } from '../controllers/orders.js';
 
 const router: Router = express.Router();
 
 router.post('/', isAuthenticated, createOrder);
 
-// router.put('/profile', isAuthenticated, updateUserProfile);
+router.post('/:orderId/refund', isAuthenticated, refundOrder);
 
 // router.get('/profile/regions', getRegionOptions);
 
