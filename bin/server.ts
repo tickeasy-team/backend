@@ -9,6 +9,7 @@ import debug from 'debug';
 import http from 'http';
 import { AppDataSource } from '../config/database.js';
 import { scheduleConcertFinishJobs } from '../scheduler/concertScheduler.js';
+import { scheduleOrderExpiredJobs } from '../scheduler/orderScheduler.js';
 
 /**
  * Get port from environment and store in Express.
@@ -94,4 +95,7 @@ function onListening() {
 AppDataSource.initialize().then(async () => {
   console.log('啟動排程任務...');
   await scheduleConcertFinishJobs(); // 啟動排程任務
+
+  console.log('啟動訂單逾期排程任務...');
+  await scheduleOrderExpiredJobs(); // 啟動訂單逾期
 });
