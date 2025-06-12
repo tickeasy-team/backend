@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database.js';
-import { User as UserEntity, RegionOptions, EventTypeOptions, Region, EventType, Gender } from '../models/user.js';
-import { UpdateProfileRequest } from '../types/user/requests.js';
+import { User as UserEntity, RegionOptions, EventTypeOptions, Region, EventType, Gender, UserRole } from '../models/user.js';
+import { UpdateProfileRequest, UpdateUserRoleRequest } from '../types/user/requests.js';
 import { UserProfileResponse, UserProfileData } from '../types/user/responses.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
 import { ErrorCode, ApiResponse } from '../types/api.js';
@@ -270,5 +270,63 @@ export const getEventTypeOptions = handleErrorAsync(async (req: Request, res: Re
     status: 'success',
     message: '獲取活動類型選項成功',
     data: formattedOptions // 返回轉換後的格式
+  });
+});
+
+/**
+ * 更新使用者角色
+ * 僅限管理員 (admin / superuser) 使用
+ * 路徑: PATCH /users/:id/role
+ */
+export const updateUserRole = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>) => {
+  // 驗證當前登入者
+  const authenticatedUser = req.user as { userId: string; role: string; email: string };
+
+  if (!authenticatedUser) {
+    throw ApiError.unauthorized();
+  }
+
+  const targetUserId = req.params.id;
+  const { role } = req.body as UpdateUserRoleRequest;
+
+  // 檢查 role 欄位
+  if (!role) {
+    throw ApiError.create(400, 'role 欄位為必填', ErrorCode.DATA_INVALID);
+  }
+
+  // 檢查是否為有效角色
+  if (!Object.values(UserRole).includes(role as UserRole)) {
+    throw ApiError.create(400, '無效的角色', ErrorCode.DATA_INVALID);
+  }
+
+  // 若要修改自己為 user，阻止此行為 (避免鎖死管理員帳號)
+  if (authenticatedUser.userId === targetUserId && role === UserRole.USER) {
+    throw ApiError.create(400, '禁止將自己的角色降為 user', ErrorCode.DATA_INVALID);
+  }
+
+  const userRepository = AppDataSource.getRepository(UserEntity);
+  const user = await userRepository.findOne({ where: { userId: targetUserId } });
+
+  if (!user) {
+    throw ApiError.notFound('用戶');
+  }
+
+  // 若角色無變動，直接回傳成功
+  if (user.role === role) {
+    return res.status(200).json({
+      status: 'success',
+      message: '使用者角色未變更',
+      data: { userId: user.userId, role: user.role }
+    });
+  }
+
+  user.role = role as UserRole;
+
+  await userRepository.save(user);
+
+  return res.status(200).json({
+    status: 'success',
+    message: '使用者角色更新成功',
+    data: { userId: user.userId, role: user.role }
   });
 }); 
