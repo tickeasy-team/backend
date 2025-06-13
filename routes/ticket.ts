@@ -1,16 +1,12 @@
 import express, { Router } from 'express';
-// import { isAuthenticated } from '../middlewares/auth.js';
-// import { isAuthenticated } from '../middlewares/auth.js';
-import { getConcertTickets } from '../controllers/ticket.js';
+import { isAuthenticated } from '../middlewares/auth.js';
+import { getConcertTickets, verifyTicket } from '../controllers/ticket.js';
 
 const router: Router = express.Router();
 
 router.get('/:concertSessionId', getConcertTickets);
 
-// router.put('/profile', isAuthenticated, updateUserProfile);
-
-// router.get('/profile/regions', getRegionOptions);
-
-// router.get('/profile/event-types', getEventTypeOptions);
+// 驗票 API - 需要驗證身份（工作人員或管理員）
+router.post('/verify', isAuthenticated, verifyTicket);
 
 export default router; 
