@@ -5,7 +5,8 @@ import { UpdateProfileRequest, UpdateUserRoleRequest } from '../types/user/reque
 import { UserProfileResponse, UserProfileData } from '../types/user/responses.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
 import { ErrorCode, ApiResponse } from '../types/api.js';
-import { Order as OrderEntity, OrderStatus } from '../models/order.js';
+import { OrderStatus } from '../models/order.js';
+import { Ticket, TicketStatus } from '../models/ticket.js';
 
 // Gender enum 的中英文映射
 const genderToChineseMap: Record<Gender, string> = {
@@ -339,42 +340,51 @@ export const getOrdersList = handleErrorAsync(async (req: Request, res: Response
   // 將 EventTypeOptions 轉換為前端期望的格式
   const authenticatedUser = req.user as { userId: string; role: string; email: string; };
 
-  const orderRepository = AppDataSource.getRepository(OrderEntity);
-  const orders = await orderRepository
-  .createQueryBuilder('order')
+  const ticketRepository = AppDataSource.getRepository(Ticket);
+  const orders = await ticketRepository
+  .createQueryBuilder('ticket')
+  .leftJoinAndSelect('ticket.order', 'order')
   .leftJoinAndSelect('order.ticketType', 'ticketType')
   .leftJoinAndSelect('ticketType.concertSession', 'concertSession')
   .leftJoinAndSelect('concertSession.concert', 'concert')
   .select([
+    'ticket.qrCode',
+    'ticket.status' as TicketStatus,
     'order.orderNumber',
     'order.createdAt',
     'order.orderStatus' as OrderStatus,
     'ticketType.ticketTypeName',
+    'ticketType.ticketTypePrice',
     'concertSession.sessionTitle',
     'concertSession.sessionDate',
     'concertSession.sessionStart',
     'concertSession.sessionEnd',
     'concert.conTitle',
-    'concert.conLocation',
-    'concert.conIntroduction'
+    'concert.conAddress',
+    'concert.conIntroduction',
+    'concert.conInfoStatus'
   ])
-  .where('order.userId = :userId', { userId: authenticatedUser.userId })
+  .where('ticket.userId = :userId', { userId: authenticatedUser.userId })
   .getRawMany();
-  
+  console.log(orders);
   let data = [];
 
   const flatOrders = orders.map(raw => ({
     orderStatus: raw.order_orderStatus,
-    orderCreatedAt: raw.order_createdAt,
+    orderCreatedAt: formatDateTime(new Date(raw.order_createdAt)),
     orderNumber: raw.order_orderNumber,
     ticketTypeName: raw.ticketType_ticketTypeName,
-    sessionDate: raw.concertSession_sessionDate,
+    price: raw.ticketType_ticketTypePrice,
+    sessionDate: formatDateTime(new Date(raw.concertSession_sessionDate)),
     sessionStart: raw.concertSession_sessionStart,
     sessionEnd: raw.concertSession_sessionEnd,
     sessionTitle: raw.concertSession_sessionTitle,
-    concertTitle: raw.concert_conTitle,
-    concertIntroduction: raw.concert_conIntroduction,
-    concertLocation: raw.concert_conLocation
+    concertName: raw.concert_conTitle,
+    concertDescription: raw.concert_conIntroduction,
+    concertStatus: raw.concert_conInfoStatus,
+    concertAddress: raw.concert_conAddress,
+    qrCode: raw.ticket_qrCode,
+    tickerStatus: raw.ticket_status
   }));
   data.push(flatOrders);
 
@@ -386,3 +396,9 @@ export const getOrdersList = handleErrorAsync(async (req: Request, res: Response
 }); 
 
 
+function formatDateTime(input: any): string {
+  if (!input) return '';
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return ''; // 檢查是否為非法時間
+  return date.toISOString().replace('T', ' ').substring(0, 19);
+}
