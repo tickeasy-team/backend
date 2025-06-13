@@ -61,6 +61,7 @@ export const getConcertTickets = handleErrorAsync(async (req: Request, res: Resp
 
 /**
  * 驗票 API - 透過 QR Code 字串核銷票券
+ * 權限：只有該票券的主辦方或管理員(admin/superuser)可以核銷
  */
 export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
   const { qrCode } = req.body;
@@ -79,6 +80,9 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
 
   const [, ticketUserId, orderId] = qrParts;
 
+  // 🔍 Debug: 輸出查詢條件
+  console.log('🔍 驗票查詢條件:', { ticketUserId, orderId });
+
   // 驗證 UUID 格式
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(ticketUserId) || !uuidRegex.test(orderId)) {
@@ -88,14 +92,60 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
   const ticketRepository = AppDataSource.getRepository(TicketEntity);
   const orderRepository = AppDataSource.getRepository(OrderEntity);
 
-  // 查找對應的訂單
+  // 🔍 Debug: 先檢查基本的訂單資料
+  console.log('🔍 查詢訂單...');
+  const basicOrder = await orderRepository.findOne({
+    where: { orderId, userId: ticketUserId }
+  });
+  console.log('🔍 基本訂單查詢結果:', basicOrder ? '找到' : '未找到');
+
+  if (!basicOrder) {
+    throw ApiError.create(404, '找不到對應的訂單', ErrorCode.ORDER_NOT_FOUND);
+  }
+
+  // 查找對應的訂單並加載主辦方資訊
+  console.log('🔍 查詢訂單關聯資料...');
   const order = await orderRepository.findOne({
     where: { orderId, userId: ticketUserId },
-    select: ['orderId', 'userId', 'orderStatus']
+    relations: [
+      'ticketType',
+      'ticketType.concertSession',
+      'ticketType.concertSession.concert',
+      'ticketType.concertSession.concert.organization'
+    ],
+    select: {
+      orderId: true,
+      userId: true,
+      orderStatus: true,
+      ticketType: {
+        concertSession: {
+          concert: {
+            organization: {
+              userId: true  // 主辦方的 userId
+            }
+          }
+        }
+      }
+    }
+  });
+
+  console.log('🔍 關聯訂單查詢結果:', order ? '找到' : '未找到');
+  console.log('🔍 訂單詳細資料:', {
+    orderId: order?.orderId,
+    orderStatus: order?.orderStatus,
+    hasTicketType: !!order?.ticketType,
+    hasSession: !!order?.ticketType?.concertSession,
+    hasConcert: !!order?.ticketType?.concertSession?.concert,
+    hasOrganization: !!order?.ticketType?.concertSession?.concert?.organization
   });
 
   if (!order) {
-    throw ApiError.create(404, '找不到對應的訂單', ErrorCode.ORDER_NOT_FOUND);
+    throw ApiError.create(404, '找不到對應的訂單關聯資料', ErrorCode.ORDER_NOT_FOUND);
+  }
+
+  // 確保關聯載入成功
+  if (!order?.ticketType?.concertSession?.concert?.organization) {
+    throw ApiError.create(500, '訂單關聯資料不完整', ErrorCode.SYSTEM_ERROR);
   }
 
   // 檢查訂單狀態
@@ -103,7 +153,50 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     throw ApiError.create(400, `訂單狀態錯誤：${order.orderStatus}`, ErrorCode.INVALID_ORDER_STATUS);
   }
 
-  // 查找對應的票券
+  // 🔒 權限檢查：只有該票券的主辦方或管理員可以核銷
+  const organizerUserId = order.ticketType.concertSession.concert.organization.userId;
+  const isOrganizer = authenticatedUser.userId === organizerUserId;
+  const isAdmin = authenticatedUser.role === 'admin' || authenticatedUser.role === 'superuser';
+  
+  console.log('🔍 權限檢查:', {
+    currentUserId: authenticatedUser.userId,
+    organizerUserId,
+    isOrganizer,
+    userRole: authenticatedUser.role,
+    isAdmin
+  });
+  
+  if (!isOrganizer && !isAdmin) {
+    throw ApiError.create(403, '您沒有權限驗證此票券，只有該演場會的主辦方或管理員可以進行驗票', ErrorCode.AUTH_INSUFFICIENT_PERMISSION);
+  }
+
+  // 🔍 Debug: 先檢查基本的票券資料
+  console.log('🔍 查詢基本票券...');
+  const basicTicket = await ticketRepository.findOne({
+    where: { orderId, userId: ticketUserId }
+  });
+  console.log('🔍 基本票券查詢結果:', basicTicket ? '找到' : '未找到');
+
+  if (!basicTicket) {
+    // 🔍 Debug: 檢查所有票券來找出問題
+    console.log('🔍 查詢所有相關票券...');
+    const allTicketsForOrder = await ticketRepository.find({
+      where: { orderId },
+      select: ['ticketId', 'orderId', 'userId', 'status']
+    });
+    console.log('🔍 該訂單的所有票券:', allTicketsForOrder);
+
+    const allTicketsForUser = await ticketRepository.find({
+      where: { userId: ticketUserId },
+      select: ['ticketId', 'orderId', 'userId', 'status']
+    });
+    console.log('🔍 該用戶的所有票券:', allTicketsForUser);
+
+    throw ApiError.create(404, '找不到對應的票券', ErrorCode.TICKET_NOT_FOUND);
+  }
+
+  // 查找對應的票券（帶關聯）
+  console.log('🔍 查詢票券關聯資料...');
   const ticket = await ticketRepository.findOne({
     where: { orderId, userId: ticketUserId },
     relations: ['ticketType', 'ticketType.concertSession'],
@@ -125,8 +218,47 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     }
   });
 
+  console.log('🔍 關聯票券查詢結果:', ticket ? '找到' : '未找到');
+
   if (!ticket) {
-    throw ApiError.create(404, '找不到對應的票券', ErrorCode.TICKET_NOT_FOUND);
+    console.log('🔍 關聯查詢失敗，使用基本票券資料');
+    // 如果關聯查詢失敗，使用基本資料
+    const fallbackTicket = basicTicket;
+    
+    // 檢查票券狀態
+    if (fallbackTicket.status === 'used') {
+      throw ApiError.create(400, '票券已被使用', ErrorCode.TICKET_ALREADY_USED);
+    }
+
+    if (fallbackTicket.status === 'refunded') {
+      throw ApiError.create(400, '票券已退款，無法使用', ErrorCode.TICKET_REFUNDED);
+    }
+
+    if (fallbackTicket.status !== 'purchased') {
+      throw ApiError.create(400, `票券狀態錯誤：${fallbackTicket.status}`, ErrorCode.INVALID_TICKET_STATUS);
+    }
+
+    // 核銷票券 - 更新狀態為 'used'
+    fallbackTicket.status = 'used';
+    await ticketRepository.save(fallbackTicket);
+
+    const verifierType = isAdmin ? '管理員' : '主辦方';
+    console.log(`票券核銷成功 - 票券ID: ${fallbackTicket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${new Date().toISOString()}`);
+
+    return res.status(200).json({
+      status: 'success',
+      message: '票券驗證成功',
+      data: {
+        ticketId: fallbackTicket.ticketId,
+        purchaserName: fallbackTicket.purchaserName,
+        ticketTypeName: '無法獲取票種資訊',
+        concertTitle: '無法獲取演場會資訊',
+        concertDate: null,
+        verifiedAt: new Date(),
+        verifiedBy: authenticatedUser.email,
+        verifierType: verifierType
+      }
+    });
   }
 
   // 檢查票券狀態
@@ -156,8 +288,9 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
   ticket.status = 'used';
   await ticketRepository.save(ticket);
 
-  // 記錄驗票資訊（可以擴展為添加驗票記錄表）
-  console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email}, 時間: ${now.toISOString()}`);
+  // 記錄驗票資訊（包含權限類型）
+  const verifierType = isAdmin ? '管理員' : '主辦方';
+  console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${now.toISOString()}`);
 
   return res.status(200).json({
     status: 'success',
@@ -169,7 +302,8 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
       concertTitle: ticket.ticketType.concertSession.sessionTitle,
       concertDate: ticket.ticketType.concertSession.sessionDate,
       verifiedAt: now,
-      verifiedBy: authenticatedUser.email
+      verifiedBy: authenticatedUser.email,
+      verifierType: verifierType
     }
   });
 });
