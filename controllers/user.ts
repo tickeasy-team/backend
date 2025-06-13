@@ -453,7 +453,7 @@ export const getTicketdetail = handleErrorAsync(async (req: Request, res: Respon
       message: '查無此票券資料',
     });
   }
-  console.log(rawTicket);
+  // console.log(rawTicket);
   const data = {
     concertName: rawTicket.contitle,
     concertAddress: rawTicket.conaddress,
@@ -479,7 +479,7 @@ export const getTicketdetail = handleErrorAsync(async (req: Request, res: Respon
       website: rawTicket.orgwebsite,
     }
   };
-  console.log(data);
+  // console.log(data);
   return res.status(200).json({
     status: 'success',
     message: '成功取得票券詳細資料',
