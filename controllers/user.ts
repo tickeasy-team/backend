@@ -5,6 +5,7 @@ import { UpdateProfileRequest, UpdateUserRoleRequest } from '../types/user/reque
 import { UserProfileResponse, UserProfileData } from '../types/user/responses.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
 import { ErrorCode, ApiResponse } from '../types/api.js';
+import { Order as OrderEntity, OrderStatus } from '../models/order.js';
 
 // Gender enum 的中英文映射
 const genderToChineseMap: Record<Gender, string> = {
@@ -330,3 +331,58 @@ export const updateUserRole = handleErrorAsync(async (req: Request, res: Respons
     data: { userId: user.userId, role: user.role }
   });
 }); 
+
+/**
+ * 獲取訂單清單
+ */
+export const getOrdersList = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>) => {
+  // 將 EventTypeOptions 轉換為前端期望的格式
+  const authenticatedUser = req.user as { userId: string; role: string; email: string; };
+
+  const orderRepository = AppDataSource.getRepository(OrderEntity);
+  const orders = await orderRepository
+  .createQueryBuilder('order')
+  .leftJoinAndSelect('order.ticketType', 'ticketType')
+  .leftJoinAndSelect('ticketType.concertSession', 'concertSession')
+  .leftJoinAndSelect('concertSession.concert', 'concert')
+  .select([
+    'order.orderNumber',
+    'order.createdAt',
+    'order.orderStatus' as OrderStatus,
+    'ticketType.ticketTypeName',
+    'concertSession.sessionTitle',
+    'concertSession.sessionDate',
+    'concertSession.sessionStart',
+    'concertSession.sessionEnd',
+    'concert.conTitle',
+    'concert.conLocation',
+    'concert.conIntroduction'
+  ])
+  .where('order.userId = :userId', { userId: authenticatedUser.userId })
+  .getRawMany();
+  
+  let data = [];
+
+  const flatOrders = orders.map(raw => ({
+    orderStatus: raw.order_orderStatus,
+    orderCreatedAt: raw.order_createdAt,
+    orderNumber: raw.order_orderNumber,
+    ticketTypeName: raw.ticketType_ticketTypeName,
+    sessionDate: raw.concertSession_sessionDate,
+    sessionStart: raw.concertSession_sessionStart,
+    sessionEnd: raw.concertSession_sessionEnd,
+    sessionTitle: raw.concertSession_sessionTitle,
+    concertTitle: raw.concert_conTitle,
+    concertIntroduction: raw.concert_conIntroduction,
+    concertLocation: raw.concert_conLocation
+  }));
+  data.push(flatOrders);
+
+  return res.status(200).json({
+    status: 'success',
+    message: '成功取得訂單清單',
+    data: data // 返回轉換後的格式
+  });
+}); 
+
+
