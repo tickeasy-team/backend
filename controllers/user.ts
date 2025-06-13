@@ -7,6 +7,7 @@ import { handleErrorAsync, ApiError } from '../utils/index.js';
 import { ErrorCode, ApiResponse } from '../types/api.js';
 import { OrderStatus } from '../models/order.js';
 import { Ticket, TicketStatus } from '../models/ticket.js';
+import { formatDateTimeTW } from '../utils/date.js';
 
 // Gender enum 的中英文映射
 const genderToChineseMap: Record<Gender, string> = {
@@ -350,6 +351,7 @@ export const getOrdersList = handleErrorAsync(async (req: Request, res: Response
   .select([
     'ticket.qrCode',
     'ticket.status' as TicketStatus,
+    'ticket.ticketId',
     'order.orderNumber',
     'order.createdAt',
     'order.orderStatus' as OrderStatus,
@@ -384,7 +386,8 @@ export const getOrdersList = handleErrorAsync(async (req: Request, res: Response
     concertStatus: raw.concert_conInfoStatus,
     concertAddress: raw.concert_conAddress,
     qrCode: raw.ticket_qrCode,
-    tickerStatus: raw.ticket_status
+    tickerStatus: raw.ticket_status,
+    ticketId:raw.ticket_ticketId
   }));
   data.push(flatOrders);
 
@@ -395,10 +398,118 @@ export const getOrdersList = handleErrorAsync(async (req: Request, res: Response
   });
 }); 
 
+/**
+ * 獲取特定票券資訊
+ */
+export const getTicketdetail = handleErrorAsync(async (req: Request, res: Response<ApiResponse<any>>) => {
+  const authenticatedUser = req.user as { userId: string; role: string; email: string };
+  const ticketId = req.params.ticketId;
+
+  const ticketRepository = AppDataSource.getRepository(Ticket);
+
+  const rawTicket = await ticketRepository
+    .createQueryBuilder('ticket')
+    .leftJoinAndSelect('ticket.order', 'order')
+    .leftJoinAndSelect('order.ticketType', 'ticketType')
+    .leftJoinAndSelect('ticketType.concertSession', 'concertSession')
+    .leftJoinAndSelect('concertSession.concert', 'concert')
+    .leftJoinAndSelect('concert.organization', 'organization')
+    .select([
+      'ticket.qrCode AS qrCode',
+      'ticket.status AS ticketStatus',
+      'ticket.purchaserName AS purchaserName',
+      'ticket.purchaserEmail AS purchaseremail',
+      'ticket.concertStartTime AS concertStartTime',
+      'ticket.purchaseTime AS purchaseTime',
+      'order.orderNumber AS orderNumber',
+      'order.purchaserPhone AS purchaserPhone',
+      'ticketType.ticketTypeName AS ticketTypeName',
+      'ticketType.ticketTypePrice AS ticketTypePrice',
+      'concertSession.sessionTitle AS sessionTitle',
+      'concertSession.sessionDate AS sessionDate',
+      'concertSession.sessionStart AS sessionStart',
+      'concertSession.sessionEnd AS sessionEnd',
+      'concert.conTitle AS conTitle',
+      'concert.conAddress AS conAddress',
+      'concert.conInfoStatus AS conInfoStatus',
+      'organization.orgName AS orgName',
+      'organization.orgAddress AS orgAddress',
+      'organization.orgContact AS orgContact',
+      'organization.orgMail AS orgMail',
+      'organization.orgMobile AS orgMobile',
+      'organization.orgPhone AS orgPhone',
+      'organization.orgWebsite AS orgWebsite',
+    ])
+
+    .where('ticket.ticketId = :ticketId AND ticket.userId = :userId', {
+        ticketId,
+        userId: authenticatedUser.userId,
+      })
+    .getRawOne();
+
+  if (!rawTicket) {
+    return res.status(404).json({
+      status: 'failed',
+      message: '查無此票券資料',
+    });
+  }
+  // console.log(rawTicket);
+  const data = {
+    concertName: rawTicket.contitle,
+    concertAddress: rawTicket.conaddress,
+    concertDate: formatDateTimeTW(rawTicket.concertstarttime),
+    orderNumber: rawTicket.ordernumber,
+    purchaseTime: formatDateTime(new Date(rawTicket.purchasetime)),
+    paymentMethod: '信用卡',
+    count: 1,
+    price: formatCurrencyTW(rawTicket.tickettypeprice),
+    sessionDate: formatDateTime(new Date(rawTicket.sessiondate)),
+    sessionStart: rawTicket.concertSession_sessionStart,
+    purchaserName: rawTicket.purchasername,
+    purchaserEmail: rawTicket.purchaseremail,
+    purchaserPhone: rawTicket.purchaserphone,
+    qrCode: rawTicket.qrcode,
+    organization:{
+      name: rawTicket.orgname,
+      address: rawTicket.orgaddress,
+      contact: rawTicket.orgcontact,
+      mail: rawTicket.orgmail,
+      mobile: rawTicket.orgmobile,
+      phone: rawTicket.orgphone,
+      website: rawTicket.orgwebsite,
+    }
+  };
+  // console.log(data);
+  return res.status(200).json({
+    status: 'success',
+    message: '成功取得票券詳細資料',
+    data,
+  });
+});
+
+
 
 function formatDateTime(input: any): string {
   if (!input) return '';
   const date = new Date(input);
   if (isNaN(date.getTime())) return ''; // 檢查是否為非法時間
   return date.toISOString().replace('T', ' ').substring(0, 19);
+}
+
+function formatCurrencyTW(amount: number | string, withSymbol: boolean = true): string {
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+  const formatted = Intl.NumberFormat('zh-TW', {
+    style: withSymbol ? 'currency' : 'decimal',
+    currency: 'TWD',
+    minimumFractionDigits: 0,
+  }).format(numericAmount);
+
+  if (!withSymbol) {
+    // 只要數字，不要幣別
+    return formatted.replace(/[^\d,.]/g, '');
+  }
+
+  // 將原本的 $ 換成 NT$
+  return formatted.replace('$', 'NT$');
 }
