@@ -95,12 +95,24 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
   // 🔍 Debug: 先檢查基本的訂單資料
   console.log('🔍 查詢訂單...');
   const basicOrder = await orderRepository.findOne({
-    where: { orderId, userId: ticketUserId }
+    where: { orderId, userId: ticketUserId },
+    select: ['orderId', 'userId', 'orderStatus', 'ticketTypeId'] // 添加 ticketTypeId
   });
   console.log('🔍 基本訂單查詢結果:', basicOrder ? '找到' : '未找到');
+  console.log('🔍 基本訂單資料:', basicOrder);
 
   if (!basicOrder) {
     throw ApiError.create(404, '找不到對應的訂單', ErrorCode.ORDER_NOT_FOUND);
+  }
+
+  // 🔍 Debug: 檢查 TicketType 是否存在
+  if (basicOrder.ticketTypeId) {
+    const ticketTypeRepo = AppDataSource.getRepository(TicketTypeEntity);
+    const ticketType = await ticketTypeRepo.findOne({
+      where: { ticketTypeId: basicOrder.ticketTypeId }
+    });
+    console.log('🔍 TicketType 查詢結果:', ticketType ? '找到' : '未找到');
+    console.log('🔍 TicketType 資料:', ticketType);
   }
 
   // 查找對應的訂單並加載主辦方資訊
@@ -112,21 +124,8 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
       'ticketType.concertSession',
       'ticketType.concertSession.concert',
       'ticketType.concertSession.concert.organization'
-    ],
-    select: {
-      orderId: true,
-      userId: true,
-      orderStatus: true,
-      ticketType: {
-        concertSession: {
-          concert: {
-            organization: {
-              userId: true  // 主辦方的 userId
-            }
-          }
-        }
-      }
-    }
+    ]
+    // 暫時移除 select 選項來測試關聯查詢
   });
 
   console.log('🔍 關聯訂單查詢結果:', order ? '找到' : '未找到');
@@ -136,7 +135,8 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     hasTicketType: !!order?.ticketType,
     hasSession: !!order?.ticketType?.concertSession,
     hasConcert: !!order?.ticketType?.concertSession?.concert,
-    hasOrganization: !!order?.ticketType?.concertSession?.concert?.organization
+    hasOrganization: !!order?.ticketType?.concertSession?.concert?.organization,
+    organizationUserId: order?.ticketType?.concertSession?.concert?.organization?.userId
   });
 
   if (!order) {
