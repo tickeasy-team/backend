@@ -233,7 +233,7 @@ function generateCheckMacValue(data: Record<string, any>): string {
       checkStr += `&${key}=${cleanData[key]}`;
     }
     checkStr += `&HashIV=${HASHIV}`;
-    console.log("checkStr:", checkStr);
+    console.log('checkStr:', checkStr);
     // URL編碼
     let encodedStr = encodeURIComponent(checkStr).toLowerCase();
 
