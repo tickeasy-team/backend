@@ -166,7 +166,7 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
     TotalAmount: TotalAmount.toString(),
     TradeDesc: limitedTradeDesc,
     ItemName: limitedItemName,
-    ReturnURL: `${HOST}`,
+    ReturnURL: `${HOST}?oid=${orderId}`,
     PaymentType: 'aio',
     ChoosePayment: 'Credit',
     IgnorePayment: 'ATM#CVS#BARCODE#WebATM',
