@@ -85,6 +85,10 @@ export const createOrder = handleErrorAsync(async (req: Request, res: Response<A
 
   const savedOrder = await orderRepository.save(newOrder);
 
+  // 生成 orderNumber，並立即更新
+  const orderNumber = generateOrderNumber(savedOrder.createdAt, savedOrder.orderId);
+  await orderRepository.update(savedOrder.orderId, { orderNumber });
+
   // console.log(`✅ 訂單 ${savedOrder.orderId} 創建成功`);
 
   return res.status(200).json({
@@ -222,7 +226,7 @@ export const refundOrder = handleErrorAsync(async (req: Request, res: Response<A
 
 function generateCheckMacValue(data: Record<string, any>): string {
     // 移除CheckMacValue
-    const { CheckMacValue, ...cleanData } = data;
+    const {  ...cleanData } = data;
 
     // 按照ASCII排序
     const sortedKeys = Object.keys(cleanData).sort();
@@ -250,3 +254,10 @@ function generateCheckMacValue(data: Record<string, any>): string {
     // 產生雜湊值
     return crypto.createHash('sha256').update(encodedStr).digest('hex').toUpperCase();
   }
+
+function generateOrderNumber(createdAt: Date, orderId: string): string {
+  const yymmdd = createdAt.toISOString().slice(2, 10).replace(/-/g, '');
+  const hhmmss = createdAt.toTimeString().slice(0, 8).replace(/:/g, '');
+  const shortId = orderId.slice(-4).toUpperCase(); // 取 UUID 最後四碼
+  return `${yymmdd}${hhmmss}-${shortId}`;
+}
