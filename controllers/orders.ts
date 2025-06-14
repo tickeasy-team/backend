@@ -224,6 +224,38 @@ export const refundOrder = handleErrorAsync(async (req: Request, res: Response<A
   }  
 });
 
+export const getOrderInfo = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
+  const authenticatedUser = req.user as { userId: string; role: string; email: string; };
+  console.log('authenticatedUser:', authenticatedUser);
+  const { orderId } = req.params;
+  const orderRepository = AppDataSource.getRepository(Order);
+
+  const result = await orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.ticketType', 'ticketType')
+    .leftJoinAndSelect('ticketType.concertSession', 'concertSession')
+    .leftJoinAndSelect('concertSession.concert', 'concert')
+    .where('order.orderId = :orderId', { orderId })
+    .andWhere('order.userId = :userId', { userId: authenticatedUser.userId })
+    .getOne();
+
+  if (!result) {
+    return res.status(404).json({ status: 'failed', message: '訂單不存在' });
+  }
+
+  // 只回傳 order 本身（不帶 ticketType 等巢狀物件）
+  const { ticketType, ...orderOnly } = result;
+  void ticketType; // 避免 linter 警告
+  return res.status(200).json({
+    status: 'success',
+    message: '訂單資訊取得成功',
+    data: {
+      order: orderOnly,
+      concert: result.ticketType?.concertSession?.concert || null
+    }
+  });
+});
+
 function generateCheckMacValue(data: Record<string, any>): string {
     // 移除CheckMacValue
     const {  ...cleanData } = data;
