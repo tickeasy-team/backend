@@ -225,6 +225,8 @@ export const refundOrder = handleErrorAsync(async (req: Request, res: Response<A
 });
 
 export const getOrderInfo = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
+  const authenticatedUser = req.user as { userId: string; role: string; email: string; };
+  console.log('authenticatedUser:', authenticatedUser);
   const { orderId } = req.params;
   const orderRepository = AppDataSource.getRepository(Order);
 
@@ -234,10 +236,11 @@ export const getOrderInfo = handleErrorAsync(async (req: Request, res: Response<
     .leftJoinAndSelect('ticketType.concertSession', 'concertSession')
     .leftJoinAndSelect('concertSession.concert', 'concert')
     .where('order.orderId = :orderId', { orderId })
+    .andWhere('order.userId = :userId', { userId: authenticatedUser.userId })
     .getOne();
 
   if (!result) {
-    return res.status(404).json({ status: 'failed', message: '訂單資訊不存在' });
+    return res.status(404).json({ status: 'failed', message: '訂單不存在' });
   }
 
   // 只回傳 order 本身（不帶 ticketType 等巢狀物件）
