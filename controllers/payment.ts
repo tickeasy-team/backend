@@ -166,11 +166,11 @@ export const getECpayurl = handleErrorAsync(async (req: Request, res: Response<A
     TotalAmount: TotalAmount.toString(),
     TradeDesc: limitedTradeDesc,
     ItemName: limitedItemName,
-    ReturnURL: `${HOST}?oId=${orderId}`,
+    ReturnURL: `${HOST}`,
     PaymentType: 'aio',
     ChoosePayment: 'Credit',
     IgnorePayment: 'ATM#CVS#BARCODE#WebATM',
-    ClientBackURL: REDIRECTURL
+    ClientBackURL: `${REDIRECTURL}?oId=${orderId}`
   };
 
   // console.log('ECPay 參數:', base_param);
