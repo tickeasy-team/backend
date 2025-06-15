@@ -13,7 +13,7 @@ export async function scheduleOrderExpiredJobs() {
   //     console.log('每秒執行一次');
   schedule.scheduleJob('*/1 * * * *', async () => {
     // 秒 分 時 日 月 星期
-    console.log('每分鐘 執行一次');
+    // console.log('每分鐘 執行一次');
 
   const orderRepo = AppDataSource.getRepository(Order);
   const ticketTypeRepo = AppDataSource.getRepository(TicketTypeEntity);
@@ -31,7 +31,7 @@ export async function scheduleOrderExpiredJobs() {
 
   if (expiredOrders.length === 0) {
     // 沒有逾期訂單，心裡輕鬆一下
-    console.log(`[${now.toISOString()}] 暫無逾期訂單`);
+    // console.log(`[${now.toISOString()}] 暫無逾期訂單`);
     return;
   }
 
@@ -61,7 +61,7 @@ export async function scheduleOrderExpiredJobs() {
 
   console.log(
     `[${now.toISOString()}] 已處理 ${expiredOrders.length} 筆逾期訂單，並歸還庫存。` 
-  )
+  );
  });
 
   console.log('變更訂單狀態排程處理完畢');
