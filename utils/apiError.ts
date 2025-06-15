@@ -68,6 +68,11 @@ export class ApiError {
     return this.create(403, '您沒有權限執行此操作', ErrorCode.AUTH_FORBIDDEN);
   }
 
+  // 信箱未驗證錯誤
+  static emailNotVerified() {
+    return this.create(403, '請先完成信箱驗證', ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
+  }
+
   // 數據驗證錯誤
   static invalidEmailFormat() {
     return this.create(400, 'Email 格式不正確', ErrorCode.VALIDATION_EMAIL_FORMAT);
@@ -134,7 +139,5 @@ export class ApiError {
   static orderExpired(fieldName: string) {
     return this.create(400, `${fieldName} 訂單已過期`, ErrorCode.DATA_INVALID);
   }
-
-
 
 } 
