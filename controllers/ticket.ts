@@ -274,14 +274,24 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     throw ApiError.create(400, `票券狀態錯誤：${ticket.status}`, ErrorCode.INVALID_TICKET_STATUS);
   }
 
-  // 檢查演出時間（可選：防止提前太多驗票）
-  const now = new Date();
-  const concertStartTime = new Date(ticket.concertStartTime);
+  // 檢查演出時間（防止過早驗票）— 轉為台北時區後比較
+  const toTaipei = (d: Date) => {
+    const taipeiOffset = -480; // Asia/Taipei 時區 (分鐘)
+    const diff = (taipeiOffset - d.getTimezoneOffset()) * 60000;
+    return new Date(d.getTime() + diff);
+  };
+
+  const now = toTaipei(new Date());
+  const concertStartTime = toTaipei(new Date(ticket.concertStartTime));
   const maxAdvanceHours = 2; // 允許提前 2 小時驗票
-  const earliestVerifyTime = new Date(concertStartTime.getTime() - (maxAdvanceHours * 60 * 60 * 1000));
-  
+  const earliestVerifyTime = new Date(concertStartTime.getTime() - maxAdvanceHours * 60 * 60 * 1000);
+
   if (now < earliestVerifyTime) {
-    throw ApiError.create(400, `演出尚未開始，最早可於 ${earliestVerifyTime.toLocaleString()} 開始驗票`, ErrorCode.TOO_EARLY_TO_VERIFY);
+    throw ApiError.create(
+      400,
+      `演出尚未開始，最早可於 ${earliestVerifyTime.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })} 開始驗票`,
+      ErrorCode.TOO_EARLY_TO_VERIFY
+    );
   }
 
   // 核銷票券 - 更新狀態為 'used'
