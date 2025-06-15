@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database.js';
 // import { Ticket as TicketEntity} from '../models/ticket.js';
 import { TicketType as TicketTypeEntity} from '../models/ticket-type.js';
+import { ConcertSession as ConcertSessionEntity} from '../models/concert-session.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
 import { ApiResponse } from '../types/api.js';
 // import { Index } from 'typeorm';
@@ -28,6 +29,24 @@ export const createOrder = handleErrorAsync(async (req: Request, res: Response<A
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(ticketTypeId)) {
     throw ApiError.invalidFormat('票種 ID');
+  }
+
+  if (!purchaserName && !purchaserEmail && !purchaserPhone){
+    return res.status(404).json(
+          {
+        status: 'failed',
+        message : '欄位未填寫完全'
+      }
+    );
+  };
+
+  if (purchaserPhone.length !== 10 && typeof purchaserPhone !== 'number' && !purchaserPhone.startsWith('09')){
+    return res.status(404).json(
+          {
+        status: 'failed',
+        message : '手機號碼格式錯誤'
+      }
+    );
   }
 
   const ticketTypeRepository = AppDataSource.getRepository(TicketTypeEntity);
@@ -103,7 +122,14 @@ export const createOrder = handleErrorAsync(async (req: Request, res: Response<A
 
 export const refundOrder = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
 
-  const { orderId } = req.body;
+  const body = req.body;
+  const { orderId } = req.params;
+  if (orderId !== body.orderId){
+    return res.status(404).json({
+        status: 'failed',
+        message: '訂單編號錯誤'
+      });
+  }
   // const authenticatedUser = req.user as Express.User; // 從 middleware 拿到 userId
   const authenticatedUser = req.user as { userId: string; role: string; email: string; };
 
@@ -132,8 +158,29 @@ export const refundOrder = handleErrorAsync(async (req: Request, res: Response<A
   }
 
   // console.log('order:', selectedOrder);
-
+  const ticketTypeRepository = AppDataSource.getRepository(TicketTypeEntity);
+  const ticketType = await ticketTypeRepository.findOneBy({ ticketTypeId: selectedOrder.ticketTypeId });
+  const ConcertSessionRepository = AppDataSource.getRepository(ConcertSessionEntity);
+  const ConcertSession = await ConcertSessionRepository.findOneBy({ sessionId: ticketType?.concertSessionId });
+  if (!ConcertSession || !ConcertSession.sessionDate) {
+    throw ApiError.notFound('演唱會場次資料錯誤');
+  }
   
+  const startTime = ConcertSession.sessionDate;
+  const refundDeadline = new Date(startTime);
+  refundDeadline.setDate(refundDeadline.getDate() - 7);
+  const now = new Date();
+  const afterRefundDeadline = now > refundDeadline;
+  console.log('now:',now);
+  console.log('refundDeadline:',refundDeadline);
+
+  if (afterRefundDeadline){
+     return res.status(403).json({
+        status: 'failed',
+        message: '此訂單不可退款'
+      });
+  }
+
   const paymentRepository = AppDataSource.getRepository(PaymentEntity);
   const selectedPayment = await paymentRepository.findOne({
     where: { orderId },
@@ -206,11 +253,25 @@ export const refundOrder = handleErrorAsync(async (req: Request, res: Response<A
       console.log('payment update');
     }
     else{
-      return res.status(200).json({
+      return res.status(404).json({
         status: 'failed',
         message: '申請退款失敗'
       });
     }
+    const now = new Date();
+
+    if (ticketType) {
+      const isInSalePeriod = now >= ticketType.sellBeginDate && now <= ticketType.sellEndDate;
+      if (isInSalePeriod) {
+        ticketType.remainingQuantity += 1;
+        await ticketTypeRepository.save(ticketType);
+        console.log('訂單退款成功，退還1張票券');
+      }
+      
+    }else{
+    console.log('訂單退款成功，不是販售時間不退還票券');
+    }
+
     return res.status(200).json({
       status: 'success',
       message: '退款申請成功'
