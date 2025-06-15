@@ -150,3 +150,19 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
     console.log(error);
   }
 };
+
+/**
+ * 確保用戶已完成信箱驗證的中間件
+ * 僅當 isAuthenticated 已經將 user 注入 req 時使用
+ */
+export const requireVerifiedEmail = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user as { isEmailVerified?: boolean };
+  if (!user?.isEmailVerified) {
+    return next(ApiError.emailNotVerified());
+  }
+  next();
+};
