@@ -15,6 +15,7 @@ import {
     RequestPasswordResetRequest,
     ResetPasswordRequest,
     GoogleRequestUser,
+    ChangePasswordRequest,
 } from '../types/auth/requests.js';
 
 import { VerificationResponseData, UserData } from '../types/auth/responses.js';
@@ -661,3 +662,59 @@ export const resetPassword = async (
         next(err);
     }
 };
+
+// ------------------ 已登入用戶變更密碼 ------------------
+export const changePassword = handleErrorAsync(
+    async (req: Request, res: Response) => {
+        const { oldPassword, newPassword } = req.body as ChangePasswordRequest;
+        const authenticated = req.user as { userId: string };
+
+        // 基本檢查
+        const fieldErrors: Record<string, { code: string; message: string }> = {};
+        if (!oldPassword) {
+            fieldErrors.oldPassword = {
+                code: ErrorCode.AUTH_PASSWORD_REQUIRED,
+                message: '舊密碼為必填欄位',
+            };
+        }
+        if (!newPassword) {
+            fieldErrors.newPassword = {
+                code: ErrorCode.AUTH_PASSWORD_REQUIRED,
+                message: '新密碼為必填欄位',
+            };
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+            throw ApiError.validation('表單驗證失敗', fieldErrors);
+        }
+
+        // 新密碼格式
+        const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        if (!pwRegex.test(newPassword)) {
+            throw ApiError.invalidPasswordFormat();
+        }
+
+        // 取得用戶
+        const userRepository = AppDataSource.getRepository(User);
+        const user = await userRepository.findOne({
+            where: { userId: authenticated.userId },
+            select: ['userId', 'password'],
+        });
+        if (!user) {
+            throw ApiError.notFound('用戶');
+        }
+
+        // 比對舊密碼
+        if (!(await user.comparePassword(oldPassword))) {
+            throw ApiError.invalidOldPassword();
+        }
+
+        // 更新密碼
+        user.password = newPassword;
+        await userRepository.save(user);
+
+        res.status(200).json({
+            status: 'success',
+            message: '密碼變更成功，請使用新密碼重新登入',
+        });
+    }
+);
