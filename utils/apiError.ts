@@ -73,6 +73,11 @@ export class ApiError {
     return this.create(403, '請先完成信箱驗證', ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
   }
 
+  // 舊密碼錯誤
+  static invalidOldPassword() {
+    return this.create(400, '舊密碼不正確', ErrorCode.AUTH_INVALID_OLD_PASSWORD);
+  }
+
   // 數據驗證錯誤
   static invalidEmailFormat() {
     return this.create(400, 'Email 格式不正確', ErrorCode.VALIDATION_EMAIL_FORMAT);
