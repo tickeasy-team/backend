@@ -28,6 +28,7 @@ import concertRoute from './routes/concert.js';
 import ticketRoute from './routes/ticket.js';
 import ordersRoute from './routes/orders.js';
 import paymentRoute from './routes/payment.js';
+import sessionRoute from './routes/session.js';
 
 import healthRouter from './routes/health.js';
 
@@ -83,6 +84,7 @@ app.use('/api/v1/concerts', concertRoute);
 app.use('/api/v1/ticket', ticketRoute);
 app.use('/api/v1/orders', ordersRoute);
 app.use('/api/v1/payments', paymentRoute);
+app.use('/api/v1/sessions', sessionRoute);
 app.use('/api/v1/health', healthRouter);
 
 
