@@ -95,6 +95,7 @@ export enum ErrorCode {
   TICKET_ALREADY_USED = 'D07',
   TICKET_REFUNDED = 'D08',
   INVALID_TICKET_STATUS = 'D09',
+  DATA_CONSTRAINT_VIOLATION = 'D10',
   
   // 系統錯誤 (S)
   SYSTEM_ERROR = 'S01',

@@ -145,4 +145,9 @@ export class ApiError {
     return this.create(400, `${fieldName} 訂單已過期`, ErrorCode.DATA_INVALID);
   }
 
+  // 關聯約束違反（外鍵）
+  static dataConstraintViolation(message = '資料仍被其他實體關聯，無法刪除') {
+    return this.create(400, message, ErrorCode.DATA_CONSTRAINT_VIOLATION);
+  }
+
 } 
