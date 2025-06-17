@@ -11,7 +11,7 @@ import {
 } from '../types/organization/index.js';
 import { ErrorCode, ApiResponse } from '../types/api.js';
 
-import { Not, IsNull } from 'typeorm';
+import { Not, IsNull, QueryFailedError } from 'typeorm';
 import { Concert } from '../models/concert.js';
 import { ConcertsResponse, VALID_SORT_FIELDS } from '../types/concert/index.js';
 
@@ -344,8 +344,17 @@ export const deleteOrganization = handleErrorAsync(
       throw ApiError.forbidden();
     }
 
-    // 執行刪除 (軟刪除或硬刪除，取決於模型配置，目前看起來 Organization 模型沒有 DeleteDateColumn，所以是硬刪除)
-    await organizationRepository.remove(organization);
+    // 執行硬刪除，若有外鍵約束違反則給出友善提示
+    try {
+      await organizationRepository.remove(organization);
+    } catch (error) {
+      // PostgreSQL 外鍵違反錯誤代碼 23503
+      if (error instanceof QueryFailedError && (error as any).code === '23503') {
+        throw ApiError.dataConstraintViolation('刪除失敗：該組織仍關聯音樂會，請先刪除或轉移相關音樂會');
+      }
+      // 其他資料庫錯誤
+      throw ApiError.databaseError();
+    }
 
     res.status(200).json({
       status: 'success',
