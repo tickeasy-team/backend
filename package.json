@@ -17,6 +17,7 @@
     "verify:setup": "node verify-setup.js",
     "test:simple": "node simple-test.js",
     "test:support": "node test-support-api.js",
+    "test:support-simple": "node test-simple-support.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },

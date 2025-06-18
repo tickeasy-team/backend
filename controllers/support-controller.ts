@@ -24,13 +24,16 @@ export class SupportController {
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
       const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
 
-      // 檢查是否已有活躍會話
-      const existingSession = await supportSessionRepo.findOne({
-        where: {
-          userId,
-          status: SessionStatus.ACTIVE
-        }
-      });
+      // 如果有 userId，檢查是否已有活躍會話
+      let existingSession = null;
+      if (userId) {
+        existingSession = await supportSessionRepo.findOne({
+          where: {
+            userId,
+            status: SessionStatus.ACTIVE
+          }
+        });
+      }
 
       let session: SupportSession;
 
@@ -40,7 +43,7 @@ export class SupportController {
       } else {
         // 建立新會話
         session = new SupportSession();
-        session.userId = userId;
+        session.userId = userId || null; // 允許不提供 userId (匿名用戶)
         session.sessionType = SessionType.BOT;
         session.status = SessionStatus.ACTIVE;
         session.priority = Priority.NORMAL;
@@ -55,7 +58,7 @@ export class SupportController {
         const userMessage = new SupportMessage();
         userMessage.sessionId = session.supportSessionId;
         userMessage.senderType = SenderType.USER;
-        userMessage.senderId = userId;
+        userMessage.senderId = userId || null; // 允許匿名用戶
         userMessage.messageText = initialMessage;
         userMessage.messageType = MessageType.TEXT;
         
