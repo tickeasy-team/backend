@@ -5,7 +5,7 @@ export class SupportKnowledgeBase {
   @PrimaryGeneratedColumn('uuid')
   supportKBId: string;
 
-  @Column({ length: 200 })
+  @Column({ type: 'varchar', length: 200 })
   title: string;
 
   @Column({ type: 'text' })
@@ -14,13 +14,13 @@ export class SupportKnowledgeBase {
   @Column({ type: 'text', array: true, default: [] })
   tags: string[];
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   category: string;
 
-  @Column({ type: 'vector', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   embeddingVector: number[];
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
   @CreateDateColumn()

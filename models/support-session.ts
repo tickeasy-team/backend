@@ -28,7 +28,7 @@ export class SupportSession {
   @PrimaryGeneratedColumn('uuid')
   supportSessionId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId: string;
 
   @ManyToOne(() => User, { nullable: true })
@@ -41,7 +41,7 @@ export class SupportSession {
   @Column({ type: 'enum', enum: SessionStatus, enumName: 'SupportSessionStatus', default: SessionStatus.ACTIVE })
   status: SessionStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   agentId: string;
 
   @ManyToOne(() => User, { nullable: true })
@@ -51,19 +51,19 @@ export class SupportSession {
   @Column({ type: 'enum', enum: Priority, enumName: 'SupportSessionPriority', default: Priority.NORMAL })
   priority: Priority;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   category: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   firstResponseAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   closedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   satisfactionRating: number;
 
   @Column({ type: 'text', nullable: true })

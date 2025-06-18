@@ -16,7 +16,7 @@ export class SupportSchedule {
   @PrimaryGeneratedColumn('uuid')
   supportScheduleId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   agentId: string;
 
   @ManyToOne(() => User)
@@ -32,7 +32,7 @@ export class SupportSchedule {
   @Column({ type: 'time' })
   endTime: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
   @CreateDateColumn()

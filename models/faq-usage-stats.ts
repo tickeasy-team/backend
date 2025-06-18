@@ -8,28 +8,28 @@ export class FAQUsageStats {
   @PrimaryGeneratedColumn('uuid')
   faqUsageStatId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   faqId: string;
 
   @ManyToOne(() => FAQ, faq => faq.usageStats)
   @JoinColumn({ name: 'faqId' })
   faq: FAQ;
 
-  @Column()
+  @Column({ type: 'uuid' })
   sessionId: string;
 
   @ManyToOne(() => SupportSession, session => session.faqUsageStats)
   @JoinColumn({ name: 'sessionId' })
   session: SupportSession;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId: string;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'boolean', nullable: true })
   isHelpful: boolean;
 
   @Column({ type: 'text', nullable: true })

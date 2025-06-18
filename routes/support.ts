@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { SupportController } from '../controllers/support-controller.js';
-import { authenticateToken } from '../middlewares/auth.js'; // 假設有認證中介軟體
+import { isAuthenticated } from '../middlewares/auth.js';
 import { body, param, query, validationResult } from 'express-validator';
 
 const router = Router();
@@ -40,7 +40,7 @@ router.post('/chat/start',
 
 // 發送訊息
 router.post('/chat/message',
-  authenticateToken,
+  isAuthenticated,
   [
     body('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     body('message').isString().isLength({ min: 1, max: 1000 }).withMessage('訊息長度必須在 1-1000 字之間'),
@@ -52,7 +52,7 @@ router.post('/chat/message',
 
 // 獲取會話歷史
 router.get('/chat/:sessionId/history',
-  authenticateToken,
+  isAuthenticated,
   [
     param('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('限制數量必須在 1-100 之間'),
@@ -64,7 +64,7 @@ router.get('/chat/:sessionId/history',
 
 // 請求轉接人工客服
 router.post('/chat/:sessionId/transfer',
-  authenticateToken,
+  isAuthenticated,
   [
     param('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     body('reason').optional().isString().isLength({ max: 200 }).withMessage('轉接原因不能超過 200 字'),
@@ -75,7 +75,7 @@ router.post('/chat/:sessionId/transfer',
 
 // 關閉會話
 router.post('/chat/:sessionId/close',
-  authenticateToken,
+  isAuthenticated,
   [
     param('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     body('satisfactionRating').optional().isInt({ min: 1, max: 5 }).withMessage('滿意度評分必須在 1-5 之間'),
@@ -87,7 +87,7 @@ router.post('/chat/:sessionId/close',
 
 // 獲取用戶的所有會話
 router.get('/chat/sessions',
-  authenticateToken,
+  isAuthenticated,
   [
     query('status').optional().isIn(['active', 'waiting', 'closed', 'transferred']).withMessage('狀態參數不正確'),
     query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('限制數量必須在 1-50 之間'),
@@ -190,7 +190,7 @@ router.get('/faq', async (req, res) => {
 
 // 獲取等待中的會話（供客服人員使用）
 router.get('/admin/waiting-sessions',
-  authenticateToken,
+  isAuthenticated,
   // TODO: 添加管理員權限檢查中介軟體
   async (req, res) => {
     try {

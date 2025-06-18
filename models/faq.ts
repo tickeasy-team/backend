@@ -7,7 +7,7 @@ export class FAQ {
   @PrimaryGeneratedColumn('uuid')
   faqId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   categoryId: string;
 
   @ManyToOne(() => FAQCategory, category => category.faqs)
@@ -23,16 +23,16 @@ export class FAQ {
   @Column({ type: 'text', array: true, default: '{}' })
   keywords: string[];
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   viewCount: number;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   helpfulCount: number;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   notHelpfulCount: number;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
   @OneToMany(() => FAQUsageStats, stats => stats.faq)

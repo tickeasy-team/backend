@@ -41,7 +41,7 @@ export class SupportMessage {
   @PrimaryGeneratedColumn('uuid')
   supportMessageId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   sessionId: string;
 
   @ManyToOne(() => SupportSession, session => session.messages)
@@ -51,7 +51,7 @@ export class SupportMessage {
   @Column({ type: 'enum', enum: SenderType, enumName: 'SupportMessageSender' })
   senderType: SenderType;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   senderId: string;
 
   @ManyToOne(() => User, { nullable: true })
@@ -67,7 +67,7 @@ export class SupportMessage {
   @Column({ type: 'jsonb', default: {} })
   metadata: MessageMetadata;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isRead: boolean;
 
   @CreateDateColumn()

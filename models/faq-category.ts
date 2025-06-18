@@ -6,13 +6,13 @@ export class FAQCategory {
   @PrimaryGeneratedColumn('uuid')
   faqCategoryId: string;
 
-  @Column({ length: 100 })
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   parentId: string;
 
   @ManyToOne(() => FAQCategory, category => category.children, { nullable: true })
@@ -22,10 +22,10 @@ export class FAQCategory {
   @OneToMany(() => FAQCategory, category => category.parent)
   children: FAQCategory[];
 
-  @Column({ name: 'sort_order', default: 0 })
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
   @OneToMany(() => FAQ, faq => faq.category)
