@@ -5,6 +5,7 @@
 
 import OpenAI from 'openai';
 import { mcpService } from './mcp-service.js';
+import { semanticSearchService } from './semantic-search-service.js';
 
 export class OpenAIService {
   constructor() {
@@ -197,7 +198,75 @@ export class OpenAIService {
   }
 
   /**
-   * 搜尋相關 FAQ（使用 MCP Service）
+   * 搜尋相關 FAQ 和知識庫（使用語義搜尋）
+   */
+  async searchRelevantContent(userMessage, limit = 3) {
+    try {
+      console.log(`🔍 開始語義搜尋相關內容: "${userMessage}"`);
+      
+      // 使用語義搜尋獲取知識庫內容
+      const knowledgeBaseResults = await semanticSearchService.searchKnowledgeBase(userMessage, {
+        limit: limit * 2, // 獲取更多結果以便篩選
+        threshold: 0.6 // 降低閾值以獲取更多潛在相關結果
+      });
+
+      // 如果語義搜尋沒有結果，嘗試使用 MCP Service 的 FAQ 搜尋作為後備
+      let faqResults = [];
+      if (mcpService.isReady()) {
+        try {
+          faqResults = await mcpService.searchFAQ(userMessage);
+        } catch (error) {
+          console.warn('⚠️ MCP FAQ 搜尋失敗，跳過:', error.message);
+        }
+      }
+
+      // 合併和格式化結果
+      const combinedResults = [];
+      
+      // 添加知識庫結果
+      knowledgeBaseResults.slice(0, Math.ceil(limit * 0.7)).forEach(kb => {
+        combinedResults.push({
+          id: kb.id,
+          type: 'knowledge_base',
+          question: kb.title,
+          answer: kb.content,
+          confidence: kb.similarity,
+          category: kb.category,
+          keywords: kb.keywords
+        });
+      });
+
+      // 添加 FAQ 結果
+      if (faqResults && faqResults.length > 0) {
+        faqResults.slice(0, Math.floor(limit * 0.3)).forEach(faq => {
+          combinedResults.push({
+            id: faq.faq_id,
+            type: 'faq',
+            question: faq.question,
+            answer: faq.answer,
+            confidence: 0.8, // FAQ 預設信心度
+            category: faq.category_name
+          });
+        });
+      }
+
+      // 按信心度排序並限制結果數量
+      const finalResults = combinedResults
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, limit);
+
+      console.log(`✅ 語義搜尋完成，找到 ${finalResults.length} 個相關結果`);
+      return finalResults;
+      
+    } catch (error) {
+      console.error('❌ 語義搜尋失敗:', error);
+      // 降級到原本的 FAQ 搜尋
+      return this.searchRelevantFAQ(userMessage, limit);
+    }
+  }
+
+  /**
+   * 原本的 FAQ 搜尋（作為後備）
    */
   async searchRelevantFAQ(userMessage, limit = 3) {
     try {
@@ -210,10 +279,11 @@ export class OpenAIService {
       
       if (faqResults && faqResults.length > 0) {
         return faqResults.slice(0, limit).map(faq => ({
-          faqId: faq.faq_id,
+          id: faq.faq_id,
+          type: 'faq',
           question: faq.question,
           answer: faq.answer,
-          confidence: 0.8 // 簡化的相關性評分
+          confidence: 0.8
         }));
       }
 
@@ -225,22 +295,26 @@ export class OpenAIService {
   }
 
   /**
-   * 生成帶 FAQ 建議的回覆
+   * 生成帶知識庫建議的回覆
    */
   async generateResponseWithFAQ(userMessage, conversationHistory = [], sessionContext = {}) {
     try {
-      // 搜尋相關 FAQ
-      const faqSuggestions = await this.searchRelevantFAQ(userMessage);
+      // 搜尋相關知識庫和 FAQ
+      const contentSuggestions = await this.searchRelevantContent(userMessage);
 
-      // 如果找到相關 FAQ，將其加入系統提示
+      // 如果找到相關內容，將其加入系統提示
       let enhancedSystemPrompt = this.systemPrompt;
       
-      if (faqSuggestions.length > 0) {
-        enhancedSystemPrompt += '\\n\\n相關 FAQ 參考：\\n';
-        faqSuggestions.forEach((faq, index) => {
-          enhancedSystemPrompt += `${index + 1}. Q: ${faq.question}\\n   A: ${faq.answer}\\n`;
+      if (contentSuggestions.length > 0) {
+        enhancedSystemPrompt += '\\n\\n相關知識庫和 FAQ 參考：\\n';
+        contentSuggestions.forEach((content, index) => {
+          const typeLabel = content.type === 'knowledge_base' ? '知識庫' : 'FAQ';
+          enhancedSystemPrompt += `${index + 1}. [${typeLabel}] Q: ${content.question}\\n   A: ${content.answer}\\n`;
+          if (content.category) {
+            enhancedSystemPrompt += `   分類: ${content.category}\\n`;
+          }
         });
-        enhancedSystemPrompt += '\\n請參考以上 FAQ 提供更準確的回答。';
+        enhancedSystemPrompt += '\\n請參考以上內容提供更精確的回答。如果用戶的問題與以上內容相關，請優先使用這些資訊。';
       }
 
       // 暫時更新系統提示
@@ -253,15 +327,17 @@ export class OpenAIService {
       // 還原系統提示
       this.systemPrompt = originalPrompt;
 
-      // 添加 FAQ 建議到結果
-      if (faqSuggestions.length > 0) {
-        result.faqSuggestions = faqSuggestions;
+      // 添加知識庫建議到結果
+      if (contentSuggestions.length > 0) {
+        result.knowledgeBaseSuggestions = contentSuggestions;
+        // 保持向下相容，也添加 faqSuggestions
+        result.faqSuggestions = contentSuggestions.filter(c => c.type === 'faq');
       }
 
       return result;
 
     } catch (error) {
-      console.error('❌ 帶 FAQ 的回覆生成失敗:', error);
+      console.error('❌ 帶知識庫的回覆生成失敗:', error);
       // 降級到基本回覆
       return await this.generateResponse(userMessage, conversationHistory, sessionContext);
     }

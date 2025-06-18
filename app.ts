@@ -30,6 +30,7 @@ import ordersRoute from './routes/orders.js';
 import paymentRoute from './routes/payment.js';
 import sessionRoute from './routes/session.js';
 import supportRoute from './routes/support.js';
+import knowledgeBaseRoute from './routes/knowledge-base.js';
 
 import healthRouter from './routes/health.js';
 
@@ -87,6 +88,7 @@ app.use('/api/v1/orders', ordersRoute);
 app.use('/api/v1/payments', paymentRoute);
 app.use('/api/v1/sessions', sessionRoute);
 app.use('/api/v1/support', supportRoute);
+app.use('/api/v1/knowledge-base', knowledgeBaseRoute);
 app.use('/api/v1/health', healthRouter);
 
 

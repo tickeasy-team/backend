@@ -18,6 +18,9 @@
     "test:simple": "node simple-test.js",
     "test:support": "node test-support-api.js",
     "test:support-simple": "node test-simple-support.js",
+    "test:semantic-search": "node test-semantic-search.js",
+    "init:knowledge-base": "tsx init-knowledge-base.ts",
+    "init:simple-kb": "tsx init-simple-kb.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },
