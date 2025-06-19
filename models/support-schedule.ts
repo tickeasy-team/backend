@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from './user.js';
 
+// 工作日枚舉
+/* eslint-disable no-unused-vars */
 export enum DayOfWeek {
   SUNDAY = 0,
   MONDAY = 1,
@@ -10,6 +12,7 @@ export enum DayOfWeek {
   FRIDAY = 5,
   SATURDAY = 6
 }
+/* eslint-enable no-unused-vars */
 
 @Entity('supportSchedule')
 export class SupportSchedule {
@@ -37,6 +40,9 @@ export class SupportSchedule {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   // 虛擬屬性：取得星期名稱
   get dayName(): string {

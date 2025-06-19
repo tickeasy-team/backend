@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { SupportSession } from './support-session.js';
 import { User } from './user.js';
 
+/* eslint-disable no-unused-vars */
 export enum SenderType {
   USER = 'user',
   BOT = 'bot',
@@ -15,6 +16,7 @@ export enum MessageType {
   QUICK_REPLY = 'quick_reply',
   FAQ_SUGGESTION = 'faq_suggestion'
 }
+/* eslint-enable no-unused-vars */
 
 interface MessageMetadata {
   confidence?: number;          // AI 回應信心度 (0-1)
@@ -73,6 +75,9 @@ export class SupportMessage {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   // 虛擬屬性：檢查是否為用戶訊息
   get isFromUser(): boolean {

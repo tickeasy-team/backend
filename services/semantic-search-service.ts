@@ -5,7 +5,7 @@
 
 import { AppDataSource } from '../config/database.js';
 import { SupportKnowledgeBase } from '../models/support-knowledge-base.js';
-import { FAQ } from '../models/faq.js';
+// import { FAQ } from '../models/faq.js'; // 暫時未使用
 import { embeddingService } from './embedding-service.js';
 
 export interface SearchResult {
@@ -197,7 +197,7 @@ export class SemanticSearchService {
       // 計算簡單的關鍵字匹配分數
       return knowledgeBases.map(kb => {
         let score = 0;
-        const searchText = `${kb.title} ${kb.content} ${kb.tags.join(' ')}`.toLowerCase();
+        // const searchText = `${kb.title} ${kb.content} ${kb.tags.join(' ')}`.toLowerCase();
         
         keywords.forEach(keyword => {
           // 標題匹配權重更高

@@ -3,12 +3,15 @@ import { User } from './user.js';
 import { SupportMessage } from './support-message.js';
 import { FAQUsageStats } from './faq-usage-stats.js';
 
+/* eslint-disable no-unused-vars */
+// 會話類型枚舉
 export enum SessionType {
   BOT = 'bot',
   HUMAN = 'human',
   MIXED = 'mixed'
 }
 
+// 會話狀態枚舉
 export enum SessionStatus {
   ACTIVE = 'active',
   WAITING = 'waiting',
@@ -16,12 +19,14 @@ export enum SessionStatus {
   TRANSFERRED = 'transferred'
 }
 
+// 優先級枚舉
 export enum Priority {
   LOW = 'low',
   NORMAL = 'normal',
   HIGH = 'high',
   URGENT = 'urgent'
 }
+/* eslint-enable no-unused-vars */
 
 @Entity('supportSession')
 export class SupportSession {

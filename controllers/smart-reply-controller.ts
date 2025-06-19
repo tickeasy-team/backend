@@ -25,9 +25,7 @@ export class SmartReplyController {
       console.log(`🤖 智能回覆請求: "${message.slice(0, 50)}${message.length > 50 ? '...' : ''}"`);
 
       // 使用智能回覆服務
-      const smartReply = await smartReplyService.getSmartReply(message, {
-        enableFallbackToAI: enableAI
-      });
+      const smartReply = await smartReplyService.getSmartReply(message);
 
       // 如果沒有找到匹配且啟用了 AI 後備
       if (smartReply.type === 'neutral' && enableAI) {
@@ -172,12 +170,18 @@ export class SmartReplyController {
         });
       }
 
-      smartReplyService.addTutorialRule({
+      smartReplyService.addRule({
+        id: `tutorial_${Date.now()}`,
         keywords: Array.isArray(keywords) ? keywords : [keywords],
-        title,
-        url,
+        replyType: 'tutorial',
+        tutorialTitle: title,
+        tutorialUrl: url,
+        tutorialDescription: description,
         priority,
-        description
+        category: '動態添加',
+        isActive: true,
+        lastModified: new Date(),
+        notes: '通過 API 動態添加'
       });
 
       res.json({
@@ -214,12 +218,18 @@ export class SmartReplyController {
         });
       }
 
-      smartReplyService.addFAQRule({
+      smartReplyService.addRule({
+        id: `faq_${Date.now()}`,
         keywords: Array.isArray(keywords) ? keywords : [keywords],
-        answer,
+        replyType: 'faq',
+        faqAnswer: answer,
         faqId,
         priority,
-        relatedQuestions
+        category: '動態添加',
+        relatedQuestions,
+        isActive: true,
+        lastModified: new Date(),
+        notes: '通過 API 動態添加'
       });
 
       res.json({

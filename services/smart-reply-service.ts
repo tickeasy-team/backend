@@ -4,12 +4,10 @@
  */
 
 import { supabaseService } from './supabase-service.js';
-import { faqSearchService } from './faq-search-service.js';
 import { 
   SMART_REPLY_RULES, 
   SmartReplyRule, 
-  getRulesByType, 
-  getRulesByPriority 
+  getRulesByType
 } from '../config/smart-reply-rules.js';
 
 export interface SmartReplyOptions {
@@ -70,14 +68,14 @@ export class SmartReplyService {
   /**
    * 處理使用者訊息 - 主要入口
    */
-  async processMessage(userMessage: string, options: SmartReplyOptions = {}): Promise<SmartReplyResponse> {
-    return this.getSmartReply(userMessage, options);
+  async processMessage(userMessage: string): Promise<SmartReplyResponse> {
+    return this.getSmartReply(userMessage);
   }
 
   /**
    * 智能回覆主要邏輯
    */
-  async getSmartReply(userMessage: string, options: SmartReplyOptions = {}): Promise<SmartReplyResponse> {
+  async getSmartReply(userMessage: string): Promise<SmartReplyResponse> {
     const startTime = Date.now();
     
     try {

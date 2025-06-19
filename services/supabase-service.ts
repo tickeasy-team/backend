@@ -35,7 +35,7 @@ export class SupabaseService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      const { data, error } = await this.client
+      const { error } = await this.client
         .from('supportKnowledgeBase')
         .select('count')
         .limit(1);
@@ -100,7 +100,7 @@ export class SupabaseService {
       // 計算相似度分數
       const results = (data || []).map(item => {
         let score = 0;
-        const searchText = `${item.title} ${item.content}`.toLowerCase();
+        // const searchText = `${item.title} ${item.content}`.toLowerCase();
         
         keywords.forEach(keyword => {
           if (item.title.toLowerCase().includes(keyword)) score += 3;

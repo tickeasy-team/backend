@@ -191,7 +191,6 @@ export class EmbeddingService {
 
     for (const faq of faqs) {
       try {
-        const embedding = await this.generateFAQEmbedding(faq);
         // 注意：FAQ 模型中沒有嵌入向量欄位，這裡我們需要擴展模型
         // 暫時跳過 FAQ 嵌入，專注於知識庫
         console.log(`⏭️  暫時跳過 FAQ "${faq.question}" 的嵌入向量`);

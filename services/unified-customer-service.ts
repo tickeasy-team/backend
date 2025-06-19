@@ -6,7 +6,7 @@
 import OpenAI from 'openai';
 import { supabaseService } from './supabase-service.js';
 import { faqSearchService } from './faq-search-service.js';
-import { semanticSearchService } from './semantic-search-service.js';
+// import { semanticSearchService } from './semantic-search-service.js'; // 暫時未使用
 import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionStatus } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';

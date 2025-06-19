@@ -3,7 +3,7 @@
  */
 
 import { Request, Response } from 'express';
-import { chatService, ChatOptions } from '../services/chat-service.js';
+import { chatService } from '../services/chat-service.js';
 import { supabaseService } from '../services/supabase-service.js';
 
 export class SmartCustomerController {
@@ -12,7 +12,7 @@ export class SmartCustomerController {
    */
   static async chat(req: Request, res: Response) {
     try {
-      const { message, history = [] } = req.body;
+      const { message } = req.body;
 
       if (!message || typeof message !== 'string') {
         return res.status(400).json({

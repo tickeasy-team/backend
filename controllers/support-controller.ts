@@ -7,7 +7,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionType, SessionStatus, Priority } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
-import { User } from '../models/user.js';
+// import { User } from '../models/user.js'; // 暫時未使用
 import { chatService } from '../services/chat-service.js';
 
 export class SupportController {
@@ -112,7 +112,7 @@ export class SupportController {
    */
   static async sendMessage(req: Request, res: Response) {
     try {
-      const { sessionId, message, messageType = MessageType.TEXT } = req.body;
+      const { sessionId, message } = req.body;
       const userId = (req.user as any)?.userId; // 可能為 null (匿名用戶)
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
@@ -154,14 +154,14 @@ export class SupportController {
         });
       }
 
-      // 準備對話歷史
-      const conversationHistory = session.messages
-        ?.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        .slice(-10)
-        .map(msg => ({
-          role: msg.senderType === SenderType.USER ? 'user' as const : 'assistant' as const,
-          content: msg.messageText
-        })) || [];
+      // 準備對話歷史（暫時不使用，使用 Responses API 的狀態管理）
+      // const conversationHistory = session.messages
+      //   ?.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      //   .slice(-10)
+      //   .map(msg => ({
+      //     role: msg.senderType === SenderType.USER ? 'user' as const : 'assistant' as const,
+      //     content: msg.messageText
+      //   })) || [];
 
       // 使用統一客服服務處理訊息
               const aiResult = await chatService.chat(message, {

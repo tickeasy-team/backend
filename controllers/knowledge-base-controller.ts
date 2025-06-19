@@ -9,7 +9,7 @@ import { semanticSearchService } from '../services/semantic-search-service.js';
 import { embeddingService } from '../services/embedding-service.js';
 import { handleErrorAsync } from '../utils/handleErrorAsync.js';
 import { ApiError } from '../utils/index.js';
-import { ErrorCode } from '../types/api.js';
+// import { ErrorCode } from '../types/api.js'; // 暫時未使用
 
 export class KnowledgeBaseController {
 
