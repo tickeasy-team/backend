@@ -7,6 +7,9 @@ import { Request, Response } from 'express';
 import { knowledgeBaseService } from '../services/knowledge-base-service.js';
 import { semanticSearchService } from '../services/semantic-search-service.js';
 import { embeddingService } from '../services/embedding-service.js';
+import { handleErrorAsync } from '../utils/handleErrorAsync.js';
+import { ApiError } from '../utils/index.js';
+import { ErrorCode } from '../types/api.js';
 
 export class KnowledgeBaseController {
 
@@ -14,9 +17,16 @@ export class KnowledgeBaseController {
    * 創建知識庫項目
    * POST /api/v1/knowledge-base
    */
-  static async createKnowledgeBase(req: Request, res: Response) {
-    try {
+  static createKnowledgeBase = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { title, content, category, tags, isActive } = req.body;
+
+      if (!title) {
+        throw ApiError.fieldRequired('標題');
+      }
+      if (!content) {
+        throw ApiError.fieldRequired('內容');
+      }
 
       const knowledgeBase = await knowledgeBaseService.createKnowledgeBase({
         title,
@@ -31,125 +41,104 @@ export class KnowledgeBaseController {
         message: '知識庫項目創建成功',
         data: knowledgeBase
       });
-    } catch (error) {
-      console.error('❌ 創建知識庫項目失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '創建知識庫項目失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 更新知識庫項目
    * PUT /api/v1/knowledge-base/:id
    */
-  static async updateKnowledgeBase(req: Request, res: Response) {
-    try {
+  static updateKnowledgeBase = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { id } = req.params;
       const { title, content, category, tags, isActive } = req.body;
 
-      const knowledgeBase = await knowledgeBaseService.updateKnowledgeBase(id, {
-        title,
-        content,
-        category,
-        tags,
-        isActive
-      });
+      if (!id) {
+        throw ApiError.fieldRequired('知識庫 ID');
+      }
 
-      res.json({
-        success: true,
-        message: '知識庫項目更新成功',
-        data: knowledgeBase
-      });
-    } catch (error) {
-      console.error('❌ 更新知識庫項目失敗:', error);
-      
-      if (error.message.includes('不存在')) {
-        res.status(404).json({
-          success: false,
-          message: '知識庫項目不存在'
+      try {
+        const knowledgeBase = await knowledgeBaseService.updateKnowledgeBase(id, {
+          title,
+          content,
+          category,
+          tags,
+          isActive
         });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: '更新知識庫項目失敗',
-          error: error.message
+
+        res.json({
+          success: true,
+          message: '知識庫項目更新成功',
+          data: knowledgeBase
         });
+      } catch (error: any) {
+        if (error.message && error.message.includes('不存在')) {
+          throw ApiError.notFound('知識庫項目');
+        }
+        throw ApiError.systemError();
       }
     }
-  }
+  );
 
   /**
    * 刪除知識庫項目
    * DELETE /api/v1/knowledge-base/:id
    */
-  static async deleteKnowledgeBase(req: Request, res: Response) {
-    try {
+  static deleteKnowledgeBase = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { id } = req.params;
 
-      await knowledgeBaseService.deleteKnowledgeBase(id);
+      if (!id) {
+        throw ApiError.fieldRequired('知識庫 ID');
+      }
 
-      res.json({
-        success: true,
-        message: '知識庫項目刪除成功'
-      });
-    } catch (error) {
-      console.error('❌ 刪除知識庫項目失敗:', error);
-      
-      if (error.message.includes('不存在')) {
-        res.status(404).json({
-          success: false,
-          message: '知識庫項目不存在'
+      try {
+        await knowledgeBaseService.deleteKnowledgeBase(id);
+
+        res.json({
+          success: true,
+          message: '知識庫項目刪除成功'
         });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: '刪除知識庫項目失敗',
-          error: error.message
-        });
+      } catch (error: any) {
+        if (error.message && error.message.includes('不存在')) {
+          throw ApiError.notFound('知識庫項目');
+        }
+        throw ApiError.systemError();
       }
     }
-  }
+  );
 
   /**
    * 獲取知識庫項目詳情
    * GET /api/v1/knowledge-base/:id
    */
-  static async getKnowledgeBase(req: Request, res: Response) {
-    try {
+  static getKnowledgeBase = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { id } = req.params;
+
+      if (!id) {
+        throw ApiError.fieldRequired('知識庫 ID');
+      }
 
       const knowledgeBase = await knowledgeBaseService.getKnowledgeBase(id);
 
       if (!knowledgeBase) {
-        return res.status(404).json({
-          success: false,
-          message: '知識庫項目不存在'
-        });
+        throw ApiError.notFound('知識庫項目');
       }
 
       res.json({
         success: true,
         data: knowledgeBase
       });
-    } catch (error) {
-      console.error('❌ 獲取知識庫項目失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '獲取知識庫項目失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 獲取知識庫列表
    * GET /api/v1/knowledge-base
    */
-  static async getKnowledgeBaseList(req: Request, res: Response) {
-    try {
+  static getKnowledgeBaseList = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const {
         page = 1,
         limit = 20,
@@ -170,22 +159,15 @@ export class KnowledgeBaseController {
         success: true,
         data: result
       });
-    } catch (error) {
-      console.error('❌ 獲取知識庫列表失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '獲取知識庫列表失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 語義搜尋知識庫
    * GET /api/v1/knowledge-base/search
    */
-  static async searchKnowledgeBase(req: Request, res: Response) {
-    try {
+  static searchKnowledgeBase = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const {
         q: query,
         limit = 10,
@@ -194,10 +176,7 @@ export class KnowledgeBaseController {
       } = req.query;
 
       if (!query || typeof query !== 'string') {
-        return res.status(400).json({
-          success: false,
-          message: '搜尋查詢參數不能為空'
-        });
+        throw ApiError.fieldRequired('搜尋查詢參數');
       }
 
       const categoryArray = categories 
@@ -218,24 +197,21 @@ export class KnowledgeBaseController {
           total: results.length
         }
       });
-    } catch (error) {
-      console.error('❌ 搜尋知識庫失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '搜尋知識庫失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 尋找相似內容
    * GET /api/v1/knowledge-base/:id/similar
    */
-  static async findSimilarContent(req: Request, res: Response) {
-    try {
+  static findSimilarContent = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { id } = req.params;
       const { limit = 5 } = req.query;
+
+      if (!id) {
+        throw ApiError.fieldRequired('知識庫 ID');
+      }
 
       const similarContent = await semanticSearchService.findSimilarContent(
         id,
@@ -249,29 +225,19 @@ export class KnowledgeBaseController {
           similar: similarContent
         }
       });
-    } catch (error) {
-      console.error('❌ 尋找相似內容失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '尋找相似內容失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 獲取查詢建議
    * GET /api/v1/knowledge-base/suggestions
    */
-  static async getQuerySuggestions(req: Request, res: Response) {
-    try {
+  static getQuerySuggestions = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { q: partialQuery, limit = 5 } = req.query;
 
       if (!partialQuery || typeof partialQuery !== 'string') {
-        return res.status(400).json({
-          success: false,
-          message: '查詢參數不能為空'
-        });
+        throw ApiError.fieldRequired('查詢參數');
       }
 
       const suggestions = await semanticSearchService.getQuerySuggestions(
@@ -285,22 +251,15 @@ export class KnowledgeBaseController {
           suggestions
         }
       });
-    } catch (error) {
-      console.error('❌ 獲取查詢建議失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '獲取查詢建議失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 批量更新嵌入向量
    * POST /api/v1/knowledge-base/embeddings/update
    */
-  static async updateEmbeddings(req: Request, res: Response) {
-    try {
+  static updateEmbeddings = handleErrorAsync(
+    async (req: Request, res: Response) => {
       console.log('🔄 開始批量更新嵌入向量...');
       const result = await knowledgeBaseService.batchUpdateEmbeddings();
 
@@ -312,22 +271,15 @@ export class KnowledgeBaseController {
           failed: result.failed
         }
       });
-    } catch (error) {
-      console.error('❌ 批量更新嵌入向量失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '批量更新嵌入向量失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 獲取知識庫統計
    * GET /api/v1/knowledge-base/stats
    */
-  static async getKnowledgeBaseStats(req: Request, res: Response) {
-    try {
+  static getKnowledgeBaseStats = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const stats = await knowledgeBaseService.getKnowledgeBaseStats();
       const embeddingStats = await embeddingService.getEmbeddingStats();
       const searchStats = await semanticSearchService.getSearchStats();
@@ -340,29 +292,19 @@ export class KnowledgeBaseController {
           search: searchStats
         }
       });
-    } catch (error) {
-      console.error('❌ 獲取知識庫統計失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '獲取知識庫統計失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 測試語義搜尋功能
    * POST /api/v1/knowledge-base/test-search
    */
-  static async testSemanticSearch(req: Request, res: Response) {
-    try {
+  static testSemanticSearch = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const { query1, query2 } = req.body;
 
       if (!query1 || !query2) {
-        return res.status(400).json({
-          success: false,
-          message: '請提供兩個查詢文本進行相似度測試'
-        });
+        throw ApiError.fieldRequired('請提供兩個查詢文本進行相似度測試');
       }
 
       // 生成兩個查詢的嵌入向量
@@ -392,22 +334,15 @@ export class KnowledgeBaseController {
           searchResults
         }
       });
-    } catch (error) {
-      console.error('❌ 測試語義搜尋失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '測試語義搜尋失敗',
-        error: error.message
-      });
     }
-  }
+  );
 
   /**
    * 檢查嵌入服務狀態
    * GET /api/v1/knowledge-base/embedding-status
    */
-  static async checkEmbeddingStatus(req: Request, res: Response) {
-    try {
+  static checkEmbeddingStatus = handleErrorAsync(
+    async (req: Request, res: Response) => {
       const isAvailable = await embeddingService.isServiceAvailable();
       const stats = await embeddingService.getEmbeddingStats();
 
@@ -420,13 +355,6 @@ export class KnowledgeBaseController {
           dimensions: 1536
         }
       });
-    } catch (error) {
-      console.error('❌ 檢查嵌入服務狀態失敗:', error);
-      res.status(500).json({
-        success: false,
-        message: '檢查嵌入服務狀態失敗',
-        error: error.message
-      });
     }
-  }
+  );
 }

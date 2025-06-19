@@ -123,7 +123,7 @@ export class SemanticSearchService {
             this.searchKnowledgeBase(query, { ...options, limit: options.limit || 10 }),
             this.keywordSearch(query, { ...options, limit: options.limit || 10 })
           ]);
-        } catch (error) {
+        } catch (error: any) {
           // 如果語義搜尋失敗，只使用關鍵字搜尋
           console.warn('⚠️  語義搜尋失敗，降級到關鍵字搜尋:', error.message);
           keywordResults = await this.keywordSearch(query, { ...options, limit: options.limit || 10 });

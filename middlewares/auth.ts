@@ -76,7 +76,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
     });
   } else {
     // 沒有 token 則設為匿名用戶
-    req.user = null;
+    req.user = undefined;
     next();
   }
 };
@@ -148,7 +148,7 @@ export const requireVerifiedEmail = (
 export const checkSessionAccess = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user?.userId;
+    const userId = (req.user as any)?.userId;
     
     if (!sessionId) {
       return res.status(400).json({

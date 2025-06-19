@@ -10,7 +10,7 @@ import { semanticSearchService } from './semantic-search-service.js';
 import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionStatus } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -42,6 +42,16 @@ export interface ChatResponse {
   processingTime: number;
   model: string;
   tokens: number;
+}
+
+interface SearchResult {
+  id: string;
+  type: 'knowledge_base' | 'faq';
+  title: string;
+  content: string;
+  similarity: number;
+  category?: string;
+  keywords?: string[];
 }
 
 export class UnifiedCustomerService {
@@ -211,28 +221,27 @@ export class UnifiedCustomerService {
   /**
    * 搜尋相關內容
    */
-  private async searchRelevantContent(userMessage: string, limit = 5): Promise<any[]> {
+  private async searchRelevantContent(userMessage: string, limit = 5): Promise<SearchResult[]> {
     try {
       console.log(`🔍 開始搜尋相關內容: "${userMessage}"`);
       
-      // 使用 Supabase 知識庫搜尋
+      // 使用 Supabase 知識庫搜尋（移除 threshold 參數）
       const knowledgeBaseResults = await supabaseService.searchKnowledgeBase(userMessage, {
-        limit: limit * 2,
-        threshold: 0.1
+        limit: limit * 2
       });
 
       // 嘗試 FAQ 搜尋作為補充
-      let faqResults = [];
+      let faqResults: any[] = [];
       if (faqSearchService.isReady()) {
         try {
           faqResults = await faqSearchService.searchFAQ(userMessage, Math.floor(limit * 0.5));
-        } catch (error) {
+        } catch (error: any) {
           console.warn('⚠️ FAQ 搜尋失敗，跳過:', error.message);
         }
       }
 
       // 合併結果
-      const combinedResults = [];
+      const combinedResults: SearchResult[] = [];
       
       // 添加知識庫結果
       knowledgeBaseResults.slice(0, Math.ceil(limit * 0.7)).forEach(kb => {
@@ -243,13 +252,13 @@ export class UnifiedCustomerService {
           content: kb.content,
           similarity: kb.similarity,
           category: kb.category,
-          keywords: kb.keywords
+          keywords: kb.tags || [] // 使用 tags 而不是 keywords
         });
       });
 
       // 添加 FAQ 結果
       if (faqResults && faqResults.length > 0) {
-        faqResults.slice(0, Math.floor(limit * 0.3)).forEach(faq => {
+        faqResults.slice(0, Math.floor(limit * 0.3)).forEach((faq: any) => {
           combinedResults.push({
             id: faq.faq_id.toString(),
             type: 'faq',
@@ -278,7 +287,7 @@ export class UnifiedCustomerService {
   /**
    * 構建增強的提示詞
    */
-  private buildEnhancedPrompt(sources: any[], category?: string): string {
+  private buildEnhancedPrompt(sources: SearchResult[], category?: string): string {
     let prompt = this.systemPrompt;
 
     if (category) {
@@ -303,7 +312,7 @@ export class UnifiedCustomerService {
   /**
    * 計算信心度
    */
-  private calculateConfidence(sources: any[], response: string, userMessage?: string): number {
+  private calculateConfidence(sources: SearchResult[], response: string, userMessage?: string): number {
     let confidence = 0.5; // 基礎信心度
 
     // 檢查是否為簡單問候語或常見對話
@@ -387,7 +396,7 @@ export class UnifiedCustomerService {
       const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
 
       // 查找或建立會話
-      let session: SupportSession;
+      let session: SupportSession | null = null;
       
       if (existingSessionId) {
         session = await supportSessionRepo.findOne({
@@ -508,7 +517,12 @@ export class UnifiedCustomerService {
         temperature: 0.3
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('OpenAI 回應為空');
+      }
+
+      return JSON.parse(content);
     } catch (error) {
       console.error('❌ 意圖分析失敗:', error);
       return {

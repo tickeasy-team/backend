@@ -44,7 +44,7 @@ export class EmbeddingService {
       }
 
       return embedding;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 生成嵌入向量失敗:', error);
       throw new Error(`嵌入生成失敗: ${error.message}`);
     }
@@ -68,7 +68,7 @@ export class EmbeddingService {
       });
 
       return response.data.map(item => item.embedding);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 批量生成嵌入向量失敗:', error);
       throw new Error(`批量嵌入生成失敗: ${error.message}`);
     }
@@ -262,7 +262,7 @@ export class EmbeddingService {
       // 簡單測試嵌入服務
       const testEmbedding = await this.generateEmbedding('測試文本');
       return testEmbedding.length > 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 嵌入服務不可用:', error.message);
       return false;
     }

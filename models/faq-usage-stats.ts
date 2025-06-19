@@ -68,7 +68,7 @@ export class FAQUsageStats {
 
   // 方法：清除反饋
   clearFeedback(): void {
-    this.isHelpful = null;
-    this.feedbackText = null;
+    this.isHelpful = false;
+    this.feedbackText = '';
   }
 }

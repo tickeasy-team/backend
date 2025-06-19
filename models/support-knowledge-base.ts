@@ -71,7 +71,7 @@ export class SupportKnowledgeBase {
 
   // 方法：清除嵌入向量
   clearEmbedding(): void {
-    this.embeddingVector = null;
+    this.embeddingVector = [];
   }
 
   // 方法：更新內容並清除舊的嵌入向量

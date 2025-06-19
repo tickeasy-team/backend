@@ -143,7 +143,7 @@ async function initializeKnowledgeBase() {
             savedKB.setEmbedding(embedding);
             await knowledgeBaseRepo.save(savedKB);
             console.log(`   ✅ 嵌入向量生成成功 (${embedding.length} 維度)`);
-          } catch (embeddingError) {
+          } catch (embeddingError: any) {
             console.log(`   ⚠️  嵌入向量生成失敗: ${embeddingError.message}`);
           }
         }
@@ -156,7 +156,7 @@ async function initializeKnowledgeBase() {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ 創建知識庫項目失敗: ${data.title}`, error.message);
         errorCount++;
       }

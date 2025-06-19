@@ -56,7 +56,7 @@ async function initSimpleKnowledgeBase() {
         
         successCount++;
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ 創建失敗: ${data.title}`, error.message);
       }
     }

@@ -52,7 +52,7 @@ export class KnowledgeBaseService {
       const knowledgeBase = new SupportKnowledgeBase();
       knowledgeBase.title = data.title;
       knowledgeBase.content = data.content;
-      knowledgeBase.category = data.category || null;
+      knowledgeBase.category = data.category || '';
       knowledgeBase.tags = data.tags || [];
       knowledgeBase.isActive = data.isActive !== false; // 預設為 true
 
@@ -71,7 +71,7 @@ export class KnowledgeBaseService {
       }
 
       return this.transformToKnowledgeBaseWithSimilarity(savedKnowledgeBase);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 創建知識庫項目失敗:', error);
       throw new Error(`創建知識庫項目失敗: ${error.message}`);
     }
@@ -123,7 +123,7 @@ export class KnowledgeBaseService {
       }
 
       return this.transformToKnowledgeBaseWithSimilarity(updatedKnowledgeBase);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 更新知識庫項目失敗:', error);
       throw new Error(`更新知識庫項目失敗: ${error.message}`);
     }
@@ -151,7 +151,7 @@ export class KnowledgeBaseService {
       
       console.log('✅ 知識庫項目已刪除（軟刪除）');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 刪除知識庫項目失敗:', error);
       throw new Error(`刪除知識庫項目失敗: ${error.message}`);
     }
@@ -309,7 +309,7 @@ export class KnowledgeBaseService {
         ...result,
         message: `批量更新完成: ${result.updated} 成功, ${result.failed} 失敗`
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 批量更新嵌入向量失敗:', error);
       return {
         updated: 0,
@@ -345,7 +345,7 @@ export class KnowledgeBaseService {
           .where('kb.isActive = true')
           .andWhere('kb.embeddingVector IS NOT NULL')
           .getCount();
-      } catch (error) {
+      } catch (error: any) {
         console.warn('⚠️  無法獲取嵌入向量統計:', error.message);
       }
 
@@ -365,7 +365,7 @@ export class KnowledgeBaseService {
           name: stat.category || '未分類',
           count: parseInt(stat.count)
         }));
-      } catch (error) {
+      } catch (error: any) {
         console.warn('⚠️  無法獲取分類統計:', error.message);
       }
 
@@ -380,7 +380,7 @@ export class KnowledgeBaseService {
           .where('kb.isActive = true')
           .andWhere('kb.updatedAt > :date', { date: sevenDaysAgo })
           .getCount();
-      } catch (error) {
+      } catch (error: any) {
         console.warn('⚠️  無法獲取最近更新統計:', error.message);
       }
 
