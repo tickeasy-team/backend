@@ -8,8 +8,7 @@ import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionType, SessionStatus, Priority } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
 import { User } from '../models/user.js';
-import { openaiService } from '../services/openai-service.js';
-// import { mcpService } from '../services/mcp-service.js'; // 已移除 MCP Service
+import { unifiedCustomerService } from '../services/unified-customer-service.js';
 
 export class SupportController {
   
@@ -22,7 +21,6 @@ export class SupportController {
       const { userId, category, initialMessage } = req.body;
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
-      const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
 
       // 如果有 userId，檢查是否已有活躍會話
       let existingSession = null;
@@ -52,50 +50,24 @@ export class SupportController {
         session = await supportSessionRepo.save(session);
       }
 
-      // 如果有初始訊息，處理它
+      // 如果有初始訊息，使用統一客服服務處理
       if (initialMessage) {
-        // 儲存用戶訊息
-        const userMessage = new SupportMessage();
-        userMessage.sessionId = session.supportSessionId;
-        userMessage.senderType = SenderType.USER;
-        userMessage.senderId = userId || null; // 允許匿名用戶
-        userMessage.messageText = initialMessage;
-        userMessage.messageType = MessageType.TEXT;
-        
-        await supportMessageRepo.save(userMessage);
-
-        // 生成 AI 回覆
-        const aiResult = await openaiService.generateResponseWithFAQ(
-          initialMessage,
-          [],
-          { category: session.category }
-        );
-
-        // 儲存 AI 回覆
-        const botMessage = new SupportMessage();
-        botMessage.sessionId = session.supportSessionId;
-        botMessage.senderType = SenderType.BOT;
-        botMessage.messageText = aiResult.response;
-        botMessage.messageType = MessageType.TEXT;
-        botMessage.metadata = {
-          confidence: aiResult.confidence,
-          processingTime: aiResult.processingTime,
-          model: aiResult.model,
-          tokens: aiResult.tokens,
-          faqSuggestions: aiResult.faqSuggestions
-        };
-
-        const savedBotMessage = await supportMessageRepo.save(botMessage);
-
-        // 設定首次回應時間
-        if (!session.firstResponseAt) {
-          session.firstResponseAt = new Date();
-          await supportSessionRepo.save(session);
-        }
+        const aiResult = await unifiedCustomerService.chat(initialMessage, {
+          category: session.category,
+          createSession: true, // 讓統一服務處理訊息記錄
+          userId: session.userId,
+          sessionId: session.supportSessionId
+        });
 
         // 檢查是否需要轉接人工
         if (aiResult.shouldTransfer) {
           session.status = SessionStatus.WAITING;
+          await supportSessionRepo.save(session);
+        }
+
+        // 設定首次回應時間
+        if (!session.firstResponseAt) {
+          session.firstResponseAt = new Date();
           await supportSessionRepo.save(session);
         }
 
@@ -106,11 +78,10 @@ export class SupportController {
             sessionId: session.supportSessionId,
             status: session.status,
             botMessage: {
-              messageId: savedBotMessage.supportMessageId,
-              text: savedBotMessage.messageText,
+              text: aiResult.message,
               confidence: aiResult.confidence,
               shouldTransfer: aiResult.shouldTransfer,
-              faqSuggestions: aiResult.faqSuggestions
+              sources: aiResult.sources
             }
           }
         });
@@ -125,7 +96,7 @@ export class SupportController {
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 開始會話失敗:', error);
       res.status(500).json({
         success: false,
@@ -142,17 +113,18 @@ export class SupportController {
   static async sendMessage(req: Request, res: Response) {
     try {
       const { sessionId, message, messageType = MessageType.TEXT } = req.body;
-      const userId = req.user?.userId; // 假設有認證中介軟體
+      const userId = (req.user as any)?.userId; // 可能為 null (匿名用戶)
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
-      const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
 
-      // 檢查會話是否存在且活躍
+      // 檢查會話是否存在
+      const whereClause: any = { supportSessionId: sessionId };
+      if (userId) {
+        whereClause.userId = userId;
+      }
+
       const session = await supportSessionRepo.findOne({
-        where: { 
-          supportSessionId: sessionId,
-          userId 
-        },
+        where: whereClause,
         relations: ['messages']
       });
 
@@ -170,69 +142,40 @@ export class SupportController {
         });
       }
 
-      // 儲存用戶訊息
-      const userMessage = new SupportMessage();
-      userMessage.sessionId = sessionId;
-      userMessage.senderType = SenderType.USER;
-      userMessage.senderId = userId;
-      userMessage.messageText = message;
-      userMessage.messageType = messageType;
-      
-      await supportMessageRepo.save(userMessage);
-
       // 如果會話狀態是等待人工客服，不生成 AI 回覆
       if (session.status === SessionStatus.WAITING) {
         return res.json({
           success: true,
           message: '訊息已發送，等待客服回覆',
           data: {
-            messageId: userMessage.supportMessageId,
             status: 'waiting_for_agent',
             waitingMessage: '您的訊息已收到，客服人員將盡快回覆您。'
           }
         });
       }
 
-      // 獲取對話歷史（最近 10 則）
+      // 準備對話歷史
       const conversationHistory = session.messages
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        .slice(-10);
+        ?.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .slice(-10)
+        .map(msg => ({
+          role: msg.senderType === SenderType.USER ? 'user' as const : 'assistant' as const,
+          content: msg.messageText
+        })) || [];
 
-      // 分析用戶意圖
-      const intentAnalysis = await openaiService.analyzeIntent(message);
-
-      // 生成 AI 回覆
-      const aiResult = await openaiService.generateResponseWithFAQ(
-        message,
-        conversationHistory,
-        { 
-          category: session.category,
-          intent: intentAnalysis
-        }
-      );
-
-      // 儲存 AI 回覆
-      const botMessage = new SupportMessage();
-      botMessage.sessionId = sessionId;
-      botMessage.senderType = SenderType.BOT;
-      botMessage.messageText = aiResult.response;
-      botMessage.messageType = MessageType.TEXT;
-      botMessage.metadata = {
-        confidence: aiResult.confidence,
-        processingTime: aiResult.processingTime,
-        model: aiResult.model,
-        tokens: aiResult.tokens,
-        intentType: intentAnalysis.intent,
-        sentiment: intentAnalysis.sentiment,
-        faqSuggestions: aiResult.faqSuggestions
-      };
-
-      const savedBotMessage = await supportMessageRepo.save(botMessage);
+      // 使用統一客服服務處理訊息
+      const aiResult = await unifiedCustomerService.chat(message, {
+        includeHistory: conversationHistory,
+        category: session.category,
+        createSession: true, // 讓統一服務處理訊息記錄
+        userId: session.userId,
+        sessionId: session.supportSessionId
+      });
 
       // 檢查是否需要轉接人工客服
-      if (aiResult.shouldTransfer || intentAnalysis.urgency === '高') {
+      if (aiResult.shouldTransfer) {
         session.status = SessionStatus.WAITING;
-        session.priority = intentAnalysis.urgency === '高' ? Priority.HIGH : Priority.NORMAL;
+        session.priority = Priority.NORMAL;
         await supportSessionRepo.save(session);
       }
 
@@ -240,20 +183,17 @@ export class SupportController {
         success: true,
         message: '訊息已發送',
         data: {
-          userMessageId: userMessage.supportMessageId,
           botMessage: {
-            messageId: savedBotMessage.supportMessageId,
-            text: savedBotMessage.messageText,
+            text: aiResult.message,
             confidence: aiResult.confidence,
             shouldTransfer: aiResult.shouldTransfer,
-            faqSuggestions: aiResult.faqSuggestions,
-            intent: intentAnalysis
+            sources: aiResult.sources
           },
           sessionStatus: session.status
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 發送訊息失敗:', error);
       res.status(500).json({
         success: false,
@@ -270,18 +210,20 @@ export class SupportController {
   static async getSessionHistory(req: Request, res: Response) {
     try {
       const { sessionId } = req.params;
-      const userId = req.user?.userId;
       const { limit = 50, offset = 0 } = req.query;
+      const userId = (req.user as any)?.userId;
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
       const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
 
       // 檢查會話權限
+      const whereClause: any = { supportSessionId: sessionId };
+      if (userId) {
+        whereClause.userId = userId;
+      }
+
       const session = await supportSessionRepo.findOne({
-        where: { 
-          supportSessionId: sessionId,
-          userId 
-        }
+        where: whereClause
       });
 
       if (!session) {
@@ -294,37 +236,34 @@ export class SupportController {
       // 獲取訊息歷史
       const messages = await supportMessageRepo.find({
         where: { sessionId },
-        relations: ['sender'],
-        order: { createdAt: 'ASC' },
+        order: { createdAt: 'DESC' },
+        take: Number(limit),
         skip: Number(offset),
-        take: Number(limit)
+        relations: ['sender']
       });
 
       res.json({
         success: true,
         data: {
-          session: {
-            sessionId: session.supportSessionId,
-            status: session.status,
-            category: session.category,
-            createdAt: session.createdAt
-          },
-          messages: messages.map(msg => ({
+          sessionId,
+          messages: messages.reverse().map(msg => ({
             messageId: msg.supportMessageId,
             senderType: msg.senderType,
-            text: msg.messageText,
+            messageText: msg.messageText,
             messageType: msg.messageType,
-            createdAt: msg.createdAt,
             metadata: msg.metadata,
-            sender: msg.sender ? {
-              name: msg.sender.name,
-              email: msg.sender.email
-            } : null
-          }))
+            createdAt: msg.createdAt,
+            isRead: msg.isRead
+          })),
+          pagination: {
+            limit: Number(limit),
+            offset: Number(offset),
+            total: messages.length
+          }
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 獲取會話歷史失敗:', error);
       res.status(500).json({
         success: false,
@@ -342,15 +281,18 @@ export class SupportController {
     try {
       const { sessionId } = req.params;
       const { reason } = req.body;
-      const userId = req.user?.userId;
+      const userId = (req.user as any)?.userId;
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
 
+      // 檢查會話權限
+      const whereClause: any = { supportSessionId: sessionId };
+      if (userId) {
+        whereClause.userId = userId;
+      }
+
       const session = await supportSessionRepo.findOne({
-        where: { 
-          supportSessionId: sessionId,
-          userId 
-        }
+        where: whereClause
       });
 
       if (!session) {
@@ -360,40 +302,46 @@ export class SupportController {
         });
       }
 
+      if (!session.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: '會話已關閉，無法轉接'
+        });
+      }
+
       // 更新會話狀態
       session.status = SessionStatus.WAITING;
-      session.sessionType = SessionType.MIXED;
-      session.priority = Priority.HIGH; // 手動轉接設為高優先級
-      
+      session.priority = Priority.HIGH; // 主動要求轉接設為高優先級
       await supportSessionRepo.save(session);
 
-      // 記錄轉接訊息
-      const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
-      const transferMessage = new SupportMessage();
-      transferMessage.sessionId = sessionId;
-      transferMessage.senderType = SenderType.BOT;
-      transferMessage.messageText = '您的會話已轉接至人工客服，請稍候...';
-      transferMessage.messageType = MessageType.TEXT;
-      transferMessage.metadata = {
-        transferReason: reason || '用戶手動要求轉接'
-      };
-
-      await supportMessageRepo.save(transferMessage);
+      // 記錄轉接原因（可選）
+      if (reason) {
+        const supportMessageRepo = AppDataSource.getRepository(SupportMessage);
+        const transferMessage = new SupportMessage();
+        transferMessage.sessionId = sessionId;
+        transferMessage.senderType = SenderType.BOT;
+        transferMessage.messageText = `用戶要求轉接人工客服。原因：${reason}`;
+        transferMessage.messageType = MessageType.TEXT;
+        transferMessage.metadata = { transferReason: reason };
+        await supportMessageRepo.save(transferMessage);
+      }
 
       res.json({
         success: true,
-        message: '已轉接至人工客服',
+        message: '已申請轉接人工客服，請稍候',
         data: {
-          sessionStatus: session.status,
-          estimatedWaitTime: '3-5分鐘' // 可以根據實際情況動態計算
+          sessionId,
+          status: session.status,
+          priority: session.priority,
+          estimatedWaitTime: '5-10 分鐘'
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 轉接人工客服失敗:', error);
       res.status(500).json({
         success: false,
-        message: '轉接失敗',
+        message: '轉接申請失敗',
         error: error.message
       });
     }
@@ -407,21 +355,31 @@ export class SupportController {
     try {
       const { sessionId } = req.params;
       const { satisfactionRating, satisfactionComment } = req.body;
-      const userId = req.user?.userId;
+      const userId = (req.user as any)?.userId;
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
 
+      // 檢查會話權限
+      const whereClause: any = { supportSessionId: sessionId };
+      if (userId) {
+        whereClause.userId = userId;
+      }
+
       const session = await supportSessionRepo.findOne({
-        where: { 
-          supportSessionId: sessionId,
-          userId 
-        }
+        where: whereClause
       });
 
       if (!session) {
         return res.status(404).json({
           success: false,
           message: '會話不存在或無權限'
+        });
+      }
+
+      if (session.isClosed) {
+        return res.status(400).json({
+          success: false,
+          message: '會話已經關閉'
         });
       }
 
@@ -433,13 +391,15 @@ export class SupportController {
         success: true,
         message: '會話已關閉',
         data: {
-          sessionId: session.supportSessionId,
-          duration: session.durationMinutes,
-          rating: session.satisfactionRating
+          sessionId,
+          status: session.status,
+          closedAt: session.closedAt,
+          satisfactionRating: session.satisfactionRating,
+          durationMinutes: session.durationMinutes
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 關閉會話失敗:', error);
       res.status(500).json({
         success: false,
@@ -455,23 +415,31 @@ export class SupportController {
    */
   static async getUserSessions(req: Request, res: Response) {
     try {
-      const userId = req.user?.userId;
       const { status, limit = 20, offset = 0 } = req.query;
+      const userId = (req.user as any)?.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: '需要登入才能查看會話列表'
+        });
+      }
 
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
 
-      const queryOptions: any = {
-        where: { userId },
-        order: { createdAt: 'DESC' },
-        skip: Number(offset),
-        take: Number(limit)
-      };
-
-      if (status) {
-        queryOptions.where.status = status;
+      // 構建查詢條件
+      const whereClause: any = { userId };
+      if (status && typeof status === 'string') {
+        whereClause.status = status as SessionStatus;
       }
 
-      const sessions = await supportSessionRepo.find(queryOptions);
+      const sessions = await supportSessionRepo.find({
+        where: whereClause,
+        order: { createdAt: 'DESC' },
+        take: Number(limit),
+        skip: Number(offset),
+        relations: ['messages']
+      });
 
       res.json({
         success: true,
@@ -480,16 +448,25 @@ export class SupportController {
             sessionId: session.supportSessionId,
             status: session.status,
             category: session.category,
-            messageCount: session.messageCount,
+            priority: session.priority,
             createdAt: session.createdAt,
-            firstResponseTime: session.firstResponseMinutes,
-            duration: session.durationMinutes,
-            satisfactionRating: session.satisfactionRating
-          }))
+            closedAt: session.closedAt,
+            messageCount: session.messageCount,
+            satisfactionRating: session.satisfactionRating,
+            durationMinutes: session.durationMinutes,
+            lastActivity: session.messages && session.messages.length > 0 
+              ? session.messages[session.messages.length - 1].createdAt 
+              : session.createdAt
+          })),
+          pagination: {
+            limit: Number(limit),
+            offset: Number(offset),
+            total: sessions.length
+          }
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 獲取用戶會話失敗:', error);
       res.status(500).json({
         success: false,

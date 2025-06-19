@@ -3,7 +3,7 @@
  */
 
 import { Request, Response } from 'express';
-import { smartCustomerService, ChatMessage } from '../services/smart-customer-service.js';
+import { unifiedCustomerService, ChatMessage } from '../services/unified-customer-service.js';
 import { supabaseService } from '../services/supabase-service.js';
 
 export class SmartCustomerController {
@@ -48,8 +48,9 @@ export class SmartCustomerController {
 
       console.log(`💬 收到用戶提問: "${message.slice(0, 50)}${message.length > 50 ? '...' : ''}"`);
 
-      const result = await smartCustomerService.chat(message, {
-        includeHistory: chatHistory
+      const result = await unifiedCustomerService.chat(message, {
+        includeHistory: chatHistory,
+        createSession: false // AI 客服不需要建立會話記錄
       });
 
       res.json({
@@ -77,7 +78,7 @@ export class SmartCustomerController {
    */
   static async getCommonQuestions(req: Request, res: Response) {
     try {
-      const questions = await smartCustomerService.getCommonQuestions();
+      const questions = await unifiedCustomerService.getCommonQuestions();
 
       res.json({
         success: true,
@@ -186,7 +187,7 @@ export class SmartCustomerController {
           knowledgeBase: stats,
           serviceStatus: {
             supabaseConnected: await supabaseService.testConnection(),
-            openaiAvailable: await smartCustomerService.checkServiceStatus()
+            openaiAvailable: await unifiedCustomerService.checkServiceStatus()
           },
           timestamp: new Date().toISOString()
         }
@@ -208,7 +209,7 @@ export class SmartCustomerController {
     try {
       const [supabaseOk, openaiOk] = await Promise.all([
         supabaseService.testConnection(),
-        smartCustomerService.checkServiceStatus()
+        unifiedCustomerService.checkServiceStatus()
       ]);
 
       const isHealthy = supabaseOk && openaiOk;
@@ -254,7 +255,9 @@ export class SmartCustomerController {
 
       for (const query of testQueries) {
         try {
-          const result = await smartCustomerService.chat(query);
+          const result = await unifiedCustomerService.chat(query, {
+            createSession: false // 測試不需要建立會話記錄
+          });
           results.push({
             query,
             success: true,

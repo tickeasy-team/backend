@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { SupportController } from '../controllers/support-controller.js';
-import { isAuthenticated } from '../middlewares/auth.js';
+import { isAuthenticated, optionalAuth, checkSessionAccess } from '../middlewares/auth.js';
 import { body, param, query, validationResult } from 'express-validator';
 
 const router = Router();
@@ -27,8 +27,9 @@ const handleValidationErrors = (req: any, res: any, next: any) => {
  * 客服聊天相關路由
  */
 
-// 開始新的客服會話
+// 開始新的客服會話（支援匿名用戶）
 router.post('/chat/start',
+  optionalAuth,
   [
     body('userId').optional().isUUID().withMessage('用戶 ID 格式不正確'),
     body('category').optional().isString().withMessage('分類必須是字串'),
@@ -38,9 +39,9 @@ router.post('/chat/start',
   SupportController.startSession
 );
 
-// 發送訊息
+// 發送訊息（支援匿名用戶）
 router.post('/chat/message',
-  isAuthenticated,
+  optionalAuth,
   [
     body('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     body('message').isString().isLength({ min: 1, max: 1000 }).withMessage('訊息長度必須在 1-1000 字之間'),
@@ -50,9 +51,10 @@ router.post('/chat/message',
   SupportController.sendMessage
 );
 
-// 獲取會話歷史
+// 獲取會話歷史（支援匿名用戶）
 router.get('/chat/:sessionId/history',
-  isAuthenticated,
+  optionalAuth,
+  checkSessionAccess,
   [
     param('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('限制數量必須在 1-100 之間'),
@@ -62,9 +64,10 @@ router.get('/chat/:sessionId/history',
   SupportController.getSessionHistory
 );
 
-// 請求轉接人工客服
+// 請求轉接人工客服（支援匿名用戶）
 router.post('/chat/:sessionId/transfer',
-  isAuthenticated,
+  optionalAuth,
+  checkSessionAccess,
   [
     param('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     body('reason').optional().isString().isLength({ max: 200 }).withMessage('轉接原因不能超過 200 字'),
@@ -73,9 +76,10 @@ router.post('/chat/:sessionId/transfer',
   SupportController.requestHumanTransfer
 );
 
-// 關閉會話
+// 關閉會話（支援匿名用戶）
 router.post('/chat/:sessionId/close',
-  isAuthenticated,
+  optionalAuth,
+  checkSessionAccess,
   [
     param('sessionId').isUUID().withMessage('會話 ID 格式不正確'),
     body('satisfactionRating').optional().isInt({ min: 1, max: 5 }).withMessage('滿意度評分必須在 1-5 之間'),
@@ -175,7 +179,7 @@ router.get('/faq', async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
       message: '獲取 FAQ 失敗',
@@ -202,7 +206,7 @@ router.get('/admin/waiting-sessions',
           waitingSessions: []
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({
         success: false,
         message: '獲取等待會話失敗',

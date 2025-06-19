@@ -29,7 +29,16 @@ export class FAQSearchService {
       const faqRepo = AppDataSource.getRepository(FAQ);
       
       const queryBuilder = faqRepo.createQueryBuilder('faq')
-        .leftJoinAndSelect('faq.category', 'category')
+        .leftJoin('faq.category', 'category')
+        .select([
+          'faq.faqId',
+          'faq.question', 
+          'faq.answer',
+          'faq.keywords',
+          'faq.helpfulCount',
+          'faq.viewCount',
+          'category.name'
+        ])
         .where('faq.isActive = :active', { active: true });
 
       // 搜尋條件：問題、答案或關鍵字匹配
@@ -77,18 +86,24 @@ export class FAQSearchService {
     try {
       const faqRepo = AppDataSource.getRepository(FAQ);
       
-      const faqs = await faqRepo.find({
-        where: { 
-          categoryId, 
-          isActive: true 
-        },
-        relations: ['category'],
-        order: { 
-          helpfulCount: 'DESC',
-          viewCount: 'DESC' 
-        },
-        take: limit
-      });
+      const queryBuilder = faqRepo.createQueryBuilder('faq')
+        .leftJoin('faq.category', 'category')
+        .select([
+          'faq.faqId',
+          'faq.question', 
+          'faq.answer',
+          'faq.keywords',
+          'faq.helpfulCount',
+          'faq.viewCount',
+          'category.name'
+        ])
+        .where('faq.categoryId = :categoryId', { categoryId })
+        .andWhere('faq.isActive = :active', { active: true })
+        .orderBy('faq.helpfulCount', 'DESC')
+        .addOrderBy('faq.viewCount', 'DESC')
+        .limit(limit);
+
+      const faqs = await queryBuilder.getMany();
 
       return faqs.map(faq => ({
         faq_id: faq.faqId,
@@ -137,15 +152,23 @@ export class FAQSearchService {
     try {
       const faqRepo = AppDataSource.getRepository(FAQ);
       
-      const faqs = await faqRepo.find({
-        where: { isActive: true },
-        relations: ['category'],
-        order: { 
-          viewCount: 'DESC',
-          helpfulCount: 'DESC' 
-        },
-        take: limit
-      });
+      const queryBuilder = faqRepo.createQueryBuilder('faq')
+        .leftJoin('faq.category', 'category')
+        .select([
+          'faq.faqId',
+          'faq.question', 
+          'faq.answer',
+          'faq.keywords',
+          'faq.helpfulCount',
+          'faq.viewCount',
+          'category.name'
+        ])
+        .where('faq.isActive = :active', { active: true })
+        .orderBy('faq.viewCount', 'DESC')
+        .addOrderBy('faq.helpfulCount', 'DESC')
+        .limit(limit);
+
+      const faqs = await queryBuilder.getMany();
 
       return faqs.map(faq => ({
         faq_id: faq.faqId,
