@@ -4,7 +4,7 @@
  */
 
 import OpenAI from 'openai';
-import { mcpService } from './mcp-service.js';
+import { faqSearchService } from './faq-search-service.js';
 import { semanticSearchService } from './semantic-search-service.js';
 
 export class OpenAIService {
@@ -210,13 +210,13 @@ export class OpenAIService {
         threshold: 0.6 // 降低閾值以獲取更多潛在相關結果
       });
 
-      // 如果語義搜尋沒有結果，嘗試使用 MCP Service 的 FAQ 搜尋作為後備
+      // 使用新的 FAQ 搜尋服務作為後備
       let faqResults = [];
-      if (mcpService.isReady()) {
+      if (faqSearchService.isReady()) {
         try {
-          faqResults = await mcpService.searchFAQ(userMessage);
+          faqResults = await faqSearchService.searchFAQ(userMessage, Math.floor(limit * 0.5));
         } catch (error) {
-          console.warn('⚠️ MCP FAQ 搜尋失敗，跳過:', error.message);
+          console.warn('⚠️ FAQ 搜尋失敗，跳過:', error.message);
         }
       }
 
@@ -266,24 +266,25 @@ export class OpenAIService {
   }
 
   /**
-   * 原本的 FAQ 搜尋（作為後備）
+   * FAQ 搜尋（使用新的 FAQSearchService）
    */
   async searchRelevantFAQ(userMessage, limit = 3) {
     try {
-      if (!mcpService.isReady()) {
-        console.warn('⚠️  MCP Service 未準備好，跳過 FAQ 搜尋');
+      if (!faqSearchService.isReady()) {
+        console.warn('⚠️  FAQ Search Service 未準備好，跳過 FAQ 搜尋');
         return [];
       }
 
-      const faqResults = await mcpService.searchFAQ(userMessage);
+      const faqResults = await faqSearchService.searchFAQ(userMessage, limit);
       
       if (faqResults && faqResults.length > 0) {
-        return faqResults.slice(0, limit).map(faq => ({
+        return faqResults.map(faq => ({
           id: faq.faq_id,
           type: 'faq',
           question: faq.question,
           answer: faq.answer,
-          confidence: 0.8
+          confidence: 0.8,
+          category: faq.category_name
         }));
       }
 
