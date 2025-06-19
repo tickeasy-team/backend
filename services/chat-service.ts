@@ -143,7 +143,7 @@ export class ChatService {
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         input: enhancedInput,
         previous_response_id: previousResponseId, // 自動處理對話歷史
-        max_completion_tokens: 300,
+        max_output_tokens: 300, // Responses API 使用 max_output_tokens
         temperature: 0.7
       });
 
@@ -514,7 +514,7 @@ export class ChatService {
             content: userMessage
           }
         ],
-        max_completion_tokens: 200,
+        max_output_tokens: 200, // Responses API 使用 max_output_tokens
         temperature: 0.3
       });
 

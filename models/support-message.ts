@@ -34,6 +34,7 @@ interface MessageMetadata {
   processingTime?: number;    // 處理時間（毫秒）
   model?: string;             // 使用的 AI 模型
   tokens?: number;            // 使用的 token 數量
+  responseId?: string;        // OpenAI Responses API 的回應 ID
 }
 
 @Entity('supportMessage')
