@@ -13,8 +13,6 @@
     "migrate": "npm run typeorm migration:run -- -d config/database.ts",
     "test": "jest",
     "init:knowledge-base": "tsx init-knowledge-base.ts",
-    "init:simple-kb": "tsx init-simple-kb.ts",
-    "init:safe-kb": "tsx init-safe-kb.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },
