@@ -32,6 +32,7 @@ import sessionRoute from './routes/session.js';
 import supportRoute from './routes/support.js';
 import knowledgeBaseRoute from './routes/knowledge-base.js';
 import aiCustomerServiceRoute from './routes/ai-customer-service.js';
+import smartReplyRoute from './routes/smart-reply.js';
 
 import healthRouter from './routes/health.js';
 
@@ -91,6 +92,7 @@ app.use('/api/v1/sessions', sessionRoute);
 app.use('/api/v1/support', supportRoute);
 app.use('/api/v1/knowledge-base', knowledgeBaseRoute);
 app.use('/api/v1/ai-customer-service', aiCustomerServiceRoute);
+app.use('/api/v1/smart-reply', smartReplyRoute);
 app.use('/api/v1/health', healthRouter);
 
 

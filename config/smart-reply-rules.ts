@@ -241,23 +241,119 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
   // 💡 Priority 3 - 一般支援功能
   // ===========================================
 
+  // 會員功能相關教學 (前端已完成圖文教學)
   {
-    id: 'password-reset',
+    id: 'member-register',
+    keywords: [
+      // 註冊核心
+      '註冊', '申請帳號', '開戶', '加入會員', '建立帳號',
+      // 完整短語
+      '如何註冊', '怎麼註冊', '註冊流程', '會員申請',
+      // 問題表達
+      '想要註冊', '要怎麼加入', '沒有帳號', '第一次使用',
+      // 註冊問題
+      '註冊不了', '註冊失敗', '無法註冊', '註冊問題'
+    ],
+    priority: 2,
+    category: '會員管理',
+    replyType: 'tutorial',
+    tutorialTitle: '會員註冊教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialDescription: '完整的會員註冊流程與注意事項說明',
+    isActive: true,
+    notes: '前端已完成圖文教學，請更新實際教學網址'
+  },
+
+  {
+    id: 'member-login',
+    keywords: [
+      // 登入核心
+      '登入', '登錄', '簽到', '進入', '登入帳號',
+      // 完整短語
+      '如何登入', '怎麼登入', '登入方式', '登入流程',
+      // 問題表達
+      '要怎麼登入', '登入在哪', '登入問題', '無法登入',
+      // 登入狀態
+      '已登入', '登入狀態', '登入成功', '登入失敗'
+    ],
+    priority: 2,
+    category: '會員管理',
+    replyType: 'tutorial',
+    tutorialTitle: '會員登入教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialDescription: '會員登入步驟與常見登入問題解決',
+    isActive: true,
+    notes: '前端已完成圖文教學，請更新實際教學網址'
+  },
+
+  {
+    id: 'forgot-password',
     keywords: [
       // 密碼問題
-      '忘記密碼', '密碼重設', '登入問題', '無法登入',
+      '忘記密碼', '密碼重設', '重設密碼', '找回密碼',
       // 完整短語
-      '密碼忘了', '登不進去', '重新設定密碼', '密碼錯誤',
-      // 帳號問題
-      '帳號被鎖', '帳號異常', '登入失敗'
+      '密碼忘了', '不記得密碼', '密碼不見了', '密碼遺失',
+      // 問題表達
+      '忘記密碼怎麼辦', '密碼重設流程', '如何重設密碼',
+      // 相關問題
+      '密碼錯誤', '密碼無效', '舊密碼不對'
     ],
-    priority: 3,
-    category: '帳號管理',
+    priority: 2,
+    category: '會員管理',
     replyType: 'tutorial',
-    tutorialTitle: '密碼重設教學',
-    tutorialUrl: '/help/tutorial/password-reset',
-    tutorialDescription: '密碼重設流程與帳號登入問題解決',
-    isActive: true
+    tutorialTitle: '忘記密碼處理教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialDescription: '忘記密碼時的重設流程與驗證步驟',
+    isActive: true,
+    notes: '前端已完成圖文教學，請更新實際教學網址'
+  },
+
+  {
+    id: 'edit-profile',
+    keywords: [
+      // 個人資訊
+      '修改個人資訊', '編輯資料', '更新資料', '個人設定',
+      // 完整短語
+      '如何修改資料', '怎麼改個人資訊', '更改個人資料',
+      // 具體項目
+      '修改姓名', '更改電話', '改地址', '修改信箱',
+      // 問題表達
+      '個人資料在哪改', '資料怎麼修改', '要怎麼更新資料',
+      // 相關功能
+      '會員資料', '帳號資訊', '個人檔案'
+    ],
+    priority: 2,
+    category: '會員管理',
+    replyType: 'tutorial',
+    tutorialTitle: '修改個人資訊教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialDescription: '修改會員個人資料的完整操作流程',
+    isActive: true,
+    notes: '前端已完成圖文教學，請更新實際教學網址'
+  },
+
+  {
+    id: 'change-password',
+    keywords: [
+      // 修改密碼
+      '修改密碼', '更改密碼', '改密碼', '換密碼',
+      // 完整短語
+      '如何修改密碼', '怎麼改密碼', '密碼修改流程',
+      // 問題表達
+      '要怎麼換密碼', '密碼在哪改', '想要改密碼',
+      // 安全相關
+      '密碼安全', '密碼強度', '新密碼設定',
+      // 相關功能
+      '密碼變更', '密碼更新'
+    ],
+    priority: 2,
+    category: '會員管理',
+    replyType: 'tutorial',
+    tutorialTitle: '修改密碼教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialDescription: '安全修改會員密碼的步驟與注意事項',
+    isActive: true,
+    notes: '前端已完成圖文教學，請更新實際教學網址'
   }
 ];
 
