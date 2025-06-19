@@ -9,7 +9,7 @@ import { SupportSession, SessionType, SessionStatus, Priority } from '../models/
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
 import { User } from '../models/user.js';
 import { openaiService } from '../services/openai-service.js';
-import { mcpService } from '../services/mcp-service.js';
+// import { mcpService } from '../services/mcp-service.js'; // 已移除 MCP Service
 
 export class SupportController {
   

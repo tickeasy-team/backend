@@ -109,7 +109,7 @@ router.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     services: {
       openai: process.env.OPENAI_API_KEY ? 'connected' : 'not_configured',
-      mcp: 'ready', // 可以加入實際的 MCP 狀態檢查
+      // mcp: 'ready', // MCP Service 已移除
       database: 'connected'
     }
   });

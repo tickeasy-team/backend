@@ -2,7 +2,6 @@
  * 客服 API 測試
  * 測試 OpenAI 客服對話功能
  */
-
 import axios from 'axios';
 import dotenv from 'dotenv';
 
@@ -16,10 +15,10 @@ class SupportAPITester {
     this.sessionId = null;
     this.authToken = null; // 實際使用時需要真實的 JWT token
   }
-
+  
   /**
    * 測試健康檢查
-   */
+  */
   async testHealthCheck() {
     console.log('🔍 測試客服系統健康檢查...');
     
