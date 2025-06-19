@@ -3,7 +3,7 @@
  */
 
 import { Request, Response } from 'express';
-import { unifiedCustomerService, ChatMessage } from '../services/unified-customer-service.js';
+import { chatService, ChatOptions } from '../services/chat-service.js';
 import { supabaseService } from '../services/supabase-service.js';
 
 export class SmartCustomerController {
@@ -35,22 +35,14 @@ export class SmartCustomerController {
         });
       }
 
-      // 驗證歷史對話格式
-      let chatHistory: ChatMessage[] = [];
-      if (Array.isArray(history)) {
-        chatHistory = history.filter((msg: any) => 
-          msg && 
-          typeof msg.role === 'string' && 
-          ['user', 'assistant'].includes(msg.role) &&
-          typeof msg.content === 'string'
-        ).slice(-10); // 最多保留最近 10 輪對話
-      }
+      // 使用 Responses API 的 previousResponseId 來處理歷史
+      const { previousResponseId } = req.body;
 
       console.log(`💬 收到用戶提問: "${message.slice(0, 50)}${message.length > 50 ? '...' : ''}"`);
 
-      const result = await unifiedCustomerService.chat(message, {
-        includeHistory: chatHistory,
-        createSession: false // AI 客服不需要建立會話記錄
+                    const result = await chatService.chat(message, {
+        createSession: false, // AI 客服不需要建立會話記錄
+        previousResponseId // 使用 Responses API 的狀態管理
       });
 
       res.json({
@@ -60,6 +52,7 @@ export class SmartCustomerController {
           sources: result.sources,
           confidence: result.confidence,
           hasRelevantInfo: result.hasRelevantInfo,
+          responseId: result.responseId, // 新增：用於後續對話
           timestamp: new Date().toISOString()
         }
       });
@@ -78,7 +71,7 @@ export class SmartCustomerController {
    */
   static async getCommonQuestions(req: Request, res: Response) {
     try {
-      const questions = await unifiedCustomerService.getCommonQuestions();
+      const questions = await chatService.getCommonQuestions();
 
       res.json({
         success: true,
@@ -187,7 +180,7 @@ export class SmartCustomerController {
           knowledgeBase: stats,
           serviceStatus: {
             supabaseConnected: await supabaseService.testConnection(),
-            openaiAvailable: await unifiedCustomerService.checkServiceStatus()
+            openaiAvailable: await chatService.checkServiceStatus()
           },
           timestamp: new Date().toISOString()
         }
@@ -209,7 +202,7 @@ export class SmartCustomerController {
     try {
       const [supabaseOk, openaiOk] = await Promise.all([
         supabaseService.testConnection(),
-        unifiedCustomerService.checkServiceStatus()
+        chatService.checkServiceStatus()
       ]);
 
       const isHealthy = supabaseOk && openaiOk;
@@ -255,7 +248,7 @@ export class SmartCustomerController {
 
       for (const query of testQueries) {
         try {
-          const result = await unifiedCustomerService.chat(query, {
+          const result = await chatService.chat(query, {
             createSession: false // 測試不需要建立會話記錄
           });
           results.push({

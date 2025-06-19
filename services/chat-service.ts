@@ -1,12 +1,11 @@
 /**
- * 統一客服服務
+ * 聊天服務 (使用 OpenAI Responses API)
  * 整合傳統客服會話與即時 AI 問答功能
  */
 
 import OpenAI from 'openai';
 import { supabaseService } from './supabase-service.js';
 import { faqSearchService } from './faq-search-service.js';
-import { semanticSearchService } from './semantic-search-service.js';
 import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionStatus } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
@@ -14,17 +13,12 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
 export interface ChatOptions {
-  includeHistory?: ChatMessage[];
   sessionId?: string;
   userId?: string;
   category?: string;
   createSession?: boolean; // 是否需要建立會話記錄
+  previousResponseId?: string; // Responses API 的前一個回應 ID
 }
 
 export interface ChatResponse {
@@ -39,6 +33,7 @@ export interface ChatResponse {
   hasRelevantInfo: boolean;
   shouldTransfer?: boolean;
   sessionId?: string;
+  responseId: string; // Responses API 的回應 ID
   processingTime: number;
   model: string;
   tokens: number;
@@ -54,7 +49,7 @@ interface SearchResult {
   keywords?: string[];
 }
 
-export class UnifiedCustomerService {
+export class ChatService {
   private openai: OpenAI;
   private systemPrompt: string;
 
@@ -67,7 +62,7 @@ export class UnifiedCustomerService {
 
     this.openai = new OpenAI({ apiKey });
     this.systemPrompt = this.buildSystemPrompt();
-    console.log('✅ 統一客服服務初始化成功');
+    console.log('✅ 聊天服務初始化成功 (Responses API)');
   }
 
   /**
@@ -107,13 +102,12 @@ export class UnifiedCustomerService {
    */
   async checkServiceStatus(): Promise<boolean> {
     try {
-      const response = await this.openai.chat.completions.create({
+      const response = await this.openai.responses.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [{ role: 'user', content: '測試' }],
-        max_tokens: 10
+        input: '測試'
       });
 
-      return !!response.choices[0]?.message?.content;
+      return !!response.output_text;
     } catch (error) {
       console.error('❌ OpenAI 服務檢查失敗:', error);
       return false;
@@ -121,18 +115,18 @@ export class UnifiedCustomerService {
   }
 
   /**
-   * 統一聊天介面
+   * 統一聊天介面 (使用 Responses API)
    */
   async chat(userMessage: string, options: ChatOptions = {}): Promise<ChatResponse> {
     const startTime = Date.now();
     
     try {
       const { 
-        includeHistory = [], 
         sessionId, 
         userId, 
         category,
-        createSession = false 
+        createSession = false,
+        previousResponseId
       } = options;
 
       console.log(`🤖 處理用戶提問: "${userMessage.slice(0, 50)}${userMessage.length > 50 ? '...' : ''}"`);
@@ -141,34 +135,26 @@ export class UnifiedCustomerService {
       const searchResults = await this.searchRelevantContent(userMessage);
       const hasRelevantInfo = searchResults.length > 0;
 
-      // 2. 構建增強的系統提示詞
-      const enhancedPrompt = this.buildEnhancedPrompt(searchResults, category);
+      // 2. 構建增強的輸入內容
+      const enhancedInput = this.buildEnhancedInput(userMessage, searchResults, category);
 
-      // 3. 準備對話訊息
-      const messages: ChatMessage[] = [
-        { role: 'system', content: enhancedPrompt },
-        ...includeHistory.slice(-10), // 最多保留 10 輪對話
-        { role: 'user', content: userMessage }
-      ];
-
-      // 4. 調用 OpenAI
-      const completion = await this.openai.chat.completions.create({
+      // 3. 調用 OpenAI Responses API
+      const response = await this.openai.responses.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages,
-        max_tokens: 300,
-        temperature: 0.7,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+        input: enhancedInput,
+        previous_response_id: previousResponseId, // 自動處理對話歷史
+        max_completion_tokens: 300,
+        temperature: 0.7
       });
 
-      const aiResponse = completion.choices[0]?.message?.content || '抱歉，我現在無法回答您的問題。';
+      const aiResponse = response.output_text || '抱歉，我現在無法回答您的問題。';
       const processingTime = Date.now() - startTime;
 
-      // 5. 計算信心度和轉接判斷
+      // 4. 計算信心度和轉接判斷
       const confidence = this.calculateConfidence(searchResults, aiResponse, userMessage);
       const shouldTransfer = this.shouldTransferToHuman(aiResponse, confidence);
 
-      // 6. 如果需要建立會話記錄，則儲存到資料庫
+      // 5. 如果需要建立會話記錄，則儲存到資料庫
       let finalSessionId = sessionId;
       if (createSession && userId) {
         finalSessionId = await this.saveToSession(
@@ -178,11 +164,12 @@ export class UnifiedCustomerService {
           category,
           confidence,
           shouldTransfer,
-          sessionId
+          sessionId,
+          response.id // 儲存 Responses API 的 ID
         );
       }
 
-      const response: ChatResponse = {
+      const chatResponse: ChatResponse = {
         message: aiResponse,
         sources: searchResults.map(source => ({
           id: source.id,
@@ -194,16 +181,17 @@ export class UnifiedCustomerService {
         hasRelevantInfo,
         shouldTransfer,
         sessionId: finalSessionId,
+        responseId: response.id, // 新增：Responses API 的回應 ID
         processingTime,
-        model: completion.model,
-        tokens: completion.usage?.total_tokens || 0
+        model: response.model,
+        tokens: response.usage?.total_tokens || 0
       };
 
-      console.log(`✅ 客服回覆完成 (信心度: ${(confidence * 100).toFixed(1)}%)`);
-      return response;
+      console.log(`✅ 客服回覆完成 (信心度: ${(confidence * 100).toFixed(1)}%, Response ID: ${response.id})`);
+      return chatResponse;
 
     } catch (error) {
-      console.error('❌ 統一客服處理失敗:', error);
+      console.error('❌ 聊天服務處理失敗:', error);
       
       return {
         message: '抱歉，系統暫時無法處理您的請求，請稍後再試或聯繫人工客服。',
@@ -212,6 +200,7 @@ export class UnifiedCustomerService {
         hasRelevantInfo: false,
         shouldTransfer: true,
         processingTime: Date.now() - startTime,
+        responseId: '',
         model: 'fallback',
         tokens: 0
       };
@@ -219,13 +208,48 @@ export class UnifiedCustomerService {
   }
 
   /**
-   * 搜尋相關內容
+   * 構建增強的輸入內容 (適用於 Responses API)
+   */
+  private buildEnhancedInput(userMessage: string, sources: SearchResult[], category?: string): any {
+    let systemContent = this.systemPrompt;
+
+    if (category) {
+      systemContent += `\n\n當前諮詢類別：${category}`;
+    }
+
+    if (sources.length > 0) {
+      systemContent += '\n\n相關知識庫和 FAQ 參考：\n';
+      sources.forEach((source, index) => {
+        const typeLabel = source.type === 'knowledge_base' ? '知識庫' : 'FAQ';
+        systemContent += `${index + 1}. [${typeLabel}] ${source.title}\n   ${source.content}\n`;
+        if (source.category) {
+          systemContent += `   分類: ${source.category}\n`;
+        }
+      });
+      systemContent += '\n請參考以上內容提供更精確的回答。如果用戶的問題與以上內容相關，請優先使用這些資訊。';
+    }
+
+    // 使用 Responses API 的結構化輸入格式
+    return [
+      {
+        role: 'system',
+        content: systemContent
+      },
+      {
+        role: 'user', 
+        content: userMessage
+      }
+    ];
+  }
+
+  /**
+   * 搜尋相關內容 (保持與原版相同)
    */
   private async searchRelevantContent(userMessage: string, limit = 5): Promise<SearchResult[]> {
     try {
       console.log(`🔍 開始搜尋相關內容: "${userMessage}"`);
       
-      // 使用 Supabase 知識庫搜尋（移除 threshold 參數）
+      // 使用 Supabase 知識庫搜尋
       const knowledgeBaseResults = await supabaseService.searchKnowledgeBase(userMessage, {
         limit: limit * 2
       });
@@ -252,7 +276,7 @@ export class UnifiedCustomerService {
           content: kb.content,
           similarity: kb.similarity,
           category: kb.category,
-          keywords: kb.tags || [] // 使用 tags 而不是 keywords
+          keywords: kb.tags || []
         });
       });
 
@@ -285,32 +309,7 @@ export class UnifiedCustomerService {
   }
 
   /**
-   * 構建增強的提示詞
-   */
-  private buildEnhancedPrompt(sources: SearchResult[], category?: string): string {
-    let prompt = this.systemPrompt;
-
-    if (category) {
-      prompt += `\n\n當前諮詢類別：${category}`;
-    }
-
-    if (sources.length > 0) {
-      prompt += '\n\n相關知識庫和 FAQ 參考：\n';
-      sources.forEach((source, index) => {
-        const typeLabel = source.type === 'knowledge_base' ? '知識庫' : 'FAQ';
-        prompt += `${index + 1}. [${typeLabel}] ${source.title}\n   ${source.content}\n`;
-        if (source.category) {
-          prompt += `   分類: ${source.category}\n`;
-        }
-      });
-      prompt += '\n請參考以上內容提供更精確的回答。如果用戶的問題與以上內容相關，請優先使用這些資訊。';
-    }
-
-    return prompt;
-  }
-
-  /**
-   * 計算信心度
+   * 計算信心度 (保持與原版相同)
    */
   private calculateConfidence(sources: SearchResult[], response: string, userMessage?: string): number {
     let confidence = 0.5; // 基礎信心度
@@ -345,7 +344,7 @@ export class UnifiedCustomerService {
 
     for (const keyword of lowConfidenceKeywords) {
       if (response.includes(keyword)) {
-        confidence -= 0.15; // 減少懲罰程度
+        confidence -= 0.15;
       }
     }
 
@@ -360,11 +359,11 @@ export class UnifiedCustomerService {
       }
     }
 
-    return Math.max(0.2, Math.min(1, confidence)); // 最低信心度提升到 0.2
+    return Math.max(0.2, Math.min(1, confidence));
   }
 
   /**
-   * 判斷是否應該轉接人工客服
+   * 判斷是否應該轉接人工客服 (保持與原版相同)
    */
   private shouldTransferToHuman(response: string, confidence: number): boolean {
     // 信心度低於 0.6 建議轉接
@@ -380,7 +379,7 @@ export class UnifiedCustomerService {
   }
 
   /**
-   * 儲存到會話記錄
+   * 儲存到會話記錄 (新增 responseId 參數)
    */
   private async saveToSession(
     userId: string,
@@ -389,7 +388,8 @@ export class UnifiedCustomerService {
     category?: string,
     confidence?: number,
     shouldTransfer?: boolean,
-    existingSessionId?: string
+    existingSessionId?: string,
+    responseId?: string
   ): Promise<string> {
     try {
       const supportSessionRepo = AppDataSource.getRepository(SupportSession);
@@ -438,7 +438,8 @@ export class UnifiedCustomerService {
       botMsg.messageType = MessageType.TEXT;
       botMsg.metadata = {
         confidence,
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini'
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        responseId // 新增：儲存 Responses API 的 ID
       };
       await supportMessageRepo.save(botMsg);
 
@@ -463,7 +464,7 @@ export class UnifiedCustomerService {
   }
 
   /**
-   * 獲取常見問題
+   * 獲取常見問題 (保持與原版相同)
    */
   async getCommonQuestions(): Promise<string[]> {
     try {
@@ -490,13 +491,13 @@ export class UnifiedCustomerService {
   }
 
   /**
-   * 分析用戶意圖
+   * 分析用戶意圖 (更新為 Responses API)
    */
   async analyzeIntent(userMessage: string): Promise<any> {
     try {
-      const response = await this.openai.chat.completions.create({
+      const response = await this.openai.responses.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
+        input: [
           {
             role: 'system',
             content: `分析用戶訊息的意圖，返回 JSON 格式：
@@ -513,11 +514,11 @@ export class UnifiedCustomerService {
             content: userMessage
           }
         ],
-        max_tokens: 200,
+        max_completion_tokens: 200,
         temperature: 0.3
       });
 
-      const content = response.choices[0]?.message?.content;
+      const content = response.output_text;
       if (!content) {
         throw new Error('OpenAI 回應為空');
       }
@@ -534,7 +535,30 @@ export class UnifiedCustomerService {
       };
     }
   }
+
+  /**
+   * 延續對話 (利用 Responses API 的狀態管理)
+   */
+  async continueChat(userMessage: string, previousResponseId: string, options: Omit<ChatOptions, 'previousResponseId'> = {}): Promise<ChatResponse> {
+    return this.chat(userMessage, {
+      ...options,
+      previousResponseId
+    });
+  }
+
+  /**
+   * 檢索之前的回應 (新功能)
+   */
+  async retrieveResponse(responseId: string): Promise<any> {
+    try {
+      const response = await this.openai.responses.retrieve(responseId);
+      return response;
+    } catch (error) {
+      console.error('❌ 檢索回應失敗:', error);
+      throw error;
+    }
+  }
 }
 
 // 創建單例實例
-export const unifiedCustomerService = new UnifiedCustomerService(); 
+export const chatService = new ChatService(); 

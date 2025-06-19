@@ -8,7 +8,7 @@ import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionType, SessionStatus, Priority } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
 import { User } from '../models/user.js';
-import { unifiedCustomerService } from '../services/unified-customer-service.js';
+import { chatService } from '../services/chat-service.js';
 
 export class SupportController {
   
@@ -52,7 +52,7 @@ export class SupportController {
 
       // 如果有初始訊息，使用統一客服服務處理
       if (initialMessage) {
-        const aiResult = await unifiedCustomerService.chat(initialMessage, {
+        const aiResult = await chatService.chat(initialMessage, {
           category: session.category,
           createSession: true, // 讓統一服務處理訊息記錄
           userId: session.userId,
@@ -164,9 +164,8 @@ export class SupportController {
         })) || [];
 
       // 使用統一客服服務處理訊息
-      const aiResult = await unifiedCustomerService.chat(message, {
-        includeHistory: conversationHistory,
-        category: session.category,
+              const aiResult = await chatService.chat(message, {
+          category: session.category,
         createSession: true, // 讓統一服務處理訊息記錄
         userId: session.userId,
         sessionId: session.supportSessionId
