@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { SupportSession } from './support-session.js';
 import { User } from './user.js';
 
 /* eslint-disable no-unused-vars */
@@ -47,9 +46,9 @@ export class SupportMessage {
   @Column({ type: 'uuid' })
   sessionId: string;
 
-  @ManyToOne(() => SupportSession, session => session.messages)
+  @ManyToOne('SupportSession', 'messages')
   @JoinColumn({ name: 'sessionId' })
-  session: SupportSession;
+  session: any;
 
   @Column({ type: 'enum', enum: SenderType, enumName: 'SupportMessageSender' })
   senderType: SenderType;
