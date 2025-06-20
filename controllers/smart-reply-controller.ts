@@ -12,41 +12,6 @@ import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionType, SessionStatus, Priority } from '../models/support-session.js';
 import { SupportMessage, SenderType, MessageType } from '../models/support-message.js';
 
-// 擴展的回覆型別
-type ExtendedSmartReplyType = 'tutorial' | 'faq' | 'neutral' | 'ai_fallback' | 'ai_response' | 'ai_continue' | 'fallback' | 'keyword_fallback';
-
-// 擴展的 MessageMetadata 介面
-interface ExtendedMessageMetadata {
-  confidence?: number;
-  faqId?: number;
-  intentType?: string;
-  sentiment?: 'positive' | 'neutral' | 'negative';
-  transferReason?: string;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  quickReplies?: string[];
-  suggestions?: Array<{
-    faqId: number;
-    question: string;
-    confidence: number;
-  }>;
-  processingTime?: number;
-  model?: string;
-  tokens?: number;
-  responseId?: string;
-  // 新增欄位
-  strategy?: string;
-  openaiResponseId?: string;
-  previousResponseId?: string;
-  sources?: Array<{
-    id: string;
-    title: string;
-    category?: string;
-    similarity: number;
-  }>;
-}
-
 export class SmartReplyController {
   /**
    * 智能回覆 - 主要入口（無狀態）

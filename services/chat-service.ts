@@ -151,7 +151,7 @@ export class ChatService {
       const processingTime = Date.now() - startTime;
 
       // 4. 計算信心度和轉接判斷
-      const confidence = this.calculateConfidence(searchResults, aiResponse, userMessage);
+      const confidence = this.calculateConfidence(searchResults, aiResponse);
       const shouldTransfer = this.shouldTransferToHuman(aiResponse, confidence);
 
       // 5. 如果需要建立會話記錄，則儲存到資料庫
@@ -268,7 +268,7 @@ export class ChatService {
   /**
    * 計算信心度
    */
-  private calculateConfidence(sources: SearchResult[], response: string, userMessage?: string): number {
+  private calculateConfidence(sources: SearchResult[], response: string): number {
     if (sources.length === 0) return 0.3;
 
     // 基於搜尋結果的相似度計算信心度
