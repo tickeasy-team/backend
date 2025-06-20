@@ -135,15 +135,15 @@ export class ChatService {
       const searchResults = await this.searchRelevantContent(userMessage);
       const hasRelevantInfo = searchResults.length > 0;
 
-      // 2. 構建增強的輸入內容
-      const enhancedInput = this.buildEnhancedInput(userMessage, searchResults, category);
+      // 2. 構建輸入內容（修正為符合 Responses API 規範）
+      const input = this.buildInput(userMessage, searchResults, category, previousResponseId);
 
-      // 3. 調用 OpenAI Responses API
+      // 3. 調用 OpenAI Responses API（修正參數）
       const response = await this.openai.responses.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        input: enhancedInput,
-        previous_response_id: previousResponseId, // 自動處理對話歷史
-        max_output_tokens: 300, // Responses API 使用 max_output_tokens
+        input: input,
+        previous_response_id: previousResponseId,
+        max_output_tokens: 300,
         temperature: 0.7
       });
 
@@ -165,7 +165,7 @@ export class ChatService {
           confidence,
           shouldTransfer,
           sessionId,
-          response.id // 儲存 Responses API 的 ID
+          response.id
         );
       }
 
@@ -181,7 +181,7 @@ export class ChatService {
         hasRelevantInfo,
         shouldTransfer,
         sessionId: finalSessionId,
-        responseId: response.id, // 新增：Responses API 的回應 ID
+        responseId: response.id,
         processingTime,
         model: response.model,
         tokens: response.usage?.total_tokens || 0
@@ -199,151 +199,102 @@ export class ChatService {
         confidence: 0,
         hasRelevantInfo: false,
         shouldTransfer: true,
-        processingTime: Date.now() - startTime,
         responseId: '',
-        model: 'fallback',
+        processingTime: Date.now() - startTime,
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         tokens: 0
       };
     }
   }
 
   /**
-   * 構建增強的輸入內容 (適用於 Responses API)
+   * 構建輸入內容（修正為符合 Responses API 規範）
    */
-  private buildEnhancedInput(userMessage: string, sources: SearchResult[], category?: string): any {
-    let systemContent = this.systemPrompt;
+  private buildInput(userMessage: string, sources: SearchResult[], category?: string, previousResponseId?: string): any {
+    // 如果有前一個回應 ID，則使用簡單的輸入格式
+    if (previousResponseId) {
+      return userMessage;
+    }
+
+    // 構建增強的輸入內容
+    let contextInfo = '';
+    
+    if (sources.length > 0) {
+      contextInfo = `\n\n相關知識庫內容：\n${sources.map((source, index) => 
+        `${index + 1}. ${source.title} (${source.type})\n內容：${source.content}`
+      ).join('\n\n')}`;
+    }
 
     if (category) {
-      systemContent += `\n\n當前諮詢類別：${category}`;
+      contextInfo += `\n\n問題分類：${category}`;
     }
 
-    if (sources.length > 0) {
-      systemContent += '\n\n相關知識庫和 FAQ 參考：\n';
-      sources.forEach((source, index) => {
-        const typeLabel = source.type === 'knowledge_base' ? '知識庫' : 'FAQ';
-        systemContent += `${index + 1}. [${typeLabel}] ${source.title}\n   ${source.content}\n`;
-        if (source.category) {
-          systemContent += `   分類: ${source.category}\n`;
-        }
-      });
-      systemContent += '\n請參考以上內容提供更精確的回答。如果用戶的問題與以上內容相關，請優先使用這些資訊。';
-    }
-
-    // 使用 Responses API 的結構化輸入格式
+    // 根據 Responses API 文檔，input 可以是字符串或消息陣列
     return [
-      {
-        role: 'system',
-        content: systemContent
-      },
-      {
-        role: 'user', 
-        content: userMessage
-      }
+      { role: 'system', content: this.systemPrompt },
+      { role: 'user', content: userMessage + contextInfo }
     ];
   }
 
   /**
-   * 搜尋相關內容 (保持與原版相同)
+   * 搜尋相關知識庫內容
    */
   private async searchRelevantContent(userMessage: string, limit = 5): Promise<SearchResult[]> {
     try {
-      console.log(`🔍 開始搜尋相關內容: "${userMessage}"`);
+      const results: SearchResult[] = [];
+
+      // 使用 Supabase 搜尋知識庫
+      const knowledgeResults = await supabaseService.searchKnowledgeBase(userMessage, { limit });
       
-      // 使用 Supabase 知識庫搜尋
-      const knowledgeBaseResults = await supabaseService.searchKnowledgeBase(userMessage, {
-        limit: limit * 2
-      });
+              for (const item of knowledgeResults) {
+          results.push({
+            id: item.id,
+            type: 'knowledge_base',
+            title: item.title,
+            content: item.content,
+            similarity: item.similarity,
+            category: item.category,
+            keywords: item.tags || []
+          });
+        }
 
-
-
-      // 合併結果
-      const combinedResults: SearchResult[] = [];
-      
-      // 添加知識庫結果
-      knowledgeBaseResults.slice(0, Math.ceil(limit * 0.7)).forEach(kb => {
-        combinedResults.push({
-          id: kb.id,
-          type: 'knowledge_base',
-          title: kb.title,
-          content: kb.content,
-          similarity: kb.similarity,
-          category: kb.category,
-          keywords: kb.tags || []
-        });
-      });
-
-
-
-      // 按相似度排序並限制結果數量
-      const finalResults = combinedResults
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, limit);
-
-      console.log(`✅ 搜尋完成，找到 ${finalResults.length} 個相關結果`);
-      return finalResults;
-      
+      return results;
     } catch (error) {
-      console.error('❌ 內容搜尋失敗:', error);
+      console.error('❌ 搜尋知識庫失敗:', error);
       return [];
     }
   }
 
   /**
-   * 計算信心度 (保持與原版相同)
+   * 計算信心度
    */
   private calculateConfidence(sources: SearchResult[], response: string, userMessage?: string): number {
-    let confidence = 0.5; // 基礎信心度
+    if (sources.length === 0) return 0.3;
 
-    // 檢查是否為簡單問候語或常見對話
-    const greetingPatterns = [
-      '你好', 'hello', 'hi', '嗨', '您好', '哈囉',
-      '謝謝', 'thank', '感謝', '再見', 'bye', '掰掰'
-    ];
+    // 基於搜尋結果的相似度計算信心度
+    const avgSimilarity = sources.reduce((sum, source) => sum + source.similarity, 0) / sources.length;
     
-    if (userMessage) {
-      const isGreeting = greetingPatterns.some(pattern => 
-        userMessage.toLowerCase().includes(pattern.toLowerCase())
-      );
-      
-      if (isGreeting) {
-        confidence = 0.8; // 問候語應該有高信心度
-      }
+    // 基於回應內容的信心度指標
+    let responseConfidence = 0.7;
+    
+    // 檢查回應是否包含不確定的詞語
+    const uncertainWords = ['不確定', '可能', '也許', '或許', '建議', '人工客服'];
+    const uncertainCount = uncertainWords.filter(word => response.includes(word)).length;
+    responseConfidence -= uncertainCount * 0.1;
+
+    // 檢查回應長度（太短可能不完整）
+    if (response.length < 20) {
+      responseConfidence -= 0.2;
     }
 
-    // 根據相關知識庫數量和質量調整
-    if (sources.length > 0) {
-      const avgSimilarity = sources.reduce((sum, s) => sum + s.similarity, 0) / sources.length;
-      confidence += avgSimilarity * 0.4;
-    }
-
-    // 降低信心度的關鍵字
-    const lowConfidenceKeywords = [
-      '不確定', '可能', '或許', '建議聯繫', '人工客服', 
-      '無法確認', '需要進一步', '抱歉'
-    ];
-
-    for (const keyword of lowConfidenceKeywords) {
-      if (response.includes(keyword)) {
-        confidence -= 0.15;
-      }
-    }
-
-    // 提高信心度的關鍵字
-    const highConfidenceKeywords = [
-      '可以', '步驟', '方法', '解決', '按照', '點擊', '歡迎', '很樂意'
-    ];
-
-    for (const keyword of highConfidenceKeywords) {
-      if (response.includes(keyword)) {
-        confidence += 0.1;
-      }
-    }
-
-    return Math.max(0.2, Math.min(1, confidence));
+    // 綜合計算最終信心度
+    const finalConfidence = (avgSimilarity * 0.6 + responseConfidence * 0.4);
+    
+    return Math.max(0, Math.min(1, finalConfidence));
   }
 
   /**
-   * 判斷是否應該轉接人工客服 (保持與原版相同)
+   * 判斷是否應該轉接人工客服
    */
   private shouldTransferToHuman(response: string, confidence: number): boolean {
     // 信心度低於 0.6 建議轉接
@@ -359,7 +310,7 @@ export class ChatService {
   }
 
   /**
-   * 儲存到會話記錄 (新增 responseId 參數)
+   * 儲存到會話記錄
    */
   private async saveToSession(
     userId: string,
@@ -419,7 +370,7 @@ export class ChatService {
       botMsg.metadata = {
         confidence,
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        responseId // 新增：儲存 Responses API 的 ID
+        responseId
       };
       await supportMessageRepo.save(botMsg);
 
@@ -444,7 +395,7 @@ export class ChatService {
   }
 
   /**
-   * 獲取常見問題 (保持與原版相同)
+   * 獲取常見問題
    */
   async getCommonQuestions(): Promise<string[]> {
     try {
@@ -458,7 +409,7 @@ export class ChatService {
         ...suggestions.slice(0, 6)
       ];
 
-      return Array.from(new Set(commonQuestions)); // 去重
+      return Array.from(new Set(commonQuestions));
     } catch (error) {
       console.error('❌ 獲取常見問題失敗:', error);
       return [
@@ -471,7 +422,7 @@ export class ChatService {
   }
 
   /**
-   * 分析用戶意圖 (更新為 Responses API)
+   * 分析用戶意圖
    */
   async analyzeIntent(userMessage: string): Promise<any> {
     try {
@@ -494,7 +445,7 @@ export class ChatService {
             content: userMessage
           }
         ],
-        max_output_tokens: 200, // Responses API 使用 max_output_tokens
+        max_output_tokens: 200,
         temperature: 0.3
       });
 
@@ -517,7 +468,7 @@ export class ChatService {
   }
 
   /**
-   * 延續對話 (利用 Responses API 的狀態管理)
+   * 延續對話（利用 Responses API 的狀態管理）
    */
   async continueChat(userMessage: string, previousResponseId: string, options: Omit<ChatOptions, 'previousResponseId'> = {}): Promise<ChatResponse> {
     return this.chat(userMessage, {
@@ -527,7 +478,7 @@ export class ChatService {
   }
 
   /**
-   * 檢索之前的回應 (新功能)
+   * 檢索之前的回應
    */
   async retrieveResponse(responseId: string): Promise<any> {
     try {
