@@ -6,7 +6,6 @@
 import OpenAI from 'openai';
 import { AppDataSource } from '../config/database.js';
 import { SupportKnowledgeBase } from '../models/support-knowledge-base.js';
-import { FAQ } from '../models/faq.js';
 
 export class EmbeddingService {
   private openai: OpenAI;
@@ -127,19 +126,7 @@ export class EmbeddingService {
     return await this.generateEmbedding(combinedText);
   }
 
-  /**
-   * 為 FAQ 生成嵌入
-   */
-  async generateFAQEmbedding(faq: FAQ): Promise<number[]> {
-    // 結合問題、答案和關鍵字生成嵌入
-    const combinedText = [
-      faq.question,
-      faq.answer,
-      faq.keywords.join(' ')
-    ].join(' ');
 
-    return await this.generateEmbedding(combinedText);
-  }
 
   /**
    * 批量更新知識庫的嵌入向量
@@ -175,37 +162,7 @@ export class EmbeddingService {
     return { updated, failed };
   }
 
-  /**
-   * 批量更新 FAQ 的嵌入向量
-   */
-  async updateFAQEmbeddings(): Promise<{ updated: number; failed: number }> {
-    console.log('🔄 開始批量更新 FAQ 嵌入向量...');
-    
-    const faqRepo = AppDataSource.getRepository(FAQ);
-    const faqs = await faqRepo.find({
-      where: { isActive: true }
-    });
 
-    let updated = 0;
-    let failed = 0;
-
-    for (const faq of faqs) {
-      try {
-        // 注意：FAQ 模型中沒有嵌入向量欄位，這裡我們需要擴展模型
-        // 暫時跳過 FAQ 嵌入，專注於知識庫
-        console.log(`⏭️  暫時跳過 FAQ "${faq.question}" 的嵌入向量`);
-      } catch (error) {
-        console.error(`❌ FAQ "${faq.question}" 嵌入向量更新失敗:`, error);
-        failed++;
-      }
-
-      // 避免 API 速率限制
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    console.log(`🎉 FAQ 嵌入向量更新完成: ${updated} 成功, ${failed} 失敗`);
-    return { updated, failed };
-  }
 
   /**
    * 獲取嵌入向量的統計信息
@@ -213,11 +170,8 @@ export class EmbeddingService {
   async getEmbeddingStats(): Promise<{
     knowledgeBaseWithEmbeddings: number;
     knowledgeBaseTotal: number;
-    faqWithEmbeddings: number;
-    faqTotal: number;
   }> {
     const knowledgeBaseRepo = AppDataSource.getRepository(SupportKnowledgeBase);
-    const faqRepo = AppDataSource.getRepository(FAQ);
 
     const [knowledgeBaseTotal, knowledgeBaseWithEmbeddings] = await Promise.all([
       knowledgeBaseRepo.count({ where: { isActive: true } }),
@@ -229,14 +183,9 @@ export class EmbeddingService {
       })
     ]);
 
-    const faqTotal = await faqRepo.count({ where: { isActive: true } });
-    const faqWithEmbeddings = 0; // FAQ 暫時沒有嵌入向量
-
     return {
       knowledgeBaseWithEmbeddings,
-      knowledgeBaseTotal,
-      faqWithEmbeddings,
-      faqTotal
+      knowledgeBaseTotal
     };
   }
 

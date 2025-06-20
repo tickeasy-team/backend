@@ -23,6 +23,43 @@ export class SupportKnowledgeBase {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  // 智能回覆規則相關欄位
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  ruleId: string; // 對應 smart-reply-rules 的 ID
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  replyType: 'tutorial' | 'faq' | 'knowledge'; // 回覆類型
+
+  @Column({ type: 'text', array: true, default: [] })
+  keywords: string[]; // 關鍵字陣列
+
+  @Column({ type: 'integer', default: 3 })
+  priority: number; // 優先級 (1-3)
+
+  // Tutorial 相關欄位
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  tutorialUrl: string;
+
+  @Column({ type: 'text', nullable: true })
+  tutorialDescription: string;
+
+  // FAQ 相關欄位
+  @Column({ type: 'text', nullable: true })
+  faqAnswer: string;
+
+  @Column({ type: 'text', array: true, default: [] })
+  relatedQuestions: string[];
+
+  // 統計欄位
+  @Column({ type: 'integer', default: 0 })
+  viewCount: number;
+
+  @Column({ type: 'integer', default: 0 })
+  helpfulCount: number;
+
+  @Column({ type: 'integer', default: 0 })
+  notHelpfulCount: number;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -86,6 +123,95 @@ export class SupportKnowledgeBase {
     return this.title.toLowerCase().includes(lowerKeyword) ||
            this.content.toLowerCase().includes(lowerKeyword) ||
            this.tags.some(tag => tag.toLowerCase().includes(lowerKeyword));
+  }
+
+  // 智能回覆相關方法
+  
+  // 檢查是否匹配關鍵字
+  matchesKeywords(userInput: string): boolean {
+    if (!this.keywords || this.keywords.length === 0) return false;
+    
+    const lowerInput = userInput.toLowerCase();
+    return this.keywords.some(keyword => 
+      lowerInput.includes(keyword.toLowerCase())
+    );
+  }
+
+  // 計算關鍵字匹配分數
+  calculateKeywordScore(userInput: string): number {
+    if (!this.keywords || this.keywords.length === 0) return 0;
+    
+    const lowerInput = userInput.toLowerCase();
+    let matchCount = 0;
+    let totalScore = 0;
+    
+    this.keywords.forEach(keyword => {
+      const lowerKeyword = keyword.toLowerCase();
+      if (lowerInput.includes(lowerKeyword)) {
+        matchCount++;
+        // 關鍵字越長，分數越高
+        totalScore += lowerKeyword.length / 10;
+      }
+    });
+    
+    // 基礎分數 + 優先級加權
+    const baseScore = (matchCount / this.keywords.length) * totalScore;
+    const priorityWeight = this.priority === 1 ? 1.0 : this.priority === 2 ? 0.5 : 0.33;
+    
+    return baseScore * priorityWeight;
+  }
+
+  // 檢查是否為圖文教學
+  get isTutorial(): boolean {
+    return this.replyType === 'tutorial';
+  }
+
+  // 檢查是否為 FAQ
+  get isFAQ(): boolean {
+    return this.replyType === 'faq';
+  }
+
+  // 檢查是否為一般知識庫
+  get isKnowledge(): boolean {
+    return this.replyType === 'knowledge';
+  }
+
+  // 取得回覆內容
+  getReplyContent(): string {
+    if (this.isFAQ && this.faqAnswer) {
+      return this.faqAnswer;
+    }
+    return this.content;
+  }
+
+  // 取得回覆 URL（如果是教學類型）
+  getReplyUrl(): string | null {
+    if (this.isTutorial && this.tutorialUrl) {
+      return this.tutorialUrl;
+    }
+    return null;
+  }
+
+  // 增加有用計數
+  incrementHelpful(): void {
+    this.helpfulCount++;
+  }
+
+  // 增加無用計數
+  incrementNotHelpful(): void {
+    this.notHelpfulCount++;
+  }
+
+  // 增加查看計數
+  incrementView(): void {
+    this.viewCount++;
+  }
+
+  // 取得滿意度分數
+  get satisfactionScore(): number {
+    const total = this.helpfulCount + this.notHelpfulCount;
+    if (total === 0) return 0;
+    return this.helpfulCount / total;
   }
 
   // 兼容舊代碼

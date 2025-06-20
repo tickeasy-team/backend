@@ -20,11 +20,8 @@ export * from './ticket.js';
 export * from './payment.js';
 
 // 導入客服系統模型
-export * from './faq-category.js';
-export * from './faq.js';
 export * from './support-session.js';
 export * from './support-message.js';
-export * from './faq-usage-stats.js';
 export * from './support-knowledge-base.js';
 export * from './support-schedule.js';
 

@@ -5,7 +5,7 @@
 
 import OpenAI from 'openai';
 import { supabaseService } from './supabase-service.js';
-import { faqSearchService } from './faq-search-service.js';
+
 // import { semanticSearchService } from './semantic-search-service.js'; // 暫時未使用
 import { AppDataSource } from '../config/database.js';
 import { SupportSession, SessionStatus } from '../models/support-session.js';
@@ -230,15 +230,7 @@ export class UnifiedCustomerService {
         limit: limit * 2
       });
 
-      // 嘗試 FAQ 搜尋作為補充
-      let faqResults: any[] = [];
-      if (faqSearchService.isReady()) {
-        try {
-          faqResults = await faqSearchService.searchFAQ(userMessage, Math.floor(limit * 0.5));
-        } catch (error: any) {
-          console.warn('⚠️ FAQ 搜尋失敗，跳過:', error.message);
-        }
-      }
+
 
       // 合併結果
       const combinedResults: SearchResult[] = [];
@@ -256,19 +248,7 @@ export class UnifiedCustomerService {
         });
       });
 
-      // 添加 FAQ 結果
-      if (faqResults && faqResults.length > 0) {
-        faqResults.slice(0, Math.floor(limit * 0.3)).forEach((faq: any) => {
-          combinedResults.push({
-            id: faq.faq_id.toString(),
-            type: 'faq',
-            title: faq.question,
-            content: faq.answer,
-            similarity: 0.8,
-            category: faq.category_name
-          });
-        });
-      }
+
 
       // 按相似度排序並限制結果數量
       const finalResults = combinedResults

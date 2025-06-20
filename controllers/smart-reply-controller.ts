@@ -75,7 +75,7 @@ export class SmartReplyController {
    */
   static async getTutorialRules(req: Request, res: Response) {
     try {
-      const stats = smartReplyService.getRulesStats();
+      const stats = await smartReplyService.getRulesStats();
       
       res.json({
         success: true,
@@ -170,18 +170,16 @@ export class SmartReplyController {
         });
       }
 
-      smartReplyService.addRule({
-        id: `tutorial_${Date.now()}`,
-        keywords: Array.isArray(keywords) ? keywords : [keywords],
-        replyType: 'tutorial',
-        tutorialTitle: title,
-        tutorialUrl: url,
-        tutorialDescription: description,
-        priority,
+      await smartReplyService.addRule({
+        ruleId: `tutorial_${Date.now()}`,
+        title,
+        content: description || title,
         category: '動態添加',
-        isActive: true,
-        lastModified: new Date(),
-        notes: '通過 API 動態添加'
+        replyType: 'tutorial',
+        keywords: Array.isArray(keywords) ? keywords : [keywords],
+        priority,
+        tutorialUrl: url,
+        tutorialDescription: description
       });
 
       res.json({
@@ -218,18 +216,16 @@ export class SmartReplyController {
         });
       }
 
-      smartReplyService.addRule({
-        id: `faq_${Date.now()}`,
-        keywords: Array.isArray(keywords) ? keywords : [keywords],
-        replyType: 'faq',
-        faqAnswer: answer,
-        faqId,
-        priority,
+      await smartReplyService.addRule({
+        ruleId: faqId || `faq_${Date.now()}`,
+        title: `FAQ_${Date.now()}`,
+        content: answer,
         category: '動態添加',
-        relatedQuestions,
-        isActive: true,
-        lastModified: new Date(),
-        notes: '通過 API 動態添加'
+        replyType: 'faq',
+        keywords: Array.isArray(keywords) ? keywords : [keywords],
+        priority,
+        faqAnswer: answer,
+        relatedQuestions
       });
 
       res.json({
@@ -257,7 +253,7 @@ export class SmartReplyController {
    */
   static async healthCheck(req: Request, res: Response) {
     try {
-      const stats = smartReplyService.getRulesStats();
+      const stats = await smartReplyService.getRulesStats();
 
       res.json({
         success: true,

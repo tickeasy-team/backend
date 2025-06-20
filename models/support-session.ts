@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, CreateDateColumn } from 'typeorm';
 import { User } from './user.js';
 import { SupportMessage } from './support-message.js';
-import { FAQUsageStats } from './faq-usage-stats.js';
 
 /* eslint-disable no-unused-vars */
 // 會話類型枚舉
@@ -76,9 +75,6 @@ export class SupportSession {
 
   @OneToMany(() => SupportMessage, message => message.session)
   messages: SupportMessage[];
-
-  @OneToMany(() => FAQUsageStats, stats => stats.session)
-  faqUsageStats: FAQUsageStats[];
 
   // 虛擬屬性：計算會話持續時間（分鐘）
   get durationMinutes(): number | null {
