@@ -1,5 +1,6 @@
 -- 啟用 UUID 支持 (如果尚未啟用)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- 創建 ENUM 類型 (必須在創建使用它們的表之前)
 CREATE TYPE "UserRole" AS ENUM ('user', 'admin', 'superuser');
@@ -12,6 +13,13 @@ CREATE TYPE "ConInfoStatus" AS ENUM ('draft', 'reviewing', 'published', 'rejecte
 CREATE TYPE "SessionStatus" AS ENUM ('draft', 'published', 'finished');
 CREATE TYPE "Region" AS ENUM ('北部', '南部', '東部', '中部', '離島', '海外');
 CREATE TYPE "EventType" AS ENUM ('流行音樂', '搖滾', '電子音樂', '嘻哈', '爵士藍調', '古典音樂', '其他');
+
+-- 客服系統 ENUM 類型
+CREATE TYPE "SupportSessionType" AS ENUM ('bot', 'human', 'mixed');
+CREATE TYPE "SupportSessionStatus" AS ENUM ('active', 'waiting', 'closed', 'transferred');
+CREATE TYPE "SupportSessionPriority" AS ENUM ('low', 'normal', 'high', 'urgent');
+CREATE TYPE "SupportMessageSender" AS ENUM ('user', 'bot', 'agent');
+CREATE TYPE "SupportMessageType" AS ENUM ('text', 'image', 'file', 'quick_reply', 'faq_suggestion');
 
 -- 創建 表格
 
@@ -211,6 +219,87 @@ CREATE TABLE "concertReview" (
     "updatedAt" timestamp without time zone NOT NULL DEFAULT now()
 );
 
+-- ===========================================
+-- 客服系統表格
+-- ===========================================
+
+
+
+-- Support Session table
+CREATE TABLE "supportSession" (
+    "supportSessionId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "userId" uuid REFERENCES "users"("userId") ON DELETE SET NULL,
+    "sessionType" "SupportSessionType" DEFAULT 'bot',
+    "status" "SupportSessionStatus" DEFAULT 'active',
+    "agentId" uuid REFERENCES "users"("userId") ON DELETE SET NULL,
+    "priority" "SupportSessionPriority" DEFAULT 'normal',
+    "category" varchar(50),
+    "firstResponseAt" timestamp,
+    "createdAt" timestamp DEFAULT NOW(),
+    "closedAt" timestamp,
+    "satisfactionRating" integer CHECK ("satisfactionRating" BETWEEN 1 AND 5),
+    "satisfactionComment" text
+);
+
+-- Support Message table
+CREATE TABLE "supportMessage" (
+    "supportMessageId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "sessionId" uuid REFERENCES "supportSession"("supportSessionId") ON DELETE CASCADE,
+    "senderType" "SupportMessageSender" NOT NULL,
+    "senderId" uuid REFERENCES "users"("userId") ON DELETE SET NULL,
+    "messageText" text,
+    "messageType" "SupportMessageType" DEFAULT 'text',
+    "metadata" jsonb DEFAULT '{}'::jsonb,
+    "isRead" boolean DEFAULT false,
+    "createdAt" timestamp DEFAULT NOW()
+);
+
+
+
+-- Support Knowledge Base table (整合智能回覆規則)
+CREATE TABLE "supportKnowledgeBase" (
+    "supportKBId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "title" varchar(200) NOT NULL,
+    "content" text NOT NULL,
+    "tags" text[] DEFAULT '{}',
+    "category" varchar(50),
+    "embeddingVector" vector(1536),
+    "isActive" boolean DEFAULT true,
+    
+    -- 智能回覆規則相關欄位
+    "ruleId" varchar(100),
+    "replyType" varchar(20),
+    "keywords" text[] DEFAULT '{}',
+    "priority" integer DEFAULT 3,
+    
+    -- Tutorial 相關欄位
+    "tutorialUrl" varchar(500),
+    "tutorialDescription" text,
+    
+    -- FAQ 相關欄位
+    "faqAnswer" text,
+    "relatedQuestions" text[] DEFAULT '{}',
+    
+    -- 統計欄位
+    "viewCount" integer DEFAULT 0,
+    "helpfulCount" integer DEFAULT 0,
+    "notHelpfulCount" integer DEFAULT 0,
+    
+    "createdAt" timestamp DEFAULT NOW(),
+    "updatedAt" timestamp DEFAULT NOW()
+);
+
+-- Support Schedule table
+CREATE TABLE "supportSchedule" (
+    "supportScheduleId" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "agentId" uuid REFERENCES "users"("userId") ON DELETE CASCADE,
+    "dayOfWeek" integer CHECK ("dayOfWeek" BETWEEN 0 AND 6),
+    "startTime" time NOT NULL,
+    "endTime" time NOT NULL,
+    "isActive" boolean DEFAULT true,
+    "createdAt" timestamp DEFAULT NOW()
+);
+
 -- 添加 外鍵 約束
 ALTER TABLE "organization" ADD CONSTRAINT "FK_organization_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
 ALTER TABLE "concert" ADD CONSTRAINT "FK_concert_organizationId" FOREIGN KEY ("organizationId") REFERENCES "organization"("organizationId");
@@ -226,8 +315,6 @@ ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_orderId" FOREIGN KEY ("orderId") 
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_ticketTypeId" FOREIGN KEY ("ticketTypeId") REFERENCES "ticketType"("ticketTypeId");
 ALTER TABLE "ticket" ADD CONSTRAINT "FK_ticket_userId" FOREIGN KEY ("userId") REFERENCES "users"("userId");
 ALTER TABLE "payment" ADD CONSTRAINT "FK_payment_orderId" FOREIGN KEY ("orderId") REFERENCES "order"("orderId");
--- ALTER TABLE "musicTag" ADD COLUMN "subLabel" character varying(100);
--- ALTER TABLE "locationTag" ADD COLUMN "subLabel" character varying(50);
 
 -- 創建 索引 (除了主鍵和唯一約束自帶的索引外)
 CREATE INDEX "IDX_users_role" ON "users" ("role");
@@ -247,3 +334,41 @@ CREATE INDEX "IDX_ticket_orderId" ON "ticket" ("orderId");
 CREATE INDEX "IDX_ticket_ticketTypeId" ON "ticket" ("ticketTypeId");
 CREATE INDEX "IDX_ticket_userId" ON "ticket" ("userId");
 CREATE INDEX "IDX_payment_orderId" ON "payment" ("orderId");
+
+-- 客服系統索引
+CREATE INDEX "IDX_supportSession_userId" ON "supportSession"("userId");
+CREATE INDEX "IDX_supportSession_agentId" ON "supportSession"("agentId");
+CREATE INDEX "IDX_supportSession_status" ON "supportSession"("status");
+CREATE INDEX "IDX_supportSession_createdAt" ON "supportSession"("createdAt");
+CREATE INDEX "IDX_supportMessage_sessionId" ON "supportMessage"("sessionId");
+CREATE INDEX "IDX_supportMessage_createdAt" ON "supportMessage"("createdAt");
+CREATE INDEX "IDX_supportKnowledgeBase_category" ON "supportKnowledgeBase"("category");
+CREATE INDEX "IDX_supportKnowledgeBase_tags" ON "supportKnowledgeBase" USING GIN("tags");
+CREATE INDEX "IDX_supportKnowledgeBase_ruleId" ON "supportKnowledgeBase"("ruleId");
+CREATE INDEX "IDX_supportKnowledgeBase_replyType" ON "supportKnowledgeBase"("replyType");
+CREATE INDEX "IDX_supportKnowledgeBase_keywords" ON "supportKnowledgeBase" USING GIN("keywords");
+CREATE INDEX "IDX_supportKnowledgeBase_priority" ON "supportKnowledgeBase"("priority");
+CREATE INDEX "IDX_supportKnowledgeBase_isActive_replyType" ON "supportKnowledgeBase"("isActive", "replyType");
+CREATE INDEX "IDX_supportSchedule_agentId" ON "supportSchedule"("agentId");
+
+-- 創建觸發器函數更新 updatedAt
+CREATE OR REPLACE FUNCTION "fn_updateUpdatedAt"()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW."updatedAt" = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+
+-- 為需要的表格創建觸發器
+CREATE TRIGGER "TRG_supportKnowledgeBase_updated" BEFORE UPDATE ON "supportKnowledgeBase"
+FOR EACH ROW EXECUTE FUNCTION "fn_updateUpdatedAt"();
+
+-- 新增 Knowledge Base 約束
+ALTER TABLE "supportKnowledgeBase" 
+ADD CONSTRAINT "CK_supportKnowledgeBase_replyType" 
+CHECK ("replyType" IN ('tutorial', 'faq', 'knowledge') OR "replyType" IS NULL);
+
+ALTER TABLE "supportKnowledgeBase" 
+ADD CONSTRAINT "CK_supportKnowledgeBase_priority" 
+CHECK ("priority" BETWEEN 1 AND 3);

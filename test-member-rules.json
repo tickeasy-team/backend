@@ -1,0 +1,94 @@
+{
+  "會員功能測試用例": [
+    {
+      "功能": "會員註冊",
+      "測試訊息": [
+        "我要怎麼註冊會員？",
+        "如何申請帳號？",
+        "想要加入會員",
+        "第一次使用，要怎麼註冊？",
+        "註冊流程是什麼？"
+      ]
+    },
+    {
+      "功能": "會員登入", 
+      "測試訊息": [
+        "怎麼登入？",
+        "登入在哪裡？",
+        "如何登入帳號？",
+        "登入問題",
+        "無法登入怎麼辦？"
+      ]
+    },
+    {
+      "功能": "忘記密碼",
+      "測試訊息": [
+        "忘記密碼怎麼辦？",
+        "密碼重設",
+        "找回密碼",
+        "密碼忘了",
+        "如何重設密碼？"
+      ]
+    },
+    {
+      "功能": "修改個人資訊",
+      "測試訊息": [
+        "怎麼修改個人資料？",
+        "要怎麼更新資料？",
+        "修改個人資訊",
+        "編輯資料在哪？",
+        "個人資料怎麼改？"
+      ]
+    },
+    {
+      "功能": "修改密碼",
+      "測試訊息": [
+        "如何修改密碼？",
+        "要怎麼改密碼？",
+        "修改密碼",
+        "換密碼",
+        "密碼在哪改？"
+      ]
+    }
+  ],
+  "API測試範例": {
+    "url": "POST http://localhost:3000/api/v1/smart-reply/reply",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body_examples": [
+      {
+        "message": "我要怎麼註冊會員？",
+        "enableAI": false
+      },
+      {
+        "message": "忘記密碼怎麼辦？",
+        "enableAI": false
+      },
+      {
+        "message": "要怎麼修改個人資料？",
+        "enableAI": false
+      }
+    ]
+  },
+  "預期回應格式": {
+    "success": true,
+    "data": {
+      "type": "tutorial",
+      "message": "我為您找到了相關的圖文教學：**會員註冊教學**\n\n完整的會員註冊流程與注意事項說明\n\n👉 [點擊查看完整教學](https://frontend-fz4o.onrender.com/question/detail?faqType=member)\n\n如還有其他問題，歡迎隨時詢問！",
+      "tutorial": {
+        "title": "會員註冊教學",
+        "url": "https://frontend-fz4o.onrender.com/question/detail?faqType=member",
+        "description": "完整的會員註冊流程與注意事項說明"
+      },
+      "data": {
+        "confidence": 0.95
+      },
+      "metadata": {
+        "matchedKeywords": ["註冊", "會員"],
+        "processingTime": 50,
+        "strategy": "tutorial_match"
+      }
+    }
+  }
+} 

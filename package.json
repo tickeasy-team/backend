@@ -12,6 +12,7 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migrate": "npm run typeorm migration:run -- -d config/database.ts",
     "test": "jest",
+    "init:knowledge-base": "tsx init-knowledge-base.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },
