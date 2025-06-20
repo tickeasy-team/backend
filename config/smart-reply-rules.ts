@@ -56,7 +56,7 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
     category: '核心功能',
     replyType: 'tutorial',
     tutorialTitle: '完整購票教學',
-    tutorialUrl: '/help/tutorial/how-to-buy-tickets',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=ticket&question=buyTicket',
     tutorialDescription: '從選擇演出、選位到完成付款的完整購票流程圖文教學',
     isActive: true
   },
@@ -77,7 +77,7 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
     category: '核心功能',
     replyType: 'tutorial',
     tutorialTitle: '退票退款教學',
-    tutorialUrl: '/help/tutorial/how-to-refund',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=ticket&question=refundTicket',
     tutorialDescription: '退票政策說明、退款流程與注意事項完整指南',
     isActive: true
   },
@@ -96,87 +96,121 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
     ],
     priority: 1,
     category: '付款相關',
-    replyType: 'faq',
-    faqAnswer: `我們支援多種便利的付款方式：
-
-💳 **信用卡支付**
-• Visa、MasterCard、JCB
-• 支援分期付款（3期、6期、12期）
-
-🏦 **銀行轉帳**
-• ATM 轉帳
-• 網路銀行轉帳
-
-🏪 **超商代碼繳費**
-• 7-11、全家、萊爾富、OK超商
-
-📱 **行動支付**
-• Apple Pay、Google Pay
-• Line Pay、街口支付
-
-💰 **其他方式**
-• 現場購票（部分場館）
-
-付款完成後，您將立即收到確認郵件和電子票券。`,
-    faqId: 'payment-methods',
-    relatedQuestions: [
-      '可以分期付款嗎？',
-      '付款後多久會收到票？',
-      '可以開發票嗎？',
-      '付款失敗怎麼辦？'
-    ],
-    isActive: true,
-    notes: '如果前端製作了付款教學頁面，可以將 replyType 改為 tutorial'
+    replyType: 'tutorial',
+    tutorialTitle: '付款方式完整教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=ticket&question=paymentMethod',
+    tutorialDescription: '各種付款方式的詳細操作說明與注意事項',
+    isActive: true
   },
 
   {
-    id: 'seat-selection',
+    id: 'view-all-concerts',
     keywords: [
-      // 座位相關
-      '座位選擇', '選位', '座位圖', '位置', '視野',
+      // 查看演唱會
+      '查看演唱會', '所有演唱會', '演唱會列表', '演唱會資訊',
       // 完整短語
-      '怎麼選座位', '可以選位嗎', '座位在哪',
-      // 座位問題
-      '座位不好', '想換位子', '視野問題', '看不到舞台'
+      '怎麼看演唱會', '哪裡看演唱會', '演唱會在哪看',
+      // 瀏覽相關
+      '瀏覽演唱會', '看所有活動', '活動列表', '音樂會資訊',
+      // 問句形式
+      '如何查看演唱會', '演唱會怎麼看', '在哪裡找演唱會'
     ],
     priority: 1,
-    category: '座位相關',
-    replyType: 'faq',
-    faqAnswer: `選位功能說明：
+    category: '演唱會查詢',
+    replyType: 'tutorial',
+    tutorialTitle: '查看所有演唱會教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=concert&question=allConcert',
+    tutorialDescription: '如何瀏覽和查看所有可參加的演唱會資訊',
+    isActive: true
+  },
 
-🎯 **選位步驟**
-1. 選擇票種後點選「選擇座位」
-2. 查看即時座位圖與價格
-3. 點選您喜歡的位置
-4. 確認座位後加入購物車
-
-🚦 **座位狀態說明**
-• 🟢 綠色：可選擇
-• 🔴 紅色：已售出
-• ⚫ 灰色：不開放銷售
-• 🔵 藍色：您已選中
-
-👁️ **視野參考**
-• A區：正面最佳視野
-• B區：側面良好視野  
-• C區：後方完整視野
-
-⚠️ **重要提醒**
-選位完成並付款後無法更改，請仔細確認座位位置。`,
-    faqId: 'seat-selection',
-    relatedQuestions: [
-      '可以改座位嗎？',
-      '座位圖準確嗎？',
-      '沒有選位會怎樣？',
-      '哪個區域視野最好？'
+  {
+    id: 'view-concert-details',
+    keywords: [
+      // 演唱會詳情
+      '演唱會詳情', '演唱會詳細資訊', '單一演唱會', '演唱會內容',
+      // 完整短語
+      '演唱會詳細介紹', '演唱會資料', '活動詳情', '音樂會詳情',
+      // 問句形式
+      '如何看演唱會詳情', '演唱會詳細資訊在哪', '怎麼查看演唱會詳情',
+      // 查詢相關
+      '演唱會介紹', '活動介紹', '演出詳情'
     ],
-    isActive: true,
-    notes: '座位選擇如果有圖文教學，可以改為 tutorial 類型'
+    priority: 1,
+    category: '演唱會查詢',
+    replyType: 'tutorial',
+    tutorialTitle: '查看演唱會詳細資訊教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=concert&question=singleConcert',
+    tutorialDescription: '如何查看單一演唱會的詳細資訊和相關內容',
+    isActive: true
+  },
+
+  {
+    id: 'register-concert',
+    keywords: [
+      // 報名相關
+      '報名演唱會', '參加演唱會', '加入演唱會', '演唱會報名',
+      // 完整短語
+      '如何報名', '怎麼報名', '報名流程', '參加流程',
+      // 問句形式
+      '要怎麼參加', '如何加入演唱會', '演唱會怎麼報名',
+      // 註冊相關
+      '演唱會註冊', '活動報名', '音樂會報名'
+    ],
+    priority: 1,
+    category: '演唱會參與',
+    replyType: 'tutorial',
+    tutorialTitle: '演唱會報名參加教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=concert&question=registerConcert',
+    tutorialDescription: '如何報名參加演唱會的完整流程說明',
+    isActive: true
   },
 
   // ===========================================
   // 📱 Priority 2 - 重要輔助功能
   // ===========================================
+
+  {
+    id: 'my-tickets',
+    keywords: [
+      // 我的票券
+      '我的票券', '我的電子票', '票券在哪', '電子票在哪',
+      // 完整短語
+      '電子票券在哪裡', '我的票在哪裡', '票券查看', '票券管理',
+      // 問句形式
+      '如何查看票券', '怎麼找我的票', '票券怎麼看',
+      // 相關詞彙
+      'e-ticket', 'QR code', '票證', '入場券'
+    ],
+    priority: 2,
+    category: '票券管理',
+    replyType: 'tutorial',
+    tutorialTitle: '我的電子票券查看教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=ticket&question=myTicket',
+    tutorialDescription: '如何查看和管理您購買的電子票券',
+    isActive: true
+  },
+
+  {
+    id: 'pickup-tickets',
+    keywords: [
+      // 取票相關
+      '取票', '領票', '拿票', '票券取得',
+      // 完整短語
+      '如何取票', '怎麼取票', '取票流程', '領票方式',
+      // 問句形式
+      '要怎麼拿票', '票要去哪拿', '取票地點',
+      // 相關詞彙
+      '實體票', '紙本票', '取票地點', '領票時間'
+    ],
+    priority: 2,
+    category: '票券管理',
+    replyType: 'tutorial',
+    tutorialTitle: '取票領票教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=ticket&question=pickupTicket',
+    tutorialDescription: '實體票券的取票流程與注意事項',
+    isActive: true
+  },
 
   {
     id: 'eticket-usage',
@@ -186,14 +220,58 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
       // 入場相關
       '入場', '驗票', '檢票', '掃碼', '進場',
       // 問題表達
-      '票券怎麼用', '電子票在哪', '怎麼進場', '票在手機哪裡'
+      '票券怎麼用', '電子票怎麼用', '怎麼進場', '票在手機哪裡'
     ],
     priority: 2,
     category: '票券管理',
+    replyType: 'faq',
+    faqAnswer: `電子票券使用說明：
+
+📱 **查看電子票**
+1. 登入會員帳號
+2. 進入「我的票券」
+3. 找到要使用的票券
+4. 點選查看 QR Code
+
+🎫 **入場使用**
+1. 到達會場入口
+2. 打開電子票券
+3. 出示 QR Code 給工作人員掃描
+4. 掃描成功即可入場
+
+⚠️ **重要提醒**
+• 請確保手機電量充足
+• 建議先截圖備份 QR Code
+• 一張票券只能使用一次
+• 請勿提早截圖分享給他人`,
+    faqId: 'eticket-usage',
+    relatedQuestions: [
+      '電子票可以截圖嗎？',
+      '手機沒電怎麼辦？',
+      'QR Code掃不到怎麼辦？',
+      '可以給別人用嗎？'
+    ],
+    isActive: true
+  },
+
+  {
+    id: 'host-concert',
+    keywords: [
+      // 舉辦相關
+      '舉辦演唱會', '辦演唱會', '主辦演唱會', '演唱會主辦',
+      // 完整短語
+      '如何舉辦演唱會', '怎麼辦演唱會', '演唱會申請', '主辦申請',
+      // 問句形式
+      '要怎麼舉辦', '如何成為主辦', '演唱會怎麼辦',
+      // 相關詞彙
+      '活動主辦', '音樂會主辦', '演出主辦', '主辦方'
+    ],
+    priority: 2,
+    category: '主辦功能',
     replyType: 'tutorial',
-    tutorialTitle: '電子票券使用教學',
-    tutorialUrl: '/help/tutorial/how-to-use-eticket',
-    tutorialDescription: '電子票下載、保存、入場使用完整說明',
+    tutorialTitle: '如何舉辦演唱會教學',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member&question=hostConcert',
+    tutorialDescription: '成為演唱會主辦方的完整申請流程與注意事項',
     isActive: true
   },
 
@@ -220,8 +298,6 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
 📞 **聯絡方式**
 • 客服專線：02-1234-5678
 • 客服信箱：support@tickeasy.com
-• 線上客服：網站右下角對話框
-• LINE客服：@tickeasy
 
 🚨 **緊急情況**
 演出當日如有緊急問題，請直接撥打活動現場緊急專線。
@@ -238,10 +314,9 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
   },
 
   // ===========================================
-  // 💡 Priority 3 - 一般支援功能
+  // 💡 Priority 3 - 會員管理功能
   // ===========================================
 
-  // 會員功能相關教學 (前端已完成圖文教學)
   {
     id: 'member-register',
     keywords: [
@@ -254,14 +329,13 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
       // 註冊問題
       '註冊不了', '註冊失敗', '無法註冊', '註冊問題'
     ],
-    priority: 2,
+    priority: 3,
     category: '會員管理',
     replyType: 'tutorial',
     tutorialTitle: '會員註冊教學',
-    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member&question=registerMember',
     tutorialDescription: '完整的會員註冊流程與注意事項說明',
-    isActive: true,
-    notes: '前端已完成圖文教學，請更新實際教學網址'
+    isActive: true
   },
 
   {
@@ -276,14 +350,13 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
       // 登入狀態
       '已登入', '登入狀態', '登入成功', '登入失敗'
     ],
-    priority: 2,
+    priority: 3,
     category: '會員管理',
     replyType: 'tutorial',
     tutorialTitle: '會員登入教學',
-    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member&question=loginMember',
     tutorialDescription: '會員登入步驟與常見登入問題解決',
-    isActive: true,
-    notes: '前端已完成圖文教學，請更新實際教學網址'
+    isActive: true
   },
 
   {
@@ -298,14 +371,13 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
       // 相關問題
       '密碼錯誤', '密碼無效', '舊密碼不對'
     ],
-    priority: 2,
+    priority: 3,
     category: '會員管理',
     replyType: 'tutorial',
     tutorialTitle: '忘記密碼處理教學',
-    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member&question=forgetPassword',
     tutorialDescription: '忘記密碼時的重設流程與驗證步驟',
-    isActive: true,
-    notes: '前端已完成圖文教學，請更新實際教學網址'
+    isActive: true
   },
 
   {
@@ -322,14 +394,13 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
       // 相關功能
       '會員資料', '帳號資訊', '個人檔案'
     ],
-    priority: 2,
+    priority: 3,
     category: '會員管理',
     replyType: 'tutorial',
     tutorialTitle: '修改個人資訊教學',
-    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member&question=editMember',
     tutorialDescription: '修改會員個人資料的完整操作流程',
-    isActive: true,
-    notes: '前端已完成圖文教學，請更新實際教學網址'
+    isActive: true
   },
 
   {
@@ -346,14 +417,13 @@ export const SMART_REPLY_RULES: SmartReplyRule[] = [
       // 相關功能
       '密碼變更', '密碼更新'
     ],
-    priority: 2,
+    priority: 3,
     category: '會員管理',
     replyType: 'tutorial',
     tutorialTitle: '修改密碼教學',
-    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member',
+    tutorialUrl: 'https://frontend-fz4o.onrender.com/question/detail?faqType=member&question=changePassword',
     tutorialDescription: '安全修改會員密碼的步驟與注意事項',
-    isActive: true,
-    notes: '前端已完成圖文教學，請更新實際教學網址'
+    isActive: true
   }
 ];
 
