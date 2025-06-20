@@ -75,9 +75,6 @@ export class SupportMessage {
   @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn()
-  updatedAt: Date;
-
   // 虛擬屬性：檢查是否為用戶訊息
   get isFromUser(): boolean {
     return this.senderType === SenderType.USER;
