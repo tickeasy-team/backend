@@ -156,11 +156,21 @@ export class SmartReplyService {
         return null;
       }
 
+      console.log(`🔍 找到 ${tutorialRules.length} 個圖文教學規則`);
+      console.log(`🔍 用戶輸入: "${userMessage}"`);
+      
+      // 調試：檢查第一個規則
+      if (tutorialRules[0]) {
+        const firstRule = tutorialRules[0];
+        console.log(`🔍 第一個規則 - ID: ${firstRule.ruleId}, 關鍵字: [${firstRule.keywords.join(', ')}]`);
+      }
+
       let bestMatch: any = null;
       let bestScore = 0;
 
       for (const rule of tutorialRules) {
         const score = rule.calculateKeywordScore(userMessage);
+        console.log(`🔍 規則 ${rule.ruleId} 分數: ${score.toFixed(4)}`);
         
         if (score > bestScore) {
           bestScore = score;
@@ -179,6 +189,9 @@ export class SmartReplyService {
         }
       }
 
+      console.log(`🔍 最佳分數: ${bestScore.toFixed(4)}, 閾值: 0.2`);
+      console.log(`🔍 是否達到閾值: ${bestScore >= 0.2 ? '✅ 是' : '❌ 否'}`);
+      
       return bestScore >= 0.2 ? bestMatch : null; // 降低閾值，提高匹配率
 
     } catch (error) {
@@ -287,9 +300,9 @@ export class SmartReplyService {
    */
   private getNeutralReply(userMessage: string, startTime: number): SmartReplyResponse {
     const neutralMessages = [
-      `感謝您的詢問！您的問題我們已經收到。`,
-      `很抱歉，我目前無法完全理解您的問題。`,
-      `謝謝您聯繫我們！`
+      '感謝您的詢問！您的問題我們已經收到。',
+      '很抱歉，我目前無法完全理解您的問題。',
+      '謝謝您聯繫我們！'
     ];
 
     const randomMessage = neutralMessages[Math.floor(Math.random() * neutralMessages.length)];

@@ -149,16 +149,19 @@ export class SupportKnowledgeBase {
       const lowerKeyword = keyword.toLowerCase();
       if (lowerInput.includes(lowerKeyword)) {
         matchCount++;
-        // 關鍵字越長，分數越高
-        totalScore += lowerKeyword.length / 10;
+        // 關鍵字越長，分數越高，並增加基礎分數
+        totalScore += (lowerKeyword.length / 5) + 0.5; // 提高基礎分數
       }
     });
     
-    // 基礎分數 + 優先級加權
-    const baseScore = (matchCount / this.keywords.length) * totalScore;
-    const priorityWeight = this.priority === 1 ? 1.0 : this.priority === 2 ? 0.5 : 0.33;
+    if (matchCount === 0) return 0;
     
-    return baseScore * priorityWeight;
+    // 改進的分數計算：不被關鍵字總數稀釋
+    const baseScore = Math.min(matchCount * 0.3, 1.0); // 每匹配一個關鍵字得 0.3 分
+    const lengthBonus = totalScore / matchCount; // 平均長度獎勵
+    const priorityWeight = this.priority === 1 ? 1.2 : this.priority === 2 ? 0.8 : 0.5; // 調整權重
+    
+    return Math.min(baseScore * lengthBonus * priorityWeight, 1.0);
   }
 
   // 檢查是否為圖文教學
