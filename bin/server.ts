@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import 'reflect-metadata'; // 必須在最前面導入
 import app from '../app.js';
 import debug from 'debug';
 import http from 'http';
