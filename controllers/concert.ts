@@ -1233,6 +1233,7 @@ export const getConcertSessions = handleErrorAsync(
         conTitle: concert.conTitle,
         sessions: (concert.sessions || []).map(session => ({
           sessionId: session.sessionId,
+          sessionTitle: session.sessionTitle,
           // 日期格式處理為 YYYY-MM-DD
           sessionDate: session.sessionDate instanceof Date 
             ? session.sessionDate.toISOString().slice(0, 10) 
