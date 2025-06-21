@@ -119,6 +119,84 @@ export class OpenAIService {
       prompt += '此演唱會目前未設定任何場次資訊。\n\n';
     }
 
+    // 新增日期邏輯分析段落
+    const now = new Date();
+    const eventStart = concert.eventStartDate ? new Date(concert.eventStartDate) : null;
+    const eventEnd = concert.eventEndDate ? new Date(concert.eventEndDate) : null;
+
+    prompt += '== 日期邏輯分析 ==\n';
+    prompt += `當前時間: ${now.toISOString()}\n`;
+    
+    if (eventStart && eventEnd) {
+      const eventDuration = Math.ceil((eventEnd.getTime() - eventStart.getTime()) / (1000 * 60 * 60 * 24));
+      const isEventInFuture = eventStart > now;
+      prompt += `活動期間: ${formatDate(concert.eventStartDate)} 至 ${formatDate(concert.eventEndDate)}\n`;
+      prompt += `活動天數: ${eventDuration} 天\n`;
+      prompt += `活動是否為未來: ${isEventInFuture ? '是' : '否'}\n`;
+    } else {
+      prompt += '活動期間: 未完整設定\n';
+    }
+
+    // 分析每個場次的時間邏輯
+    if (concert.sessions && concert.sessions.length > 0) {
+      prompt += '\n各場次時間分析:\n';
+      concert.sessions.forEach((session, index) => {
+        const sessionDate = session.sessionDate ? new Date(session.sessionDate) : null;
+        
+        if (sessionDate) {
+          const isInEventPeriod = eventStart && eventEnd ? 
+            (sessionDate >= eventStart && sessionDate <= eventEnd) : false;
+          const isFuture = sessionDate > now;
+          const hoursFromNow = Math.round((sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+          
+          prompt += `場次 ${index + 1} (${session.sessionTitle || '未命名'}):\n`;
+          prompt += `  - 演出日期: ${formatDate(session.sessionDate)}\n`;
+          prompt += `  - 是否在活動期間內: ${isInEventPeriod ? '是' : '否'}\n`;
+          prompt += `  - 是否為未來時間: ${isFuture ? '是' : '否'}\n`;
+          prompt += `  - 距離現在: ${hoursFromNow} 小時\n`;
+          
+          // 計算演出持續時間
+          if (session.sessionStart && session.sessionEnd) {
+            const startTime = new Date(`1970-01-01T${session.sessionStart}`);
+            const endTime = new Date(`1970-01-01T${session.sessionEnd}`);
+            let duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+            
+            // 處理跨日情況
+            if (duration < 0) {
+              duration += 24;
+            }
+            
+            prompt += `  - 演出時長: ${duration.toFixed(1)} 小時\n`;
+            prompt += `  - 時段: ${session.sessionStart} - ${session.sessionEnd}\n`;
+          }
+          
+          // 售票時間分析
+          if (session.ticketTypes && session.ticketTypes.length > 0) {
+            session.ticketTypes.forEach((ticket, ticketIndex) => {
+              if (ticket.sellBeginDate && ticket.sellEndDate) {
+                const sellStart = new Date(ticket.sellBeginDate);
+                const sellEnd = new Date(ticket.sellEndDate);
+                const sellDuration = Math.ceil((sellEnd.getTime() - sellStart.getTime()) / (1000 * 60 * 60 * 24));
+                const sellEndBeforeEvent = sellEnd <= sessionDate;
+                const sellStartInPast = sellStart <= now;
+                
+                prompt += `  票種 ${ticketIndex + 1} (${ticket.ticketTypeName || '未命名'}) 售票分析:\n`;
+                prompt += `    - 售票期間: ${sellDuration} 天\n`;
+                prompt += `    - 售票開始: ${formatDate(ticket.sellBeginDate)} ${sellStartInPast ? '(已開始)' : '(未開始)'}\n`;
+                prompt += `    - 售票結束: ${formatDate(ticket.sellEndDate)}\n`;
+                prompt += `    - 售票結束是否早於演出: ${sellEndBeforeEvent ? '是' : '否'}\n`;
+              }
+            });
+          }
+        } else {
+          prompt += `場次 ${index + 1}: 演出日期未設定\n`;
+        }
+        prompt += '\n';
+      });
+    }
+    
+    prompt += '\n';
+
     // 審核標準提示
     prompt += '== 審核標準與重點 ==\n';
     if (criteria.checkInformationCompleteness) {
@@ -135,6 +213,37 @@ export class OpenAIService {
       const pricingConfig = reviewRulesService.getPricingConfig();
       prompt += `- 價格合理性：檢查各票種價格是否在市場普遍接受的範圍內（${pricingConfig.minPrice} - ${pricingConfig.maxPrice} TWD）。\n`;
     }
+    
+    // 新增日期相關審核標準
+    if (criteria.checkDateLogic) {
+      prompt += '- 日期邏輯檢查：\n';
+      prompt += '  * 活動結束日期必須晚於或等於開始日期\n';
+      prompt += '  * 所有演出日期必須在活動期間內\n';
+      prompt += '  * 場次結束時間必須晚於開始時間\n';
+      prompt += '  * 演出持續時間要合理（建議30分鐘-8小時）\n';
+    }
+    
+    if (criteria.checkFutureEvents) {
+      prompt += '- 未來活動檢查：\n';
+      prompt += '  * 所有演出日期必須是未來時間（至少距離現在24小時）\n';
+      prompt += '  * 活動不能是已過期的歷史活動\n';
+    }
+    
+    if (criteria.checkTicketSaleLogic) {
+      prompt += '- 售票時間邏輯：\n';
+      prompt += '  * 售票結束時間必須晚於開始時間\n';
+      prompt += '  * 售票結束時間不能晚於演出時間\n';
+      prompt += '  * 售票期間至少要有合理長度（建議3天以上）\n';
+      prompt += '  * 售票開始時間不能是過去時間\n';
+    }
+    
+    if (criteria.checkSessionSchedule) {
+      prompt += '- 場次時間安排：\n';
+      prompt += '  * 同一天多場次之間要有合理間隔（建議至少2小時）\n';
+      prompt += '  * 演出時間要在合理時段內（建議8:00-23:00）\n';
+      prompt += '  * 場次時間不能重疊或過於接近\n';
+    }
+    
     prompt += '\n請提供您的審核結果。確保您的回應完全符合系統提示中定義的 JSON 結構，特別是 "summary" 欄位必須包含對審核的簡要總結。';
     return prompt;
   }

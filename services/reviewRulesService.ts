@@ -13,6 +13,11 @@ export interface ReviewCriteria {
   checkFalseAdvertising: boolean;     // 檢查虛假或誇大宣傳
   checkPricingReasonableness: boolean; // 檢查價格是否在合理範圍
   checkInformationCompleteness: boolean; // 檢查資訊完整性（日期、地點、票價等）
+  // 新增日期相關審核標準
+  checkDateLogic: boolean;           // 檢查日期邏輯合理性
+  checkFutureEvents: boolean;        // 檢查活動是否為未來日期
+  checkTicketSaleLogic: boolean;     // 檢查售票時間邏輯
+  checkSessionSchedule: boolean;     // 檢查場次時間安排
   // 未來可擴展其他標準，例如：
   // checkCopyrightIssues: boolean;    // 檢查版權問題
   // checkEventFeasibility: boolean;   // 檢查活動可行性
@@ -42,6 +47,11 @@ const DEFAULT_REVIEW_CRITERIA: ReviewCriteria = {
   checkFalseAdvertising: true,
   checkPricingReasonableness: true,
   checkInformationCompleteness: true,
+  // 日期相關審核預設啟用
+  checkDateLogic: true,
+  checkFutureEvents: true,
+  checkTicketSaleLogic: true,
+  checkSessionSchedule: true,
 };
 
 // 預設價格配置 (以台灣市場為例)
