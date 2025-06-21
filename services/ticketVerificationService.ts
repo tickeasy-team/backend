@@ -203,7 +203,7 @@ export class TicketVerificationService {
     const concertStartUTC = concertStartTime.getTime();
     
     // 計算最早可驗票時間（UTC 毫秒數）
-    const earliestVerifyUTC = concertStartUTC - maxAdvanceHours * 60 * 60 * 1000;
+    const earliestVerifyUTC = concertStartUTC - maxAdvanceHours * 60 * 60 * 1000 - 8 * 60 * 60 * 1000;
 
     // Debug 資訊 - 全部轉換為台灣時間顯示
     const nowTaiwan = new Date(nowUTC).toLocaleString('zh-TW', { 
