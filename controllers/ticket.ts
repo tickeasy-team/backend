@@ -212,7 +212,9 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
         ticketTypeName: true,
         concertSession: {
           sessionTitle: true,
-          sessionDate: true
+          sessionDate: true,
+          sessionStart: true,
+          sessionEnd: true
         }
       }
     }
@@ -243,12 +245,12 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     await ticketRepository.save(fallbackTicket);
 
     const verifierType = isAdmin ? '管理員' : '主辦方';
-    // 定義 toUTC8 函數（如果在 fallback 路徑中需要）
-    const toUTC8Fallback = (date: Date) => {
-      return new Date(date.getTime() + 8 * 60 * 60 * 1000);
+    // 定義 toUTCMinus8 函數（如果在 fallback 路徑中需要）
+    const toUTCMinus8Fallback = (date: Date) => {
+      return new Date(date.getTime() - 8 * 60 * 60 * 1000);
     };
-    const fallbackVerificationTimeUTC8 = toUTC8Fallback(new Date());
-    console.log(`票券核銷成功 - 票券ID: ${fallbackTicket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${fallbackVerificationTimeUTC8.toISOString()} (UTC+8)`);
+    const fallbackVerificationTimeUTC8 = toUTCMinus8Fallback(new Date());
+    console.log(`票券核銷成功 - 票券ID: ${fallbackTicket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${fallbackVerificationTimeUTC8.toISOString()} (UTC-8)`);
 
     return res.status(200).json({
       status: 'success',
@@ -279,28 +281,54 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     throw ApiError.create(400, `票券狀態錯誤：${ticket.status}`, ErrorCode.INVALID_TICKET_STATUS);
   }
 
-  // 檢查演出時間（防止過早驗票）
-  // 配合實際核銷時間使用 UTC+8 時區
-  const toUTC8 = (date: Date) => {
-    // 將 UTC 時間轉換為 UTC+8 (台北時區)
+  // 檢查演出時間（演出前2小時到演出結束期間都能核銷）
+  // 配合實際核銷時間使用 UTC-8 時區
+  const toUTCMinus8 = (date: Date) => {
+    // 將 UTC 時間轉換為 UTC-8
     return new Date(date.getTime() - 8 * 60 * 60 * 1000);
   };
 
-  const nowUTC8 = toUTC8(new Date());
-  const concertStartTimeUTC8 = toUTC8(new Date(ticket.concertStartTime));
+  const nowUTC8 = toUTCMinus8(new Date());
+  const concertStartTimeUTC8 = toUTCMinus8(new Date(ticket.concertStartTime));
   const maxAdvanceHours = 2; // 允許提前 2 小時驗票
   const earliestVerifyTimeUTC8 = new Date(concertStartTimeUTC8.getTime() - maxAdvanceHours * 60 * 60 * 1000);
+  
+  // 計算演出結束時間
+  let concertEndTimeUTC8: Date;
+  
+  if (ticket.ticketType.concertSession.sessionStart && ticket.ticketType.concertSession.sessionEnd) {
+    // 從場次的 sessionDate + sessionEnd 計算結束時間
+    const sessionDate = new Date(ticket.ticketType.concertSession.sessionDate);
+    const [endHour, endMinute] = ticket.ticketType.concertSession.sessionEnd.split(':').map(Number);
+    
+    concertEndTimeUTC8 = new Date(sessionDate);
+    concertEndTimeUTC8.setHours(endHour, endMinute, 0, 0);
+    concertEndTimeUTC8 = toUTCMinus8(concertEndTimeUTC8);
+    
+    // 處理跨日情況：如果結束時間早於開始時間，表示跨日演出
+    if (concertEndTimeUTC8 < concertStartTimeUTC8) {
+      concertEndTimeUTC8.setDate(concertEndTimeUTC8.getDate() + 1);
+    }
+  } else {
+    // 如果沒有 sessionEnd，預設演出持續3小時
+    concertEndTimeUTC8 = new Date(concertStartTimeUTC8.getTime() + 3 * 60 * 60 * 1000);
+  }
 
-  console.log('🔍 時間檢查 (UTC+8):', {
+  console.log('🔍 演出時間檢查 (UTC):', {
     nowUTC8: nowUTC8.toISOString(),
     concertStartTimeUTC8: concertStartTimeUTC8.toISOString(),
+    concertEndTimeUTC8: concertEndTimeUTC8.toISOString(),
     earliestVerifyTimeUTC8: earliestVerifyTimeUTC8.toISOString(),
-    canVerify: nowUTC8 >= earliestVerifyTimeUTC8
+    canVerifyEarly: nowUTC8 >= earliestVerifyTimeUTC8,
+    concertInProgress: nowUTC8 >= concertStartTimeUTC8 && nowUTC8 <= concertEndTimeUTC8,
+    concertEnded: nowUTC8 > concertEndTimeUTC8
   });
 
+  // 檢查是否在可核銷時間範圍內（演出前2小時到演出結束）
   if (nowUTC8 < earliestVerifyTimeUTC8) {
-    // 格式化顯示時間為台北時區格式
-    const taipeiEarliestTime = earliestVerifyTimeUTC8.toLocaleString('zh-TW', { 
+    // 將 UTC-8 時間轉換回 UTC，然後顯示為台北時間
+    const utcEarliestTime = new Date(earliestVerifyTimeUTC8.getTime() + 8 * 60 * 60 * 1000);
+    const taipeiEarliestTime = utcEarliestTime.toLocaleString('zh-TW', { 
       timeZone: 'Asia/Taipei',
       year: 'numeric',
       month: '2-digit',
@@ -312,8 +340,29 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     
     throw ApiError.create(
       400,
-      `演出尚未開始，最早可於 ${taipeiEarliestTime} 開始驗票`,
+      `演出尚未開始，最早可於 ${taipeiEarliestTime} (台北時間) 開始驗票`,
       ErrorCode.TOO_EARLY_TO_VERIFY
+    );
+  }
+
+  // 檢查演出是否已結束
+  if (nowUTC8 > concertEndTimeUTC8) {
+    // 將 UTC-8 時間轉換回 UTC，然後顯示為台北時間
+    const utcEndTime = new Date(concertEndTimeUTC8.getTime() + 8 * 60 * 60 * 1000);
+    const taipeiEndTime = utcEndTime.toLocaleString('zh-TW', { 
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    throw ApiError.create(
+      400,
+      `演出已於 ${taipeiEndTime} (台北時間) 結束，核銷時間已過`,
+      ErrorCode.TOO_LATE_TO_VERIFY
     );
   }
 
@@ -323,7 +372,7 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
 
   // 記錄驗票資訊（包含權限類型）
   const verifierType = isAdmin ? '管理員' : '主辦方';
-  const verificationTimeUTC8 = toUTC8(new Date()); // 使用 UTC+8 時間
+  const verificationTimeUTC8 = toUTCMinus8(new Date()); // 使用 UTC-8 時間
   console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${verificationTimeUTC8.toISOString()} (UTC-8)`);
 
   return res.status(200).json({

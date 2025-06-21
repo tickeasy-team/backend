@@ -84,6 +84,7 @@ export enum ErrorCode {
   INVALID_QR_FORMAT = 'V07',
   INVALID_UUID_FORMAT = 'V08',
   TOO_EARLY_TO_VERIFY = 'V09',
+  TOO_LATE_TO_VERIFY = 'V10',
   
   // 數據相關錯誤 (D)
   DATA_NOT_FOUND = 'D01',
