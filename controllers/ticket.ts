@@ -324,7 +324,7 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
   // 記錄驗票資訊（包含權限類型）
   const verifierType = isAdmin ? '管理員' : '主辦方';
   const verificationTimeUTC8 = toUTC8(new Date()); // 使用 UTC+8 時間
-  console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${verificationTimeUTC8.toISOString()} (UTC+8)`);
+  console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${verificationTimeUTC8.toISOString()} (UTC-8)`);
 
   return res.status(200).json({
     status: 'success',
