@@ -407,10 +407,10 @@ export class TicketVerificationService {
         reason: ticket.status !== 'purchased' ? `票券狀態：${ticket.status}` : undefined
       };
       
-    } catch (error) {
+    } catch (error: any) {
       return {
         isValid: false,
-        reason: error instanceof ApiError ? error.message : '系統錯誤'
+        reason: error?.message || '系統錯誤'
       };
     }
   }
