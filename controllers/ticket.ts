@@ -247,7 +247,7 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     const verifierType = isAdmin ? '管理員' : '主辦方';
     // 定義 toUTCMinus8 函數（如果在 fallback 路徑中需要）
     const toUTCMinus8Fallback = (date: Date) => {
-      return new Date(date.getTime() - 8 * 60 * 60 * 1000);
+      return new Date(date.getTime());
     };
     const fallbackVerificationTimeUTC8 = toUTCMinus8Fallback(new Date());
     console.log(`票券核銷成功 - 票券ID: ${fallbackTicket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${fallbackVerificationTimeUTC8.toISOString()} (UTC-8)`);
@@ -285,7 +285,7 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
   // 配合實際核銷時間使用 UTC-8 時區
   const toUTCMinus8 = (date: Date) => {
     // 將 UTC 時間轉換為 UTC-8
-    return new Date(date.getTime() - 8 * 60 * 60 * 1000);
+    return new Date(date.getTime());
   };
 
   const nowUTC8 = toUTCMinus8(new Date());
