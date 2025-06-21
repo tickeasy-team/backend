@@ -283,7 +283,7 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
   // 配合實際核銷時間使用 UTC+8 時區
   const toUTC8 = (date: Date) => {
     // 將 UTC 時間轉換為 UTC+8 (台北時區)
-    return new Date(date.getTime() + 8 * 60 * 60 * 1000);
+    return new Date(date.getTime() - 8 * 60 * 60 * 1000);
   };
 
   const nowUTC8 = toUTC8(new Date());
