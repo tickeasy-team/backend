@@ -188,32 +188,69 @@ export class TicketVerificationService {
    * 驗證核銷時間
    */
   private validateVerificationTime(ticket: any): void {
-    const now = new Date();
-    const concertStartTime = new Date(ticket.concertStartTime);
+    const taiwanTimeZone = 'Asia/Taipei';
     const maxAdvanceHours = 2; // 允許提前 2 小時驗票
-    const earliestVerifyTime = new Date(concertStartTime.getTime() - maxAdvanceHours * 60 * 60 * 1000);
+    
+    // 獲取當前 UTC 時間的毫秒數
+    const nowUTC = Date.now();
+    
+    // 將演出開始時間轉換為 UTC 毫秒數
+    // 假設 ticket.concertStartTime 是台灣時間字串，需要轉換為 UTC
+    const concertStartTime = new Date(ticket.concertStartTime);
+    
+    // 如果 concertStartTime 是台灣時間，需要減去 8 小時轉換為 UTC
+    // 但這裡先假設資料庫儲存的已經是正確的時間
+    const concertStartUTC = concertStartTime.getTime();
+    
+    // 計算最早可驗票時間（UTC 毫秒數）
+    const earliestVerifyUTC = concertStartUTC - maxAdvanceHours * 60 * 60 * 1000;
 
-    if (now < earliestVerifyTime) {
-      // 顯示時使用台北時區格式
-      const taipeiEarliestTime = earliestVerifyTime.toLocaleString('zh-TW', { 
-        timeZone: 'Asia/Taipei',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-      
+    // Debug 資訊 - 全部轉換為台灣時間顯示
+    const nowTaiwan = new Date(nowUTC).toLocaleString('zh-TW', { 
+      timeZone: taiwanTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const concertStartTaiwan = new Date(concertStartUTC).toLocaleString('zh-TW', { 
+      timeZone: taiwanTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const earliestVerifyTaiwan = new Date(earliestVerifyUTC).toLocaleString('zh-TW', { 
+      timeZone: taiwanTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    console.log('🕐 時間驗證 Debug:', {
+      '當前台灣時間': nowTaiwan,
+      '演出開始時間(台灣)': concertStartTaiwan,
+      '最早驗票時間(台灣)': earliestVerifyTaiwan,
+      '可以驗票': nowUTC >= earliestVerifyUTC
+    });
+
+    if (nowUTC < earliestVerifyUTC) {
       throw ApiError.create(
         400,
-        `演出尚未開始，最早可於 ${taipeiEarliestTime} 開始驗票`,
+        `演出尚未開始，最早可於 ${earliestVerifyTaiwan} (台北時間) 開始驗票`,
         ErrorCode.TOO_EARLY_TO_VERIFY
       );
     }
-
-    // 可選：檢查演出是否已結束（基於現有邏輯，這個檢查可能不需要）
-    // 因為原始代碼沒有這個限制，所以這裡不實現
   }
 
   /**
