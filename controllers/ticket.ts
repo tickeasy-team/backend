@@ -274,22 +274,28 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     throw ApiError.create(400, `票券狀態錯誤：${ticket.status}`, ErrorCode.INVALID_TICKET_STATUS);
   }
 
-  // 檢查演出時間（防止過早驗票）— 轉為台北時區後比較
-  const toTaipei = (d: Date) => {
-    const taipeiOffset = -480; // Asia/Taipei 時區 (分鐘)
-    const diff = (taipeiOffset - d.getTimezoneOffset()) * 60000;
-    return new Date(d.getTime() + diff);
-  };
-
-  const now = toTaipei(new Date());
-  const concertStartTime = toTaipei(new Date(ticket.concertStartTime));
+  // 檢查演出時間（防止過早驗票）
+  // 直接使用 UTC 時間進行比較，這是最可靠的方式
+  const now = new Date();
+  const concertStartTime = new Date(ticket.concertStartTime);
   const maxAdvanceHours = 2; // 允許提前 2 小時驗票
   const earliestVerifyTime = new Date(concertStartTime.getTime() - maxAdvanceHours * 60 * 60 * 1000);
 
   if (now < earliestVerifyTime) {
+    // 顯示時使用台北時區格式
+    const taipeiEarliestTime = earliestVerifyTime.toLocaleString('zh-TW', { 
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
     throw ApiError.create(
       400,
-      `演出尚未開始，最早可於 ${earliestVerifyTime.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })} 開始驗票`,
+      `演出尚未開始，最早可於 ${taipeiEarliestTime} 開始驗票`,
       ErrorCode.TOO_EARLY_TO_VERIFY
     );
   }
@@ -300,7 +306,8 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
 
   // 記錄驗票資訊（包含權限類型）
   const verifierType = isAdmin ? '管理員' : '主辦方';
-  console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${now.toISOString()}`);
+  const verificationTime = new Date();
+  console.log(`票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${authenticatedUser.email} (${verifierType}), 時間: ${verificationTime.toISOString()}`);
 
   return res.status(200).json({
     status: 'success',
@@ -311,7 +318,7 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
       ticketTypeName: ticket.ticketType.ticketTypeName,
       concertTitle: ticket.ticketType.concertSession.sessionTitle,
       concertDate: ticket.ticketType.concertSession.sessionDate,
-      verifiedAt: now,
+      verifiedAt: verificationTime,
       verifiedBy: authenticatedUser.email,
       verifierType: verifierType
     }
