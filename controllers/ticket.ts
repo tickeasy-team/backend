@@ -6,12 +6,25 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database.js';
 import { TicketType as TicketTypeEntity } from '../models/ticket-type.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
-import { ApiResponse } from '../types/api.js';
+import { ApiResponse, ErrorCode } from '../types/api.js';
 import { TicketVerificationService } from '../services/ticketVerificationService.js';
+// import { Index } from 'typeorm';
+
 
 /**
- * 獲取演場會票券類型資訊
+ * 獲取用戶個人資料
  */
+// function getConcertTickets(url: string): string | null {
+//   try {
+//     const urlParts = url.split('/ticket/');
+//     if (urlParts.length === 2) {
+//       return urlParts[1];
+//     }
+//   } catch (e) { console.log(e); /* 忽略解析錯誤 */ }
+//   return null;
+// }
+
+
 export const getConcertTickets = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
   const concertSessionId = req.params.concertSessionId;
   
@@ -69,36 +82,5 @@ export const verifyTicket = handleErrorAsync(async (req: Request, res: Response<
     status: 'success',
     message: '票券驗證成功',
     data: result
-  });
-});
-
-/**
- * 查詢票券狀態 API - 不執行核銷，僅查詢狀態
- */
-export const checkTicketStatus = handleErrorAsync(async (req: Request, res: Response<ApiResponse>) => {
-  const { qrCode } = req.body;
-
-  if (!qrCode || typeof qrCode !== 'string') {
-    throw ApiError.fieldRequired('qrCode');
-  }
-
-  const verificationService = new TicketVerificationService();
-  const result = await verificationService.checkTicketStatus(qrCode);
-
-  if (!result.isValid) {
-    return res.status(400).json({
-      status: 'failed',
-      message: result.reason || '票券無效',
-      data: result.ticket
-    });
-  }
-
-  return res.status(200).json({
-    status: 'success',
-    message: '票券狀態查詢成功',
-    data: {
-      isValid: result.isValid,
-      ticket: result.ticket
-    }
   });
 });

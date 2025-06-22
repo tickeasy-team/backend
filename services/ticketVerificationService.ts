@@ -1,7 +1,3 @@
-/**
- * 票券驗證服務
- * 基於現有模型重構，提高代碼品質和可維護性
- */
 import { AppDataSource } from '../config/database.js';
 import { Ticket as TicketEntity } from '../models/ticket.js';
 import { Order as OrderEntity } from '../models/order.js';
@@ -13,35 +9,9 @@ interface QRCodeData {
   orderId: string;
 }
 
-interface TicketWithRelations {
-  ticketId: string;
-  userId: string;
-  orderId: string;
-  status: 'purchased' | 'used' | 'refunded';
-  purchaserName: string | null;
-  concertStartTime: Date;
-  order: {
-    orderStatus: string;
-  };
-  ticketType: {
-    ticketTypeName: string;
-    concertSession: {
-      sessionTitle: string;
-      sessionDate: Date;
-      sessionStart?: string;
-      sessionEnd?: string;
-      concert: {
-        organization: {
-          userId: string;
-        };
-      };
-    };
-  };
-}
-
 interface VerificationResult {
   ticketId: string;
-  purchaserName: string | null;
+  purchaserName: string;
   ticketTypeName: string;
   concertTitle: string;
   concertDate: Date;
@@ -63,62 +33,45 @@ export class TicketVerificationService {
    * 核銷票券主要方法
    */
   async verifyTicket(qrCode: string, verifierId: string, verifierRole: string, verifierEmail: string): Promise<VerificationResult> {
-    // 1. 解析和驗證 QR Code
+    // 1. 解析 QR Code
     const { userId, orderId } = this.validateAndParseQRCode(qrCode);
 
-    // 2. 獲取票券及相關數據（使用事務和鎖防止併發）
-    const queryRunner = AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    // 2. 獲取訂單及相關數據（先檢查訂單，再檢查票券）
+    const order = await this.getOrderWithAllRelations(userId, orderId);
 
-    try {
-      // 3. 查找並鎖定票券
-      const ticket = await this.getTicketWithLock(queryRunner, userId, orderId);
+    // 3. 驗證權限
+    this.validateVerificationPermission(order, verifierId, verifierRole);
 
-      // 4. 驗證權限
-      this.validateVerificationPermission(ticket, verifierId, verifierRole);
+    // 4. 獲取票券資料
+    const ticket = await this.getTicketWithRelations(userId, orderId);
 
-      // 5. 驗證票券狀態
-      this.validateTicketStatus(ticket);
+    // 5. 驗證票券狀態
+    this.validateTicketStatus(ticket);
 
-      // 6. 驗證時間範圍
-      this.validateVerificationTime(ticket);
+    // 6. 驗證時間範圍
+    this.validateVerificationTime(ticket);
 
-      // 7. 執行核銷
-      const result = await this.executeVerification(queryRunner, ticket, verifierId, verifierRole, verifierEmail);
-
-      await queryRunner.commitTransaction();
-      return result;
-
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    // 7. 執行核銷
+    return await this.executeVerification(ticket, verifierId, verifierRole, verifierEmail);
   }
 
   /**
    * 驗證並解析 QR Code
    */
   private validateAndParseQRCode(qrCode: string): QRCodeData {
-    if (!qrCode || typeof qrCode !== 'string' || qrCode.trim().length === 0) {
-      throw ApiError.create(400, 'QR Code 不能為空', ErrorCode.INVALID_QR_FORMAT);
-    }
-
-    if (qrCode.length > 200) {
+    if (!qrCode || typeof qrCode !== 'string') {
       throw ApiError.create(400, 'QR Code 格式錯誤', ErrorCode.INVALID_QR_FORMAT);
     }
 
     const parts = qrCode.split('|');
     if (parts.length !== 3 || parts[0] !== 'TICKEASY') {
-      throw ApiError.create(400, 'QR Code 格式錯誤，請確認是有效的 Tickeasy 票券', ErrorCode.INVALID_QR_FORMAT);
+      throw ApiError.create(400, 'QR Code 格式錯誤', ErrorCode.INVALID_QR_FORMAT);
     }
 
     const [, userId, orderId] = parts;
     
-    // UUID 格式驗證（更嚴格的正則表達式）
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    // UUID 格式驗證
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(userId) || !uuidRegex.test(orderId)) {
       throw ApiError.create(400, 'QR Code 中的 ID 格式錯誤', ErrorCode.INVALID_UUID_FORMAT);
     }
@@ -127,56 +80,82 @@ export class TicketVerificationService {
   }
 
   /**
-   * 獲取票券及所有相關數據（使用悲觀鎖）
+   * 獲取訂單及所有相關數據
    */
-  private async getTicketWithLock(queryRunner: any, userId: string, orderId: string): Promise<TicketWithRelations> {
-    // 先檢查訂單是否存在且已付款
-    const order = await queryRunner.manager
-      .createQueryBuilder(OrderEntity, 'order')
-      .setLock("pessimistic_write")
-      .leftJoinAndSelect('order.ticketType', 'ticketType')
-      .leftJoinAndSelect('ticketType.concertSession', 'session')
-      .leftJoinAndSelect('session.concert', 'concert')
-      .leftJoinAndSelect('concert.organization', 'organization')
-      .where('order.orderId = :orderId', { orderId })
-      .andWhere('order.userId = :userId', { userId })
-      .andWhere('order.orderStatus = :orderStatus', { orderStatus: 'paid' })
-      .getOne();
+  private async getOrderWithAllRelations(userId: string, orderId: string): Promise<any> {
+    const order = await this.orderRepository.findOne({
+      where: { orderId, userId },
+      relations: [
+        'ticketType',
+        'ticketType.concertSession',
+        'ticketType.concertSession.concert',
+        'ticketType.concertSession.concert.organization'
+      ]
+    });
 
     if (!order) {
-      throw ApiError.create(404, '找不到對應的已付款訂單', ErrorCode.ORDER_NOT_FOUND);
+      throw ApiError.create(404, '找不到對應的訂單', ErrorCode.ORDER_NOT_FOUND);
     }
 
-    // 檢查關聯資料完整性
     if (!order.ticketType?.concertSession?.concert?.organization) {
       throw ApiError.create(500, '訂單關聯資料不完整', ErrorCode.SYSTEM_ERROR);
     }
 
-    // 查找對應的票券
-    const ticket = await queryRunner.manager
-      .createQueryBuilder(TicketEntity, 'ticket')
-      .setLock("pessimistic_write")
-      .where('ticket.orderId = :orderId', { orderId })
-      .andWhere('ticket.userId = :userId', { userId })
-      .getOne();
-
-    if (!ticket) {
-      throw ApiError.create(404, '找不到對應的票券', ErrorCode.TICKET_NOT_FOUND);
+    // 檢查訂單狀態
+    if (order.orderStatus !== 'paid') {
+      throw ApiError.create(400, `訂單狀態錯誤：${order.orderStatus}`, ErrorCode.INVALID_ORDER_STATUS);
     }
 
-    // 組合完整的票券資料
-    return {
-      ...ticket,
-      order,
-      ticketType: order.ticketType
-    } as TicketWithRelations;
+    return order;
+  }
+
+  /**
+   * 獲取票券及相關數據
+   */
+  private async getTicketWithRelations(userId: string, orderId: string): Promise<any> {
+    const ticket = await this.ticketRepository.findOne({
+      where: { orderId, userId },
+      relations: ['ticketType', 'ticketType.concertSession'],
+      select: {
+        ticketId: true,
+        orderId: true,
+        userId: true,
+        status: true,
+        purchaserName: true,
+        concertStartTime: true,
+        qrCode: true,
+        ticketType: {
+          ticketTypeName: true,
+          concertSession: {
+            sessionTitle: true,
+            sessionDate: true,
+            sessionEnd: true
+          }
+        }
+      }
+    });
+
+    if (!ticket) {
+      // 如果關聯查詢失敗，嘗試基本查詢
+      const basicTicket = await this.ticketRepository.findOne({
+        where: { orderId, userId }
+      });
+
+      if (!basicTicket) {
+        throw ApiError.create(404, '找不到對應的票券', ErrorCode.TICKET_NOT_FOUND);
+      }
+
+      return basicTicket;
+    }
+
+    return ticket;
   }
 
   /**
    * 驗證核銷權限
    */
-  private validateVerificationPermission(ticket: TicketWithRelations, verifierId: string, verifierRole: string): void {
-    const organizerUserId = ticket.ticketType.concertSession.concert.organization.userId;
+  private validateVerificationPermission(order: any, verifierId: string, verifierRole: string): void {
+    const organizerUserId = order.ticketType.concertSession.concert.organization.userId;
     const isOrganizer = verifierId === organizerUserId;
     const isAdmin = ['admin', 'superuser'].includes(verifierRole);
 
@@ -192,226 +171,130 @@ export class TicketVerificationService {
   /**
    * 驗證票券狀態
    */
-  private validateTicketStatus(ticket: TicketWithRelations): void {
+  private validateTicketStatus(ticket: any): void {
     switch (ticket.status) {
       case 'used':
-        throw ApiError.create(400, '此票券已被使用，無法重複驗證', ErrorCode.TICKET_ALREADY_USED);
+        throw ApiError.create(400, '票券已被使用', ErrorCode.TICKET_ALREADY_USED);
       case 'refunded':
-        throw ApiError.create(400, '此票券已退款，無法使用', ErrorCode.TICKET_REFUNDED);
+        throw ApiError.create(400, '票券已退款，無法使用', ErrorCode.TICKET_REFUNDED);
       case 'purchased':
         return; // 正常狀態
       default:
-        throw ApiError.create(400, `票券狀態異常：${ticket.status}`, ErrorCode.INVALID_TICKET_STATUS);
+        throw ApiError.create(400, `票券狀態錯誤：${ticket.status}`, ErrorCode.INVALID_TICKET_STATUS);
     }
   }
 
   /**
    * 驗證核銷時間
    */
-  private validateVerificationTime(ticket: TicketWithRelations): void {
-    const session = ticket.ticketType.concertSession;
-    const concertStartTime = this.buildConcertStartTime(session.sessionDate, session.sessionStart);
+  private validateVerificationTime(ticket: any): void {
+    const taiwanTimeZone = 'Asia/Taipei';
+    const maxAdvanceHours = 2; // 允許提前 2 小時驗票
     
-    const timeValidation = this.checkVerificationTimeWindow(
-      concertStartTime,
-      session.sessionDate,
-      session.sessionEnd
-    );
-
-    if (!timeValidation.canVerify) {
-      const errorCode = timeValidation.reason?.includes('尚未開始') 
-        ? ErrorCode.TOO_EARLY_TO_VERIFY 
-        : ErrorCode.TOO_LATE_TO_VERIFY;
-      
-      throw ApiError.create(400, timeValidation.reason!, errorCode);
-    }
-  }
-
-  /**
-   * 建構演出開始時間
-   */
-  private buildConcertStartTime(sessionDate: Date, sessionStart?: string): Date {
-    const startTime = new Date(sessionDate);
+    // 獲取當前 UTC 時間的毫秒數
+    const nowUTC = Date.now();
     
-    if (sessionStart) {
-      const timeMatch = sessionStart.match(/^(\d{1,2}):(\d{2})$/);
-      if (!timeMatch) {
-        throw ApiError.create(500, '演出開始時間格式錯誤', ErrorCode.SYSTEM_ERROR);
-      }
-      
-      const [, hourStr, minuteStr] = timeMatch;
-      const hour = parseInt(hourStr, 10);
-      const minute = parseInt(minuteStr, 10);
-      
-      if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-        throw ApiError.create(500, '演出開始時間格式錯誤', ErrorCode.SYSTEM_ERROR);
-      }
-      
-      startTime.setHours(hour, minute, 0, 0);
-    } else {
-      // 如果沒有指定時間，預設為當天 19:00
-      startTime.setHours(19, 0, 0, 0);
-    }
+    // 將演出開始時間轉換為 UTC 毫秒數
+    // 假設 ticket.concertStartTime 是台灣時間字串，需要轉換為 UTC
+    const concertStartTime = new Date(ticket.concertStartTime);
     
-    return startTime;
-  }
+    // 如果 concertStartTime 是台灣時間，需要減去 8 小時轉換為 UTC
+    // 但這裡先假設資料庫儲存的已經是正確的時間
+    const concertStartUTC = concertStartTime.getTime();
+    
+    // 計算最早可驗票時間（UTC 毫秒數）
+    const earliestVerifyUTC = concertStartUTC - maxAdvanceHours * 60 * 60 * 1000 - 8 * 60 * 60 * 1000;
 
-  /**
-   * 檢查核銷時間窗口
-   */
-  private checkVerificationTimeWindow(
-    concertStartTime: Date, 
-    sessionDate: Date, 
-    sessionEnd?: string,
-    advanceHours: number = 2
-  ): TimeValidationResult {
-    const now = new Date();
-    const earliestVerifyTime = new Date(concertStartTime.getTime() - advanceHours * 60 * 60 * 1000);
-
-    let endTime: Date;
-
-    if (sessionEnd) {
-      const timeMatch = sessionEnd.match(/^(\d{1,2}):(\d{2})$/);
-      if (!timeMatch) {
-        // 如果結束時間格式錯誤，預設演出持續3小時
-        endTime = new Date(concertStartTime.getTime() + 3 * 60 * 60 * 1000);
-      } else {
-        const [, hourStr, minuteStr] = timeMatch;
-        const endHour = parseInt(hourStr, 10);
-        const endMinute = parseInt(minuteStr, 10);
-        
-        endTime = new Date(sessionDate);
-        endTime.setHours(endHour, endMinute, 0, 0);
-
-        // 處理跨日情況：如果結束時間早於開始時間，表示跨日演出
-        if (endTime <= concertStartTime) {
-          endTime.setDate(endTime.getDate() + 1);
-        }
-      }
-    } else {
-      // 如果沒有 sessionEnd，預設演出持續3小時
-      endTime = new Date(concertStartTime.getTime() + 3 * 60 * 60 * 1000);
-    }
-
-    // 檢查是否太早
-    if (now < earliestVerifyTime) {
-      return {
-        canVerify: false,
-        reason: `演出尚未開始，最早可於 ${earliestVerifyTime.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })} (台北時間) 開始驗票`
-      };
-    }
-
-    // 檢查是否太晚
-    if (now > endTime) {
-      return {
-        canVerify: false,
-        reason: `演出已於 ${endTime.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })} (台北時間) 結束，核銷時間已過`
-      };
-    }
-
-    return { canVerify: true };
-  }
-
-  /**
-   * 執行核銷操作
-   */
-  private async executeVerification(
-    queryRunner: any,
-    ticket: TicketWithRelations, 
-    verifierId: string, 
-    verifierRole: string,
-    verifierEmail: string
-  ): Promise<VerificationResult> {
-    const verificationTime = new Date();
-
-    // 更新票券狀態
-    await queryRunner.manager.update(
-      TicketEntity,
-      { ticketId: ticket.ticketId },
-      { 
-        status: 'used' as const
-      }
-    );
-
-    // 記錄驗證操作（寫入日誌，這裡可以用其他方式記錄，比如文件日誌）
-    const verifierType = ['admin', 'superuser'].includes(verifierRole) ? '管理員' : '主辦方';
-    console.log(`[VERIFICATION] 票券核銷成功`, {
-      ticketId: ticket.ticketId,
-      verifierId,
-      verifierEmail,
-      verifierType,
-      concertTitle: ticket.ticketType.concertSession.sessionTitle,
-      ticketType: ticket.ticketType.ticketTypeName,
-      verifiedAt: verificationTime.toISOString(),
-      timestamp: new Date().toISOString()
+    // Debug 資訊 - 全部轉換為台灣時間顯示
+    const nowTaiwan = new Date(nowUTC).toLocaleString('zh-TW', { 
+      timeZone: taiwanTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const concertStartTaiwan = new Date(concertStartUTC).toLocaleString('zh-TW', { 
+      timeZone: taiwanTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const earliestVerifyTaiwan = new Date(earliestVerifyUTC).toLocaleString('zh-TW', { 
+      timeZone: taiwanTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
     });
 
-    return {
-      ticketId: ticket.ticketId,
-      purchaserName: ticket.purchaserName,
-      ticketTypeName: ticket.ticketType.ticketTypeName,
-      concertTitle: ticket.ticketType.concertSession.sessionTitle,
-      concertDate: ticket.ticketType.concertSession.sessionDate,
-      verifiedAt: verificationTime,
-      verifiedBy: verifierEmail,
-      verifierType: verifierType
-    };
+    console.log('🕐 時間驗證 Debug:', {
+      '當前台灣時間': nowTaiwan,
+      '演出開始時間(台灣)': concertStartTaiwan,
+      '最早驗票時間(台灣)': earliestVerifyTaiwan,
+      '可以驗票': nowUTC >= earliestVerifyUTC
+    });
+
+    if (nowUTC < earliestVerifyUTC) {
+      throw ApiError.create(
+        400,
+        `演出尚未開始，最早可於 ${earliestVerifyTaiwan} (台北時間) 開始驗票`,
+        ErrorCode.TOO_EARLY_TO_VERIFY
+      );
+    }
   }
 
   /**
-   * 查詢票券狀態（不執行核銷）
+   * 執行核銷操作（使用事務）
    */
-  async checkTicketStatus(qrCode: string): Promise<{
-    isValid: boolean;
-    ticket?: {
-      ticketId: string;
-      status: string;
-      purchaserName: string | null;
-      ticketTypeName?: string;
-      concertTitle?: string;
-      concertDate?: Date;
-    };
-    reason?: string;
-  }> {
+  private async executeVerification(ticket: any, verifierId: string, verifierRole: string, verifierEmail: string): Promise<VerificationResult> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      const { userId, orderId } = this.validateAndParseQRCode(qrCode);
-      
-      // 查找票券和相關資料（不使用鎖）
-      const ticket = await this.ticketRepository
-        .createQueryBuilder('ticket')
-        .leftJoinAndSelect('ticket.order', 'order')
-        .leftJoinAndSelect('ticket.ticketType', 'ticketType')
-        .leftJoinAndSelect('ticketType.concertSession', 'session')
-        .where('ticket.orderId = :orderId', { orderId })
-        .andWhere('ticket.userId = :userId', { userId })
-        .andWhere('order.orderStatus = :orderStatus', { orderStatus: 'paid' })
-        .getOne();
+      // 更新票券狀態
+      ticket.status = 'used';
+      await queryRunner.manager.save(ticket);
 
-      if (!ticket) {
-        return {
-          isValid: false,
-          reason: '找不到對應的票券'
-        };
-      }
+      // 可以在這裡添加核銷日誌記錄
+      // await this.logVerification(queryRunner, ticket, verifierId);
+
+      await queryRunner.commitTransaction();
+
+      const verifierType = ['admin', 'superuser'].includes(verifierRole) ? '管理員' : '主辦方';
+      const verificationTime = new Date();
+
+      // 記錄核銷資訊到 console
+      console.log(
+        `票券核銷成功 - 票券ID: ${ticket.ticketId}, 驗票人員: ${verifierEmail} (${verifierType}), 時間: ${verificationTime.toISOString()}`
+      );
 
       return {
-        isValid: ticket.status === 'purchased',
-        ticket: {
-          ticketId: ticket.ticketId,
-          status: ticket.status,
-          purchaserName: ticket.purchaserName,
-          ticketTypeName: ticket.ticketType?.ticketTypeName,
-          concertTitle: ticket.ticketType?.concertSession?.sessionTitle,
-          concertDate: ticket.ticketType?.concertSession?.sessionDate
-        },
-        reason: ticket.status !== 'purchased' ? `票券狀態：${ticket.status}` : undefined
+        ticketId: ticket.ticketId,
+        purchaserName: ticket.purchaserName || '無法獲取購買者資訊',
+        ticketTypeName: ticket.ticketType?.ticketTypeName || '無法獲取票種資訊',
+        concertTitle: ticket.ticketType?.concertSession?.sessionTitle || '無法獲取演場會資訊',
+        concertDate: ticket.ticketType?.concertSession?.sessionDate || null,
+        verifiedAt: verificationTime,
+        verifiedBy: verifierEmail,
+        verifierType: verifierType
       };
-      
-    } catch (error: any) {
-      return {
-        isValid: false,
-        reason: error?.message || '系統錯誤'
-      };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
-}
+} 
