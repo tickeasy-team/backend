@@ -70,7 +70,53 @@ connectToDatabase()
 
 // 中間件設置
 app.use(helmet());
-app.use(cors());
+
+// CORS 配置
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+    // 允許的來源
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',  // Vite 開發服務器
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:5173'
+    ];
+    
+    // 開發環境允許沒有 origin 的請求（例如 Postman、移動應用）
+    if (process.env.NODE_ENV === 'development' && !origin) {
+      return callback(null, true);
+    }
+    
+    // 生產環境從環境變數讀取允許的來源
+    if (process.env.CORS_ORIGIN) {
+      const prodOrigins = process.env.CORS_ORIGIN.split(',');
+      allowedOrigins.push(...prodOrigins);
+    }
+    
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error(`來源 ${origin} 不被 CORS 政策允許`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'X-HTTP-Method-Override',
+    'Access-Control-Allow-Headers'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200 // 支援舊版 IE
+};
+
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
