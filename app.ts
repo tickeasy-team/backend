@@ -84,16 +84,17 @@ const corsOptions = {
       'http://127.0.0.1:5173'
     ];
     
+    // 從 FRONTEND_URL 環境變數中提取前端域名（去掉 /callback）
+    if (process.env.FRONTEND_URL) {
+      const frontendUrl = process.env.FRONTEND_URL.replace('/callback', '');
+      allowedOrigins.push(frontendUrl);
+    }
+    
     // 開發環境允許沒有 origin 的請求（例如 Postman、移動應用）
     if (process.env.NODE_ENV === 'development' && !origin) {
       return callback(null, true);
     }
     
-    // 生產環境從環境變數讀取允許的來源
-    if (process.env.CORS_ORIGIN) {
-      const prodOrigins = process.env.CORS_ORIGIN.split(',');
-      allowedOrigins.push(...prodOrigins);
-    }
     
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
