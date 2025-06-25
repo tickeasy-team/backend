@@ -82,7 +82,8 @@ const corsOptions = {
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
       'http://127.0.0.1:5173',
-      'https://tickeasy-dashboard.onrender.com'
+      'https://tickeasy-dashboard.onrender.com',
+      'https://frontend-fj47.onrender.com'
     ];
     
     // 從 FRONTEND_URL 環境變數中提取前端域名（去掉 /callback）
