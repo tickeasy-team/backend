@@ -147,7 +147,7 @@ export const createConcert = handleErrorAsync(
           const sellStart = new Date(ticket.sellBeginDate);
           const sellEnd = new Date(ticket.sellEndDate);
           if (sellStart >= sellEnd) {
-            throw ApiError.invalidFormat('售票結束時間必須晚於開始時間');
+            throw ApiError.invalidFormat('售票結束時間必須晚於售票開始時間');
           }
         }
       }
@@ -477,7 +477,7 @@ export const updateConcert = handleErrorAsync(
             const sellStart = new Date(ticket.sellBeginDate);
             const sellEnd = new Date(ticket.sellEndDate);
             if (sellStart >= sellEnd) {
-              throw ApiError.invalidFormat('售票結束需晚於開始');
+              throw ApiError.invalidFormat('售票結束時間必須晚於售票開始時間');
             }
           }
 
@@ -899,7 +899,7 @@ export const submitConcertForReview = handleErrorAsync(
         const sellStart = new Date(ticket.sellBeginDate);
         const sellEnd = new Date(ticket.sellEndDate);
         if (sellStart >= sellEnd) {
-          throw ApiError.invalidFormat('售票結束時間必須晚於開始時間');
+          throw ApiError.invalidFormat('售票結束時間必須晚於售票開始時間');
         }
       }
     }
