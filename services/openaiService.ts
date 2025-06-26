@@ -231,7 +231,7 @@ export class OpenAIService {
     
     if (criteria.checkTicketSaleLogic) {
       prompt += '- 售票時間邏輯：\n';
-      prompt += '  * 售票結束時間必須晚於開始時間\n';
+      prompt += '  * 售票結束時間必須晚於售票開始時間\n';
       prompt += '  * 售票結束時間不能晚於演出時間\n';
       prompt += '  * 售票期間至少要有合理長度（建議3天以上）\n';
       prompt += '  * 售票開始時間不能是過去時間\n';
