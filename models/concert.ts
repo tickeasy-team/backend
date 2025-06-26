@@ -65,13 +65,13 @@ export class Concert {
   @Column({ type: 'varchar', length: 50, nullable: false })
   conTitle: string;
 
-  @Column({ type: 'varchar', length: 3000, nullable: true })
+  @Column({ type: 'varchar', length: 30000, nullable: true })
   conIntroduction: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   conLocation: string;
 
-  @Column({ type: 'varchar', length: 200, nullable: true })
+  @Column({ type: 'varchar', length: 2000, nullable: true })
   conAddress: string;
 
   @Column({ type: 'date', nullable: true })
@@ -83,13 +83,13 @@ export class Concert {
   @Column({ type: 'varchar', length: 255, nullable: true })
   imgBanner: string;
 
-  @Column({ type: 'varchar', length: 1000, nullable: true })
+  @Column({ type: 'varchar', length: 10000, nullable: true })
   ticketPurchaseMethod: string;
 
-  @Column({ type: 'varchar', length: 2000, nullable: true })
+  @Column({ type: 'varchar', length: 20000, nullable: true })
   precautions: string;
 
-  @Column({ type: 'varchar', length: 1000, nullable: true })
+  @Column({ type: 'varchar', length: 10000, nullable: true })
   refundPolicy: string;
 
   @Column({
