@@ -176,7 +176,7 @@ export class IntentClassificationService {
       );
       
       if (hasConflict) {
-        console.log(`⚠️ 檢測到關鍵詞衝突: 演唱會意圖但包含非演出關鍵詞`);
+        console.log('⚠️ 檢測到關鍵詞衝突: 演唱會意圖但包含非演出關鍵詞');
         return true;
       }
     }
@@ -252,7 +252,7 @@ export class IntentClassificationService {
     
     if (instructionMatches.length > 0) {
       console.log(`🎯 檢測到客服指導詞彙: [${instructionMatches.join(', ')}]`);
-      console.log(`🎯 優先歸類為一般客服，即使包含領域關鍵詞`);
+      console.log('🎯 優先歸類為一般客服，即使包含領域關鍵詞');
       
       return {
         primaryIntent: IntentType.GENERAL_SERVICE,

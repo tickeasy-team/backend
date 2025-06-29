@@ -639,7 +639,7 @@ export class SmartReplyService {
       return true;
     }
 
-    console.log(`  ❌ 未匹配演唱會意圖`);
+    console.log('  ❌ 未匹配演唱會意圖');
     return false;
   }
 

@@ -336,7 +336,7 @@ export class ConcertSearchService {
             new Brackets(qb => {
                              venueKeywords.forEach((keyword: string, index: number) => {
                  if (index === 0) {
-                   qb.where('venue.venueName ILIKE :keyword0', { [`keyword0`]: `%${keyword}%` });
+                   qb.where('venue.venueName ILIKE :keyword0', { ['keyword0']: `%${keyword}%` });
                  } else {
                    qb.orWhere(`venue.venueName ILIKE :keyword${index}`, { [`keyword${index}`]: `%${keyword}%` });
                  }
@@ -633,6 +633,11 @@ export class ConcertSearchService {
       };
     }
 
+    // 取得前端網址並清理路徑
+    let frontendUrl = process.env.FRONTEND_URL || 'https://frontend-fz4o.onrender.com';
+    // 移除可能的 /callback 路徑，確保乾淨的基礎URL
+    frontendUrl = frontendUrl.replace('/callback', '');
+
     // 生成回覆訊息
     let message = `🎵 為您找到 ${results.length} 個與「${originalQuery}」相關的演唱會：\n\n`;
     
@@ -649,14 +654,16 @@ export class ConcertSearchService {
           message += `💰 票價：$${firstSession.ticketPriceRange.min.toLocaleString()} - $${firstSession.ticketPriceRange.max.toLocaleString()}\n`;
         }
       }
-      message += '\n';
+      
+      // 加上詳細資訊連結
+      message += `🔗 查看詳情：${frontendUrl}/concert/${concert.concertId}\n\n`;
     });
 
     if (results.length > 3) {
-      message += `\n還有 ${results.length - 3} 場演唱會，`;
+      message += `還有 ${results.length - 3} 場演唱會，`;
     }
 
-    message += '\n如需詳細資訊或購票，歡迎詢問「演唱會詳情」或聯繫客服！';
+    message += '如需詳細資訊或購票，歡迎詢問「演唱會詳情」或聯繫客服！';
 
     return {
       message,
