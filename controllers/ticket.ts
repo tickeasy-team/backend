@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../config/database.js';
 import { TicketType as TicketTypeEntity } from '../models/ticket-type.js';
 import { handleErrorAsync, ApiError } from '../utils/index.js';
-import { ApiResponse, ErrorCode } from '../types/api.js';
+import { ApiResponse } from '../types/api.js';
 import { TicketVerificationService } from '../services/ticketVerificationService.js';
 // import { Index } from 'typeorm';
 

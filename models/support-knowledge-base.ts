@@ -141,27 +141,84 @@ export class SupportKnowledgeBase {
   calculateKeywordScore(userInput: string): number {
     if (!this.keywords || this.keywords.length === 0) return 0;
     
-    const lowerInput = userInput.toLowerCase();
+    const lowerInput = userInput.toLowerCase().trim();
     let matchCount = 0;
     let totalScore = 0;
+    let hasExactMatch = false;
+    let hasCoreKeyword = false;
+    
+    // 核心功能關鍵字清單（單純詞彙需要特殊保護）
+    const coreKeywords = [
+      '註冊', '登入', '購票', '買票', '退票', '取票', '領票',
+      '忘記密碼', '修改密碼', '付款方式', '客服時間', '電子票'
+    ];
     
     this.keywords.forEach(keyword => {
       const lowerKeyword = keyword.toLowerCase();
       if (lowerInput.includes(lowerKeyword)) {
         matchCount++;
+        
+        // 檢查是否完全匹配
+        if (lowerInput === lowerKeyword) {
+          hasExactMatch = true;
+        }
+        
+        // 檢查是否為核心關鍵字
+        if (coreKeywords.includes(lowerKeyword)) {
+          hasCoreKeyword = true;
+        }
+        
         // 關鍵字越長，分數越高，並增加基礎分數
-        totalScore += (lowerKeyword.length / 5) + 0.5; // 提高基礎分數
+        totalScore += (lowerKeyword.length / 5) + 0.5;
       }
     });
     
     if (matchCount === 0) return 0;
     
-    // 改進的分數計算：不被關鍵字總數稀釋
-    const baseScore = Math.min(matchCount * 0.3, 1.0); // 每匹配一個關鍵字得 0.3 分
+    // 改進的分數計算
+    let baseScore = Math.min(matchCount * 0.3, 1.0); // 每匹配一個關鍵字得 0.3 分
     const lengthBonus = totalScore / matchCount; // 平均長度獎勵
-    const priorityWeight = this.priority === 1 ? 1.2 : this.priority === 2 ? 0.8 : 0.5; // 調整權重
     
-    return Math.min(baseScore * lengthBonus * priorityWeight, 1.0);
+    // 🎯 優化權重策略
+    let priorityWeight;
+    if (this.priority === 1) {
+      priorityWeight = 1.2;
+    } else if (this.priority === 2) {
+      priorityWeight = 0.8;
+    } else {
+      // Priority 3 的特殊處理
+      if (hasCoreKeyword && hasExactMatch) {
+        // 核心關鍵字完全匹配：提高權重到 0.8
+        priorityWeight = 0.8;
+        console.log(`🎯 核心關鍵字完全匹配獎勵: "${lowerInput}" 權重提升至 0.8`);
+      } else if (hasCoreKeyword) {
+        // 包含核心關鍵字：提高權重到 0.7
+        priorityWeight = 0.7;
+        console.log(`🎯 核心關鍵字獎勵: "${lowerInput}" 權重提升至 0.7`);
+      } else {
+        priorityWeight = 0.5;
+      }
+    }
+    
+    // 🚀 完全匹配獎勵
+    if (hasExactMatch) {
+      baseScore = Math.min(baseScore * 1.2, 1.0); // 完全匹配額外 20% 獎勵
+      console.log(`🎯 完全匹配獎勵: "${lowerInput}" baseScore 提升 20%`);
+    }
+    
+    const finalScore = Math.min(baseScore * lengthBonus * priorityWeight, 1.0);
+    
+    if (hasCoreKeyword) {
+      console.log(`🧮 核心關鍵字分數計算: 
+        - 輸入: "${lowerInput}"
+        - 匹配數: ${matchCount}
+        - baseScore: ${baseScore.toFixed(4)}
+        - lengthBonus: ${lengthBonus.toFixed(4)}
+        - priorityWeight: ${priorityWeight}
+        - 最終分數: ${finalScore.toFixed(4)}`);
+    }
+    
+    return finalScore;
   }
 
   // 檢查是否為圖文教學
