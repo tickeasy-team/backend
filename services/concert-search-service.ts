@@ -659,7 +659,7 @@ export class ConcertSearchService {
       message += `還有 ${results.length - 3} 場演唱會，`;
     }
 
-    message += '如需詳細資訊或購票，歡迎詢問「演唱會詳情」或聯繫客服！';
+    message += '如需更多資訊，歡迎使用網站右上方搜尋功能';
 
     return {
       message,
