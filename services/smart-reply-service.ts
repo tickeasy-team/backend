@@ -66,6 +66,15 @@ export class SmartReplyService {
   }
 
   /**
+   * 獲取前端基礎 URL
+   */
+  private getFrontendBaseUrl(): string {
+    const frontendUrl = process.env.FRONTEND_URL || '';
+    // 移除可能存在的 /callback 路徑，以及結尾的斜線
+    return frontendUrl.replace(/\/callback\/?$/, '').replace(/\/$/, '');
+  }
+
+  /**
    * 處理使用者訊息 - 主要入口
    */
   async processMessage(userMessage: string): Promise<SmartReplyResponse> {
@@ -177,12 +186,18 @@ export class SmartReplyService {
     if (tutorialMatch) {
       await this.incrementViewCount(tutorialMatch.ruleId);
       
+      const baseUrl = this.getFrontendBaseUrl();
+      // 如果 tutorialMatch.url 是相對路徑 (以 / 開頭)，就組合 URL
+      const fullUrl = baseUrl && tutorialMatch.url.startsWith('/')
+        ? `${baseUrl}${tutorialMatch.url}`
+        : tutorialMatch.url;
+
       return {
         type: 'tutorial',
-        message: `我為您找到了相關的圖文教學：**${tutorialMatch.title}**\n\n${tutorialMatch.description}\n\n👉 [點擊查看完整教學](${tutorialMatch.url})\n\n如還有其他問題，歡迎隨時詢問！`,
+        message: `我為您找到了相關的圖文教學：**${tutorialMatch.title}**\n\n${tutorialMatch.description}\n\n👉 [點擊查看完整教學](${fullUrl})\n\n如還有其他問題，歡迎隨時詢問！`,
         tutorial: {
           title: tutorialMatch.title,
-          url: tutorialMatch.url,
+          url: fullUrl,
           description: tutorialMatch.description
         },
         data: { confidence: tutorialMatch.confidence },
