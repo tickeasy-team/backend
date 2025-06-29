@@ -74,7 +74,7 @@ app.use(helmet());
 
 // CORS 配置
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // 允許的來源
     const allowedOrigins = [
       'http://localhost:3000',

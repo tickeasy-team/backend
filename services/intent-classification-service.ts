@@ -5,6 +5,7 @@
 
 import openaiService from './openaiService.js';
 
+/* eslint-disable no-unused-vars */
 // 支援的意圖類型
 export enum IntentType {
   CONCERT = 'concert',           // 演唱會相關
@@ -14,6 +15,7 @@ export enum IntentType {
   GENERAL_SERVICE = 'general_service', // 一般客服
   UNKNOWN = 'unknown'           // 無法識別
 }
+/* eslint-enable no-unused-vars */
 
 // 意圖分析結果
 export interface IntentAnalysisResult {
@@ -115,8 +117,8 @@ export class IntentClassificationService {
     let parsedResult;
     try {
       parsedResult = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.error('❌ AI回應解析失敗:', aiResponse);
+    } catch (e) {
+      console.error('❌ AI回應解析失敗:', aiResponse, e);
       throw new Error('AI回應格式錯誤');
     }
 

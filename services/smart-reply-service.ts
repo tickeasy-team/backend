@@ -128,7 +128,7 @@ export class SmartReplyService {
   ): Promise<SmartReplyResponse | null> {
     
     switch (intentResult.primaryIntent) {
-      case IntentType.CONCERT:
+      case IntentType.CONCERT: {
         console.log('🎵 處理演唱會查詢意圖');
         const concertResult = await this.tryConcertSearch(userMessage);
         if (concertResult) {
@@ -136,6 +136,7 @@ export class SmartReplyService {
           return concertResult;
         }
         break;
+      }
 
       case IntentType.FOOD:
         console.log('🍽️ 處理美食查詢意圖');

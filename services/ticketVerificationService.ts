@@ -20,10 +20,7 @@ interface VerificationResult {
   verifierType: string;
 }
 
-interface TimeValidationResult {
-  canVerify: boolean;
-  reason?: string;
-}
+
 
 export class TicketVerificationService {
   private ticketRepository = AppDataSource.getRepository(TicketEntity);

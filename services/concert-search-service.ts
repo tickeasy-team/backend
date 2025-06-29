@@ -10,9 +10,9 @@ import { ConcertSession } from '../models/concert-session.js';
 import { Venue } from '../models/venue.js';
 import { LocationTag } from '../models/location-tag.js';
 import { MusicTag } from '../models/music-tag.js';
-import { TicketType } from '../models/ticket-type.js';
 import { Brackets, IsNull } from 'typeorm';
 
+/* eslint-disable no-unused-vars */
 // 查詢意圖枚舉
 export enum SearchIntent {
   ARTIST = 'artist',           // 藝人名查詢
@@ -22,6 +22,7 @@ export enum SearchIntent {
   GENRE = 'genre',            // 音樂類型查詢
   GENERAL = 'general'         // 一般關鍵字查詢
 }
+/* eslint-enable no-unused-vars */
 
 // 查詢參數介面
 export interface ConcertSearchParams {
@@ -113,7 +114,7 @@ export class ConcertSearchService {
       const results = await this.executeSearch(params.query, intent, params);
       
       // 4. 計算相關性分數並排序
-      const scoredResults = await this.calculateRelevanceScores(results, params.query, intent);
+      const scoredResults = await this.calculateRelevanceScores(results, params.query);
       
       // 5. 限制結果數量
       const limit = params.limit || 5;
@@ -297,7 +298,7 @@ export class ConcertSearchService {
         );
         break;
 
-      case SearchIntent.LOCATION:
+      case SearchIntent.LOCATION: {
         // 從查詢中提取地區關鍵詞
         const locationKeywords = this.extractLocationKeywords(query);
         if (locationKeywords.length > 0) {
@@ -327,8 +328,8 @@ export class ConcertSearchService {
           );
         }
         break;
-
-      case SearchIntent.VENUE:
+      }
+      case SearchIntent.VENUE: {
         // 從查詢中提取場地關鍵詞
         const venueKeywords = this.extractVenueKeywords(query);
         if (venueKeywords.length > 0) {
@@ -350,7 +351,7 @@ export class ConcertSearchService {
           );
         }
         break;
-
+      }
       case SearchIntent.GENRE:
         queryBuilder.andWhere(
           new Brackets(qb => {
@@ -361,7 +362,7 @@ export class ConcertSearchService {
         );
         break;
 
-      case SearchIntent.DATE_RANGE:
+      case SearchIntent.DATE_RANGE: {
         const dateRange = this.parseDateFromQuery(query);
         if (dateRange.start) {
           queryBuilder.andWhere('concert.eventStartDate >= :startDate', { 
@@ -374,7 +375,7 @@ export class ConcertSearchService {
           });
         }
         break;
-
+      }
       default:
         // 一般查詢：搜索所有文字欄位
         queryBuilder.andWhere(
@@ -475,8 +476,7 @@ export class ConcertSearchService {
    */
   private async calculateRelevanceScores(
     concerts: Concert[], 
-    query: string, 
-    intent: SearchIntent
+    query: string
   ): Promise<ConcertSearchResult[]> {
     const results: ConcertSearchResult[] = [];
     const lowerQuery = query.toLowerCase();
@@ -527,7 +527,6 @@ export class ConcertSearchService {
    */
   private async transformToSearchResult(concert: Concert, score: number): Promise<ConcertSearchResult> {
     // 計算票價範圍
-    let ticketPriceRange: { min: number; max: number } | undefined;
     if (concert.sessions && concert.sessions.length > 0) {
       const allPrices: number[] = [];
       concert.sessions.forEach(session => {
@@ -541,10 +540,7 @@ export class ConcertSearchService {
       });
       
       if (allPrices.length > 0) {
-        ticketPriceRange = {
-          min: Math.min(...allPrices),
-          max: Math.max(...allPrices)
-        };
+        // ticketPriceRange is unused
       }
     }
 

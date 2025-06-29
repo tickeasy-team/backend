@@ -62,6 +62,36 @@ export class OpenAIService {
 }`;
   }
 
+  /**
+   * 通用聊天完成 API
+   * @param messages 聊天訊息陣列
+   * @param options 額外選項，如 model, temperature
+   * @returns AI 模型的回應字串
+   */
+  async getChatCompletion(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    options: { model?: string; temperature?: number } = {}
+  ): Promise<string> {
+    if (!this.isInitialized) {
+      console.warn('OpenAI Service 未初始化，無法取得聊天回覆。');
+      return 'AI服務目前無法使用，請稍後再試。';
+    }
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: options.model || OPENAI_MODEL,
+        messages,
+        temperature: options.temperature === undefined ? OPENAI_TEMPERATURE : options.temperature,
+        max_tokens: OPENAI_MAX_TOKENS,
+      });
+
+      return response.choices[0].message.content || '';
+    } catch (error: any) {
+      console.error('❌ 與 OpenAI API 互動失敗:', error);
+      throw new Error(`OpenAI API 錯誤: ${error.message}`);
+    }
+  }
+
   // 建立 User Prompt
   private buildReviewPrompt(concert: Concert, criteria: ReviewCriteria): string {
     // 輔助函數，用於安全地格式化日期
