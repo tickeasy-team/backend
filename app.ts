@@ -32,6 +32,7 @@ import sessionRoute from './routes/session.js';
 import knowledgeBaseRoute from './routes/knowledge-base.js';
 import smartReplyRoute from './routes/smart-reply.js';
 
+
 import healthRouter from './routes/health.js';
 
 const app = express();
@@ -73,7 +74,7 @@ app.use(helmet());
 
 // CORS 配置
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // 允許的來源
     const allowedOrigins = [
       'http://localhost:3000',
@@ -140,6 +141,7 @@ app.use('/api/v1/payments', paymentRoute);
 app.use('/api/v1/sessions', sessionRoute);
 app.use('/api/v1/knowledge-base', knowledgeBaseRoute);
 app.use('/api/v1/smart-reply', smartReplyRoute);
+
 app.use('/api/v1/health', healthRouter);
 
 
