@@ -74,6 +74,7 @@ app.use(helmet());
 
 // CORS 配置
 const corsOptions = {
+  // eslint-disable-next-line no-unused-vars
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // 允許的來源
     const allowedOrigins = [
