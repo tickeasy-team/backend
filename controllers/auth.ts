@@ -24,9 +24,9 @@ import { ErrorCode } from '../types/api.js';
 import { Buffer } from 'buffer';
 import { URL } from 'url';
 
-// Google 登入相關介面 - 保留原有介面以維持相容性
+// Google 登入相關介面 - 修正為與 Passport 實際回傳結構一致
 interface GoogleRequest extends Omit<Request, 'user'> {
-    user?: GoogleRequestUser;
+    user?: UserData;  // 直接使用 UserData，因為 Passport 回傳的就是這個結構
     query: {
         state?: string;
         [key: string]: string | undefined;
@@ -268,15 +268,7 @@ export const googleLogin = handleErrorAsync(
             );
         }
 
-        if (!googleReq.user.user) {
-            throw ApiError.create(
-                400,
-                '無效的 Google 用戶資料格式',
-                ErrorCode.DATA_INVALID
-            );
-        }
-
-        if (!googleReq.user.user.userId) {
+        if (!googleReq.user.userId) {
             throw ApiError.create(
                 400,
                 '未找到用戶識別碼',
@@ -286,26 +278,23 @@ export const googleLogin = handleErrorAsync(
 
         // 生成 token，包含用戶 ID 和角色
         const token = generateToken({
-            userId: googleReq.user.user.userId,
-            role: googleReq.user.user.role || 'user', // 確保有默認角色
+            userId: googleReq.user.userId,
+            role: googleReq.user.role || 'user', // 確保有默認角色
         });
 
         // 準備返回的用戶資料
         const userData = {
-            userId: googleReq.user.user.userId,
-            name: googleReq.user.user.name,
-            email: googleReq.user.user.email,
-            photo: googleReq.user.user.photo,
-            role: googleReq.user.user.role,
-            oauthProviders: googleReq.user.user.oauthProviders,
-            phone: googleReq.user.user.phone,
-            address: googleReq.user.user.address,
-            birthday: googleReq.user.user.birthday,
-            gender: googleReq.user.user.gender,
-            intro: googleReq.user.user.intro,
-            facebook: googleReq.user.user.facebook,
-            instagram: googleReq.user.user.instagram,
-            discord: googleReq.user.user.discord,
+            userId: googleReq.user.userId,
+            name: googleReq.user.name,
+            email: googleReq.user.email,
+            avatar: googleReq.user.avatar,
+            role: googleReq.user.role,
+            oauthProviders: googleReq.user.oauthProviders,
+            phone: googleReq.user.phone,
+            address: googleReq.user.address,
+            birthday: googleReq.user.birthday,
+            gender: googleReq.user.gender,
+            isEmailVerified: googleReq.user.isEmailVerified,
         };
 
         // 如果是 POST 請求 (直接從前端發來的)
