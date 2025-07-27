@@ -88,7 +88,7 @@ const corsOptions = {
       'https://frontend-fz4o.onrender.com',
       'https://frontend-amber.onrender.com',
       'https://tickeasy-frontend.onrender.com',
-      'https://tickeasy-f.onrender.com/'
+      'https://tickeasy-f.onrender.com'
     ];
     
     // 從 FRONTEND_URL 環境變數中提取前端域名（去掉 /callback）
