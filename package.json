@@ -11,7 +11,8 @@
     "build-windows": "tsc && xcopy views dist\\views /E /I /Y",
     "typeorm": "typeorm-ts-node-commonjs",
     "migrate": "npm run typeorm migration:run -- -d config/database.ts",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest --config jest.config.cjs",
+    "test": "jest",
+    "init:knowledge-base": "tsx init-knowledge-base.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },
